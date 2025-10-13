@@ -404,6 +404,39 @@ export type Database = {
         }
         Relationships: []
       }
+      precios_empire: {
+        Row: {
+          created_at: string
+          estado: string | null
+          id: string
+          marca: string | null
+          modelo: string | null
+          monday_id_elemento: string | null
+          name: string | null
+          precio_venta: string | null
+        }
+        Insert: {
+          created_at?: string
+          estado?: string | null
+          id?: string
+          marca?: string | null
+          modelo?: string | null
+          monday_id_elemento?: string | null
+          name?: string | null
+          precio_venta?: string | null
+        }
+        Update: {
+          created_at?: string
+          estado?: string | null
+          id?: string
+          marca?: string | null
+          modelo?: string | null
+          monday_id_elemento?: string | null
+          name?: string | null
+          precio_venta?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
