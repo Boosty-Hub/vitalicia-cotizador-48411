@@ -54,16 +54,33 @@ const ActivarPolizaNaturalPage = () => {
       
       if (response.ok) {
         const data = await response.json();
-        setPlacaValidada(true);
-        setShowError(false);
-        setCurrentStep(2);
-        toast({
-          title: "Placa encontrada",
-          description: "Continúa con el proceso de activación",
-        });
+        
+        // Verificar si la placa fue encontrada en el sistema
+        if (data.Encontrado === true) {
+          setPlacaValidada(true);
+          setShowError(false);
+          setCurrentStep(2);
+          toast({
+            title: "Placa encontrada",
+            description: "Continúa con el proceso de activación",
+          });
+        } else {
+          setShowError(true);
+          setPlacaValidada(false);
+          toast({
+            title: "Placa no encontrada",
+            description: "La placa no se encuentra en el sistema",
+            variant: "destructive",
+          });
+        }
       } else {
         setShowError(true);
         setPlacaValidada(false);
+        toast({
+          title: "Error",
+          description: "No se pudo validar la placa. Por favor, intenta nuevamente.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error validating placa:", error);

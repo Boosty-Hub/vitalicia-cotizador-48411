@@ -241,30 +241,30 @@ const ActivarPolizaJuridicaPage = () => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="razonSocial">Razón Social</Label>
+                      <Label htmlFor="nombreEmpresa">Razón Social</Label>
                       <Input
-                        id="razonSocial"
-                        value={formData.razonSocial}
-                        onChange={(e) => handleInputChange("razonSocial", e.target.value)}
+                        id="nombreEmpresa"
+                        value={formData.nombreEmpresa}
+                        onChange={(e) => handleInputChange("nombreEmpresa", e.target.value)}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="rif">RIF</Label>
+                      <Label htmlFor="numeroRIF">RIF</Label>
                       <Input
-                        id="rif"
-                        value={formData.rif}
-                        onChange={(e) => handleInputChange("rif", e.target.value)}
+                        id="numeroRIF"
+                        value={formData.numeroRIF}
+                        onChange={(e) => handleInputChange("numeroRIF", e.target.value)}
                       />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="nombreRepresentante">Nombre del Representante</Label>
+                        <Label htmlFor="nombresRepresentante">Nombre del Representante</Label>
                         <Input
-                          id="nombreRepresentante"
-                          value={formData.nombreRepresentante}
-                          onChange={(e) => handleInputChange("nombreRepresentante", e.target.value)}
+                          id="nombresRepresentante"
+                          value={formData.nombresRepresentante}
+                          onChange={(e) => handleInputChange("nombresRepresentante", e.target.value)}
                         />
                       </div>
                       <div className="space-y-2">
@@ -289,7 +289,7 @@ const ActivarPolizaJuridicaPage = () => {
                         onClick={() => setCurrentStep(3)}
                         variant="hero"
                         className="flex-1"
-                        disabled={!formData.razonSocial || !formData.rif || !formData.nombreRepresentante || !formData.cedulaRepresentante}
+                        disabled={!formData.nombreEmpresa || !formData.numeroRIF || !formData.nombresRepresentante || !formData.cedulaRepresentante}
                       >
                         Siguiente
                       </Button>
@@ -314,31 +314,31 @@ const ActivarPolizaJuridicaPage = () => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="telefono">Teléfono</Label>
+                      <Label htmlFor="telefonoCelular">Teléfono</Label>
                       <Input
-                        id="telefono"
+                        id="telefonoCelular"
                         type="tel"
-                        value={formData.telefono}
-                        onChange={(e) => handleInputChange("telefono", e.target.value)}
+                        value={formData.telefonoCelular}
+                        onChange={(e) => handleInputChange("telefonoCelular", e.target.value)}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="email">Correo Electrónico</Label>
+                      <Label htmlFor="correoElectronico">Correo Electrónico</Label>
                       <Input
-                        id="email"
+                        id="correoElectronico"
                         type="email"
-                        value={formData.email}
-                        onChange={(e) => handleInputChange("email", e.target.value)}
+                        value={formData.correoElectronico}
+                        onChange={(e) => handleInputChange("correoElectronico", e.target.value)}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="direccionFiscal">Dirección Fiscal</Label>
+                      <Label htmlFor="ciudad">Dirección Fiscal</Label>
                       <Input
-                        id="direccionFiscal"
-                        value={formData.direccionFiscal}
-                        onChange={(e) => handleInputChange("direccionFiscal", e.target.value)}
+                        id="ciudad"
+                        value={formData.ciudad}
+                        onChange={(e) => handleInputChange("ciudad", e.target.value)}
                       />
                     </div>
 
@@ -354,7 +354,7 @@ const ActivarPolizaJuridicaPage = () => {
                         onClick={handleSubmit}
                         variant="hero"
                         className="flex-1"
-                        disabled={!formData.telefono || !formData.email || !formData.direccionFiscal}
+                        disabled={!formData.telefonoCelular || !formData.correoElectronico || !formData.ciudad}
                       >
                         Finalizar
                       </Button>
