@@ -48,21 +48,32 @@ const ActivarPolizaNaturalPage = () => {
   const totalSteps = 4;
   const progress = (currentStep / totalSteps) * 100;
 
-  const validatePlaca = () => {
-    // Simulación de búsqueda en base de datos
-    const placasValidas = ["ABC123", "XYZ789", "DEF456"];
-    
-    if (placasValidas.includes(placa.toUpperCase())) {
-      setPlacaValidada(true);
-      setShowError(false);
-      setCurrentStep(2);
-      toast({
-        title: "Placa encontrada",
-        description: "Continúa con el proceso de activación",
-      });
-    } else {
+  const validatePlaca = async () => {
+    try {
+      const response = await fetch(`https://hook.us2.make.com/bvauv3534xqm83vqccqwgev20t5h7jxe?placa=${encodeURIComponent(placa)}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setPlacaValidada(true);
+        setShowError(false);
+        setCurrentStep(2);
+        toast({
+          title: "Placa encontrada",
+          description: "Continúa con el proceso de activación",
+        });
+      } else {
+        setShowError(true);
+        setPlacaValidada(false);
+      }
+    } catch (error) {
+      console.error("Error validating placa:", error);
       setShowError(true);
       setPlacaValidada(false);
+      toast({
+        title: "Error",
+        description: "No se pudo validar la placa. Por favor, intenta nuevamente.",
+        variant: "destructive",
+      });
     }
   };
 
