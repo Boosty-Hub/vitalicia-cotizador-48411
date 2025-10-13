@@ -14,7 +14,396 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      board_cod_ciudad: {
+        Row: {
+          cd_ciudad: string | null
+          cd_estado: string | null
+          cd_pais: string | null
+          created_at: string
+          descripcion: string | null
+          id: string
+          monday_id_elemento: string | null
+        }
+        Insert: {
+          cd_ciudad?: string | null
+          cd_estado?: string | null
+          cd_pais?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Update: {
+          cd_ciudad?: string | null
+          cd_estado?: string | null
+          cd_pais?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Relationships: []
+      }
+      board_cod_color: {
+        Row: {
+          cd_valdet: string | null
+          created_at: string
+          descripcion: string | null
+          id: string
+          monday_id_elemento: string | null
+        }
+        Insert: {
+          cd_valdet?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Update: {
+          cd_valdet?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Relationships: []
+      }
+      board_cod_edo_civil: {
+        Row: {
+          cd_valdet: string | null
+          created_at: string
+          descripcion: string | null
+          id: string
+          monday_id_elemento: string | null
+        }
+        Insert: {
+          cd_valdet?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Update: {
+          cd_valdet?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Relationships: []
+      }
+      board_cod_estado: {
+        Row: {
+          cd_estado: string | null
+          cd_pais: string | null
+          created_at: string
+          descripcion: string | null
+          id: string
+          monday_id_elemento: string | null
+        }
+        Insert: {
+          cd_estado?: string | null
+          cd_pais?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Update: {
+          cd_estado?: string | null
+          cd_pais?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Relationships: []
+      }
+      board_cod_marca: {
+        Row: {
+          cd_marca: string | null
+          created_at: string
+          descripcion: string | null
+          id: string
+          monday_id_elemento: string | null
+        }
+        Insert: {
+          cd_marca?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Update: {
+          cd_marca?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Relationships: []
+      }
+      board_cod_modelo: {
+        Row: {
+          cd_marca: string | null
+          cd_modelo: string | null
+          created_at: string
+          descripcion: string | null
+          id: string
+          monday_id_elemento: string | null
+        }
+        Insert: {
+          cd_marca?: string | null
+          cd_modelo?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Update: {
+          cd_marca?: string | null
+          cd_modelo?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Relationships: []
+      }
+      board_cod_municipio: {
+        Row: {
+          cd_ciudad: string | null
+          cd_estado: string | null
+          cd_municipio: string | null
+          cd_pais: string | null
+          created_at: string
+          descripcion: string | null
+          id: string
+          monday_id_elemento: string | null
+        }
+        Insert: {
+          cd_ciudad?: string | null
+          cd_estado?: string | null
+          cd_municipio?: string | null
+          cd_pais?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Update: {
+          cd_ciudad?: string | null
+          cd_estado?: string | null
+          cd_municipio?: string | null
+          cd_pais?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Relationships: []
+      }
+      board_cod_pais: {
+        Row: {
+          cd_pais: string | null
+          created_at: string
+          descripcion: string | null
+          id: string
+          monday_id_elemento: string | null
+        }
+        Insert: {
+          cd_pais?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Update: {
+          cd_pais?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Relationships: []
+      }
+      board_cod_sexo: {
+        Row: {
+          cd_valdet: string | null
+          created_at: string
+          descripcion: string | null
+          id: string
+          monday_id_elemento: string | null
+        }
+        Insert: {
+          cd_valdet?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Update: {
+          cd_valdet?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Relationships: []
+      }
+      board_cod_tipo_veh: {
+        Row: {
+          cd_valdet: string | null
+          created_at: string
+          descripcion: string | null
+          id: string
+          monday_id_elemento: string | null
+        }
+        Insert: {
+          cd_valdet?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Update: {
+          cd_valdet?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Relationships: []
+      }
+      board_cod_tlf: {
+        Row: {
+          cd_valdet: string | null
+          created_at: string
+          id: string
+          monday_id_elemento: string | null
+          s_descripcion: string | null
+        }
+        Insert: {
+          cd_valdet?: string | null
+          created_at?: string
+          id?: string
+          monday_id_elemento?: string | null
+          s_descripcion?: string | null
+        }
+        Update: {
+          cd_valdet?: string | null
+          created_at?: string
+          id?: string
+          monday_id_elemento?: string | null
+          s_descripcion?: string | null
+        }
+        Relationships: []
+      }
+      board_cod_version_api: {
+        Row: {
+          cd_subversion_seguro: string | null
+          cd_version_seguro: string | null
+          created_at: string
+          id: string
+          monday_id_elemento: string | null
+          n_centuria: string | null
+        }
+        Insert: {
+          cd_subversion_seguro?: string | null
+          cd_version_seguro?: string | null
+          created_at?: string
+          id?: string
+          monday_id_elemento?: string | null
+          n_centuria?: string | null
+        }
+        Update: {
+          cd_subversion_seguro?: string | null
+          cd_version_seguro?: string | null
+          created_at?: string
+          id?: string
+          monday_id_elemento?: string | null
+          n_centuria?: string | null
+        }
+        Relationships: []
+      }
+      board_cod_version_moto: {
+        Row: {
+          cd_marca: string | null
+          cd_modelo: string | null
+          cd_version: string | null
+          created_at: string
+          descripcion: string | null
+          id: string
+          monday_id_elemento: string | null
+        }
+        Insert: {
+          cd_marca?: string | null
+          cd_modelo?: string | null
+          cd_version?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Update: {
+          cd_marca?: string | null
+          cd_modelo?: string | null
+          cd_version?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Relationships: []
+      }
+      cod_act_economica: {
+        Row: {
+          cd_actividad: string | null
+          created_at: string
+          descripcion: string | null
+          id: string
+          monday_id_elemento: string | null
+        }
+        Insert: {
+          cd_actividad?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Update: {
+          cd_actividad?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Relationships: []
+      }
+      codigo_nacionalidad: {
+        Row: {
+          cd_valdet: string | null
+          created_at: string
+          descripcion: string | null
+          id: string
+          monday_id_elemento: string | null
+        }
+        Insert: {
+          cd_valdet?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Update: {
+          cd_valdet?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          monday_id_elemento?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
