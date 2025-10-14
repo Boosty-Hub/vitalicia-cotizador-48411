@@ -136,8 +136,71 @@ const ActivarPolizaNaturalPage = () => {
     }
   };
 
+  const formatCedulaInput = (tipo: string, value: string) => {
+    // Remover caracteres no numéricos y guiones
+    const numbersOnly = value.replace(/[^0-9]/g, '');
+    
+    // Obtener el prefijo según el tipo
+    const prefix = tipo || '';
+    
+    if (!prefix) return value;
+    
+    // Formatear según el tipo
+    switch (prefix) {
+      case 'V':
+      case 'E':
+        // Formato: V-12345678 (hasta 8 dígitos)
+        if (numbersOnly.length === 0) return `${prefix}-`;
+        return `${prefix}-${numbersOnly.slice(0, 8)}`;
+      
+      case 'J':
+      case 'G':
+        // Formato: J-123456789-0 (hasta 9 dígitos + 1 dígito verificador)
+        if (numbersOnly.length === 0) return `${prefix}-`;
+        if (numbersOnly.length <= 9) {
+          return `${prefix}-${numbersOnly}`;
+        }
+        return `${prefix}-${numbersOnly.slice(0, 9)}-${numbersOnly.slice(9, 10)}`;
+      
+      case 'P':
+        // Pasaporte: texto libre
+        return value;
+      
+      default:
+        return value;
+    }
+  };
+
   const handleInputChange = (field: string, value: string | File | null) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleTipoIdentificacionChange = (value: string) => {
+    setFormData(prev => {
+      // Si hay un número de cédula existente, reformatearlo con el nuevo tipo
+      const currentNumero = prev.numeroCedula;
+      let newNumero = '';
+      
+      if (currentNumero) {
+        // Extraer solo los números del valor actual
+        const numbersOnly = currentNumero.replace(/[^0-9]/g, '');
+        newNumero = formatCedulaInput(value, numbersOnly);
+      } else {
+        // Si no hay número, solo poner el prefijo
+        newNumero = value ? `${value}-` : '';
+      }
+      
+      return {
+        ...prev,
+        tipoIdentificacion: value,
+        numeroCedula: newNumero
+      };
+    });
+  };
+
+  const handleCedulaChange = (value: string) => {
+    const formatted = formatCedulaInput(formData.tipoIdentificacion, value);
+    setFormData(prev => ({ ...prev, numeroCedula: formatted }));
   };
 
   const handleFileChange = (field: string, file: File | null) => {
@@ -379,7 +442,7 @@ const ActivarPolizaNaturalPage = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="tipoIdentificacion">Tipo de Identificación *</Label>
-                        <Select value={formData.tipoIdentificacion} onValueChange={(value) => handleInputChange("tipoIdentificacion", value)}>
+                        <Select value={formData.tipoIdentificacion} onValueChange={handleTipoIdentificacionChange}>
                           <SelectTrigger>
                             <SelectValue placeholder="Seleccione una opción" />
                           </SelectTrigger>
@@ -397,7 +460,9 @@ const ActivarPolizaNaturalPage = () => {
                         <Input
                           id="numeroCedula"
                           value={formData.numeroCedula}
-                          onChange={(e) => handleInputChange("numeroCedula", e.target.value)}
+                          onChange={(e) => handleCedulaChange(e.target.value)}
+                          placeholder={formData.tipoIdentificacion ? `Ej: ${formData.tipoIdentificacion}-12345678` : "Seleccione tipo primero"}
+                          disabled={!formData.tipoIdentificacion}
                         />
                       </div>
                     </div>
