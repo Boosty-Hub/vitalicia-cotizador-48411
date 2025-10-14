@@ -54,6 +54,14 @@ const ActivarPolizaNaturalPage = () => {
     email2: "",
     serialCarroceria: "",
     fechaCompra: "",
+    // Beneficiary data
+    beneficiarioNombre: "",
+    beneficiarioApellidos: "",
+    beneficiarioTipoIdentificacion: "",
+    beneficiarioNumeroCedula: "",
+    beneficiarioSexo: "",
+    beneficiarioFechaNacimiento: "",
+    beneficiarioEstadoCivil: "",
     // Document uploads
     docIdentidad: null as File | null,
     docOrigenVehiculo: null as File | null,
@@ -61,7 +69,7 @@ const ActivarPolizaNaturalPage = () => {
     docRIF: null as File | null,
   });
 
-  const totalSteps = 4;
+  const totalSteps = 5;
   const progress = (currentStep / totalSteps) * 100;
 
   useEffect(() => {
@@ -325,6 +333,31 @@ const ActivarPolizaNaturalPage = () => {
     setFormData(prev => ({ ...prev, numeroCedula: formatted }));
   };
 
+  const handleBeneficiarioTipoIdentificacionChange = (value: string) => {
+    setFormData(prev => {
+      const currentNumero = prev.beneficiarioNumeroCedula;
+      let newNumero = '';
+      
+      if (currentNumero) {
+        const numbersOnly = currentNumero.replace(/[^0-9]/g, '');
+        newNumero = formatCedulaInput(value, numbersOnly);
+      } else {
+        newNumero = value ? `${value}-` : '';
+      }
+      
+      return {
+        ...prev,
+        beneficiarioTipoIdentificacion: value,
+        beneficiarioNumeroCedula: newNumero
+      };
+    });
+  };
+
+  const handleBeneficiarioCedulaChange = (value: string) => {
+    const formatted = formatCedulaInput(formData.beneficiarioTipoIdentificacion, value);
+    setFormData(prev => ({ ...prev, beneficiarioNumeroCedula: formatted }));
+  };
+
   const handleFileChange = (field: string, file: File | null) => {
     setFormData(prev => ({ ...prev, [field]: file }));
   };
@@ -339,7 +372,7 @@ const ActivarPolizaNaturalPage = () => {
       title: "Formulario enviado",
       description: "Tu solicitud ha sido procesada exitosamente",
     });
-    setCurrentStep(5);
+    setCurrentStep(6);
   };
 
   const pageVariants = {
@@ -867,6 +900,132 @@ const ActivarPolizaNaturalPage = () => {
 
             {currentStep === 4 && (
               <motion.div
+                key="step5"
+                variants={pageVariants}
+                initial="initial"
+                animate="in"
+                exit="out"
+                transition={{ duration: 0.3 }}
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-primary">Beneficiarios Preferencial en Caso de Muerte</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="beneficiarioNombre">Nombre *</Label>
+                        <Input
+                          id="beneficiarioNombre"
+                          value={formData.beneficiarioNombre}
+                          onChange={(e) => handleInputChange("beneficiarioNombre", e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="beneficiarioApellidos">Apellidos *</Label>
+                        <Input
+                          id="beneficiarioApellidos"
+                          value={formData.beneficiarioApellidos}
+                          onChange={(e) => handleInputChange("beneficiarioApellidos", e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="beneficiarioTipoIdentificacion">Tipo de Identificación *</Label>
+                        <Select value={formData.beneficiarioTipoIdentificacion} onValueChange={handleBeneficiarioTipoIdentificacionChange}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccione una opción" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {nacionalidades.map((nac) => (
+                              <SelectItem key={nac.cd_valdet} value={nac.cd_valdet || ""}>
+                                {nac.descripcion || ""}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="beneficiarioNumeroCedula">Número de Cédula o RIF *</Label>
+                        <Input
+                          id="beneficiarioNumeroCedula"
+                          value={formData.beneficiarioNumeroCedula}
+                          onChange={(e) => handleBeneficiarioCedulaChange(e.target.value)}
+                          placeholder={formData.beneficiarioTipoIdentificacion ? `Ej: ${formData.beneficiarioTipoIdentificacion}-12345678` : "Seleccione tipo primero"}
+                          disabled={!formData.beneficiarioTipoIdentificacion}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="beneficiarioSexo">Sexo *</Label>
+                        <Select value={formData.beneficiarioSexo} onValueChange={(value) => handleInputChange("beneficiarioSexo", value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccione una opción" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {sexos.map((sexo) => (
+                              <SelectItem key={sexo.cd_valdet} value={sexo.cd_valdet || ""}>
+                                {sexo.descripcion || ""}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="beneficiarioFechaNacimiento">Fecha de Nacimiento *</Label>
+                        <Input
+                          id="beneficiarioFechaNacimiento"
+                          type="date"
+                          value={formData.beneficiarioFechaNacimiento}
+                          onChange={(e) => handleInputChange("beneficiarioFechaNacimiento", e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="beneficiarioEstadoCivil">Estado Civil *</Label>
+                      <Select value={formData.beneficiarioEstadoCivil} onValueChange={(value) => handleInputChange("beneficiarioEstadoCivil", value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccione una opción" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {estadosCiviles.map((estado) => (
+                            <SelectItem key={estado.cd_valdet} value={estado.cd_valdet || ""}>
+                              {estado.descripcion || ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                      <Button
+                        onClick={() => setCurrentStep(3)}
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        Anterior
+                      </Button>
+                      <Button
+                        onClick={() => setCurrentStep(5)}
+                        variant="hero"
+                        className="flex-1"
+                        disabled={!formData.beneficiarioNombre || !formData.beneficiarioApellidos || !formData.beneficiarioNumeroCedula || !formData.beneficiarioSexo || !formData.beneficiarioFechaNacimiento || !formData.beneficiarioEstadoCivil}
+                      >
+                        Siguiente
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {currentStep === 5 && (
+              <motion.div
                 key="step4"
                 variants={pageVariants}
                 initial="initial"
@@ -964,7 +1123,7 @@ const ActivarPolizaNaturalPage = () => {
 
                     <div className="flex gap-3 pt-4">
                       <Button
-                        onClick={() => setCurrentStep(3)}
+                        onClick={() => setCurrentStep(4)}
                         variant="outline"
                         className="flex-1"
                       >
@@ -985,9 +1144,9 @@ const ActivarPolizaNaturalPage = () => {
               </motion.div>
             )}
 
-            {currentStep === 5 && (
+            {currentStep === 6 && (
               <motion.div
-                key="step5"
+                key="step6"
                 variants={pageVariants}
                 initial="initial"
                 animate="in"
