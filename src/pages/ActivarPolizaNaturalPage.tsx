@@ -515,7 +515,15 @@ const ActivarPolizaNaturalPage = () => {
                         Cancelar
                       </Button>
                       <Button
-                        onClick={() => setCurrentStep(2)}
+                        onClick={() => {
+                          if (vehicleData?.Carroceria) {
+                            setFormData(prev => ({
+                              ...prev,
+                              serialCarroceria: vehicleData.Carroceria || ""
+                            }));
+                          }
+                          setCurrentStep(2);
+                        }}
                         variant="hero"
                         size="lg"
                         className="flex-1"
