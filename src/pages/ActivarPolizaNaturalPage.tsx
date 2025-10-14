@@ -942,6 +942,16 @@ const ActivarPolizaNaturalPage = () => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
+                      <Label htmlFor="placaMoto">Placa de la Moto *</Label>
+                      <Input
+                        id="placaMoto"
+                        value={placa}
+                        onChange={(e) => setPlaca(e.target.value.toUpperCase())}
+                        placeholder="Ej: ABC123"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
                       <Label htmlFor="serialCarroceria">Serial de Carrocería *</Label>
                       <Input
                         id="serialCarroceria"
@@ -972,7 +982,7 @@ const ActivarPolizaNaturalPage = () => {
                         onClick={() => setCurrentStep(4)}
                         variant="hero"
                         className="flex-1"
-                        disabled={!formData.serialCarroceria || !formData.fechaCompra}
+                        disabled={!placa || !formData.serialCarroceria || !formData.fechaCompra}
                       >
                         Siguiente
                       </Button>
