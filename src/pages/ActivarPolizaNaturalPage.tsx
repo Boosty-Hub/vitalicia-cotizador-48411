@@ -28,6 +28,12 @@ const ActivarPolizaNaturalPage = () => {
     Carroceria: string | null;
   } | null>(null);
   const [nacionalidades, setNacionalidades] = useState<Array<{ cd_valdet: string | null; descripcion: string | null }>>([]);
+  const [sexos, setSexos] = useState<Array<{ cd_valdet: string | null; descripcion: string | null }>>([]);
+  const [estadosCiviles, setEstadosCiviles] = useState<Array<{ cd_valdet: string | null; descripcion: string | null }>>([]);
+  const [estados, setEstados] = useState<Array<{ cd_estado: string | null; descripcion: string | null }>>([]);
+  const [ciudades, setCiudades] = useState<Array<{ cd_ciudad: string | null; descripcion: string | null; cd_estado: string | null }>>([]);
+  const [municipios, setMunicipios] = useState<Array<{ cd_municipio: string | null; descripcion: string | null; cd_ciudad: string | null }>>([]);
+  const [codigosTelefonicos, setCodigosTelefonicos] = useState<Array<{ cd_valdet: string | null; s_descripcion: string | null }>>([]);
   const [formData, setFormData] = useState({
     nombre: "",
     apellidos: "",
@@ -79,6 +85,122 @@ const ActivarPolizaNaturalPage = () => {
 
     fetchNacionalidades();
   }, [toast]);
+
+  useEffect(() => {
+    const fetchSexos = async () => {
+      const { data, error } = await supabase
+        .from('board_cod_sexo')
+        .select('cd_valdet, descripcion')
+        .order('descripcion');
+      
+      if (error) {
+        console.error('Error loading sexos:', error);
+      } else if (data) {
+        setSexos(data);
+      }
+    };
+
+    fetchSexos();
+  }, []);
+
+  useEffect(() => {
+    const fetchEstadosCiviles = async () => {
+      const { data, error } = await supabase
+        .from('board_cod_edo_civil')
+        .select('cd_valdet, descripcion')
+        .order('descripcion');
+      
+      if (error) {
+        console.error('Error loading estados civiles:', error);
+      } else if (data) {
+        setEstadosCiviles(data);
+      }
+    };
+
+    fetchEstadosCiviles();
+  }, []);
+
+  useEffect(() => {
+    const fetchEstados = async () => {
+      const { data, error } = await supabase
+        .from('board_cod_estado')
+        .select('cd_estado, descripcion')
+        .order('descripcion');
+      
+      if (error) {
+        console.error('Error loading estados:', error);
+      } else if (data) {
+        setEstados(data);
+      }
+    };
+
+    fetchEstados();
+  }, []);
+
+  useEffect(() => {
+    const fetchCodigosTelefonicos = async () => {
+      const { data, error } = await supabase
+        .from('board_cod_tlf')
+        .select('cd_valdet, s_descripcion')
+        .order('cd_valdet');
+      
+      if (error) {
+        console.error('Error loading códigos telefónicos:', error);
+      } else if (data) {
+        setCodigosTelefonicos(data);
+      }
+    };
+
+    fetchCodigosTelefonicos();
+  }, []);
+
+  // Fetch ciudades when estado changes
+  useEffect(() => {
+    const fetchCiudades = async () => {
+      if (!formData.estado) {
+        setCiudades([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('board_cod_ciudad')
+        .select('cd_ciudad, descripcion, cd_estado')
+        .eq('cd_estado', formData.estado)
+        .order('descripcion');
+      
+      if (error) {
+        console.error('Error loading ciudades:', error);
+      } else if (data) {
+        setCiudades(data);
+      }
+    };
+
+    fetchCiudades();
+  }, [formData.estado]);
+
+  // Fetch municipios when ciudad changes
+  useEffect(() => {
+    const fetchMunicipios = async () => {
+      if (!formData.ciudad) {
+        setMunicipios([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('board_cod_municipio')
+        .select('cd_municipio, descripcion, cd_ciudad')
+        .eq('cd_ciudad', formData.ciudad)
+        .order('descripcion');
+      
+      if (error) {
+        console.error('Error loading municipios:', error);
+      } else if (data) {
+        setMunicipios(data);
+      }
+    };
+
+    fetchMunicipios();
+  }, [formData.ciudad]);
 
   const validatePlaca = async () => {
     setIsValidating(true);
@@ -483,8 +605,11 @@ const ActivarPolizaNaturalPage = () => {
                             <SelectValue placeholder="Seleccione una opción" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="M">Masculino</SelectItem>
-                            <SelectItem value="F">Femenino</SelectItem>
+                            {sexos.map((sexo) => (
+                              <SelectItem key={sexo.cd_valdet} value={sexo.cd_valdet || ""}>
+                                {sexo.descripcion || ""}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -507,10 +632,11 @@ const ActivarPolizaNaturalPage = () => {
                             <SelectValue placeholder="Seleccione una opción" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="soltero">Soltero/a</SelectItem>
-                            <SelectItem value="casado">Casado/a</SelectItem>
-                            <SelectItem value="divorciado">Divorciado/a</SelectItem>
-                            <SelectItem value="viudo">Viudo/a</SelectItem>
+                            {estadosCiviles.map((estado) => (
+                              <SelectItem key={estado.cd_valdet} value={estado.cd_valdet || ""}>
+                                {estado.descripcion || ""}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -537,35 +663,24 @@ const ActivarPolizaNaturalPage = () => {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="estado">Estado *</Label>
-                        <Select value={formData.estado} onValueChange={(value) => handleInputChange("estado", value)}>
+                        <Select 
+                          value={formData.estado} 
+                          onValueChange={(value) => {
+                            handleInputChange("estado", value);
+                            // Reset ciudad and municipio when estado changes
+                            handleInputChange("ciudad", "");
+                            handleInputChange("municipio", "");
+                          }}
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="Seleccione un estado" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="amazonas">Amazonas</SelectItem>
-                            <SelectItem value="anzoategui">Anzoátegui</SelectItem>
-                            <SelectItem value="apure">Apure</SelectItem>
-                            <SelectItem value="aragua">Aragua</SelectItem>
-                            <SelectItem value="barinas">Barinas</SelectItem>
-                            <SelectItem value="bolivar">Bolívar</SelectItem>
-                            <SelectItem value="carabobo">Carabobo</SelectItem>
-                            <SelectItem value="cojedes">Cojedes</SelectItem>
-                            <SelectItem value="delta">Delta Amacuro</SelectItem>
-                            <SelectItem value="distrito">Distrito Capital</SelectItem>
-                            <SelectItem value="falcon">Falcón</SelectItem>
-                            <SelectItem value="guarico">Guárico</SelectItem>
-                            <SelectItem value="lara">Lara</SelectItem>
-                            <SelectItem value="merida">Mérida</SelectItem>
-                            <SelectItem value="miranda">Miranda</SelectItem>
-                            <SelectItem value="monagas">Monagas</SelectItem>
-                            <SelectItem value="nuevaesparta">Nueva Esparta</SelectItem>
-                            <SelectItem value="portuguesa">Portuguesa</SelectItem>
-                            <SelectItem value="sucre">Sucre</SelectItem>
-                            <SelectItem value="tachira">Táchira</SelectItem>
-                            <SelectItem value="trujillo">Trujillo</SelectItem>
-                            <SelectItem value="vargas">Vargas</SelectItem>
-                            <SelectItem value="yaracuy">Yaracuy</SelectItem>
-                            <SelectItem value="zulia">Zulia</SelectItem>
+                            {estados.map((estado) => (
+                              <SelectItem key={estado.cd_estado} value={estado.cd_estado || ""}>
+                                {estado.descripcion || ""}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -574,21 +689,45 @@ const ActivarPolizaNaturalPage = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="ciudad">Ciudad *</Label>
-                        <Input
-                          id="ciudad"
-                          placeholder="Seleccione una ciudad"
-                          value={formData.ciudad}
-                          onChange={(e) => handleInputChange("ciudad", e.target.value)}
-                        />
+                        <Select 
+                          value={formData.ciudad} 
+                          onValueChange={(value) => {
+                            handleInputChange("ciudad", value);
+                            // Reset municipio when ciudad changes
+                            handleInputChange("municipio", "");
+                          }}
+                          disabled={!formData.estado}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={formData.estado ? "Seleccione una ciudad" : "Seleccione estado primero"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ciudades.map((ciudad) => (
+                              <SelectItem key={ciudad.cd_ciudad} value={ciudad.cd_ciudad || ""}>
+                                {ciudad.descripcion || ""}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="municipio">Municipio *</Label>
-                        <Input
-                          id="municipio"
-                          placeholder="Seleccione un municipio"
-                          value={formData.municipio}
-                          onChange={(e) => handleInputChange("municipio", e.target.value)}
-                        />
+                        <Select 
+                          value={formData.municipio} 
+                          onValueChange={(value) => handleInputChange("municipio", value)}
+                          disabled={!formData.ciudad}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={formData.ciudad ? "Seleccione un municipio" : "Seleccione ciudad primero"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {municipios.map((municipio) => (
+                              <SelectItem key={municipio.cd_municipio} value={municipio.cd_municipio || ""}>
+                                {municipio.descripcion || ""}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
 
@@ -600,11 +739,11 @@ const ActivarPolizaNaturalPage = () => {
                             <SelectValue placeholder="Seleccione un código" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="0412">0412</SelectItem>
-                            <SelectItem value="0414">0414</SelectItem>
-                            <SelectItem value="0424">0424</SelectItem>
-                            <SelectItem value="0416">0416</SelectItem>
-                            <SelectItem value="0426">0426</SelectItem>
+                            {codigosTelefonicos.map((codigo) => (
+                              <SelectItem key={codigo.cd_valdet} value={codigo.cd_valdet || ""}>
+                                {codigo.cd_valdet || ""}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
