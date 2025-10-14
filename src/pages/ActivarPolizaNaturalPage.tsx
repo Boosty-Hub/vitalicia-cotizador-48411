@@ -782,7 +782,7 @@ const ActivarPolizaNaturalPage = () => {
                 <Card>
                   <CardHeader>
                     <div className="flex items-center justify-between">
-                      <CardTitle>Información del Vehículo</CardTitle>
+                      <CardTitle>INFORMACION SOBRE EL VEHICULO</CardTitle>
                       <Button onClick={autoFillVehicleData} variant="outline" size="sm" className="gap-2">
                         <Zap className="w-4 h-4" />
                         Auto-rellenar
