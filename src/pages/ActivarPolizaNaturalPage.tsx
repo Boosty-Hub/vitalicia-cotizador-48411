@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MegaMenuHeader } from "@/components/ui/MegaMenuHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { ArrowLeft, Search, MessageCircle, CheckCircle2, Upload } from "lucide-r
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const ActivarPolizaNaturalPage = () => {
   const navigate = useNavigate();
@@ -25,6 +26,7 @@ const ActivarPolizaNaturalPage = () => {
     Color: string | null;
     Carroceria: string | null;
   } | null>(null);
+  const [nacionalidades, setNacionalidades] = useState<Array<{ cd_valdet: string | null; descripcion: string | null }>>([]);
   const [formData, setFormData] = useState({
     nombre: "",
     apellidos: "",
@@ -54,6 +56,28 @@ const ActivarPolizaNaturalPage = () => {
 
   const totalSteps = 4;
   const progress = (currentStep / totalSteps) * 100;
+
+  useEffect(() => {
+    const fetchNacionalidades = async () => {
+      const { data, error } = await supabase
+        .from('codigo_nacionalidad')
+        .select('cd_valdet, descripcion')
+        .order('descripcion');
+      
+      if (error) {
+        console.error('Error loading nacionalidades:', error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los tipos de identificación",
+          variant: "destructive",
+        });
+      } else if (data) {
+        setNacionalidades(data);
+      }
+    };
+
+    fetchNacionalidades();
+  }, [toast]);
 
   const validatePlaca = async () => {
     try {
@@ -349,9 +373,11 @@ const ActivarPolizaNaturalPage = () => {
                             <SelectValue placeholder="Seleccione una opción" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="V">V - Venezolano</SelectItem>
-                            <SelectItem value="E">E - Extranjero</SelectItem>
-                            <SelectItem value="P">P - Pasaporte</SelectItem>
+                            {nacionalidades.map((nac) => (
+                              <SelectItem key={nac.cd_valdet} value={nac.cd_valdet || ""}>
+                                {nac.descripcion || ""}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
