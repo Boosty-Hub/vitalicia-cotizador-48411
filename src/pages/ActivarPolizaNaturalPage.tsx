@@ -88,6 +88,8 @@ const ActivarPolizaNaturalPage = () => {
     beneficiarioEstadoCivil: "",
     // Document uploads
     docIdentidad: null as File | null,
+    docLicenciaConducir: null as File | null,
+    docCertificadoMedico: null as File | null,
     docOrigenVehiculo: null as File | null,
     docFacturaCompra: null as File | null,
     docRIF: null as File | null
@@ -921,11 +923,31 @@ const ActivarPolizaNaturalPage = () => {
                   <CardContent className="space-y-6">
                     <div className="space-y-2">
                       <Label htmlFor="docIdentidad">
-                        Cédula de Identidad, Licencia de Conducir y Certificado Médico *
+                        Cédula de Identidad *
                       </Label>
                       <div className="flex items-center gap-3">
                         <Input id="docIdentidad" type="file" accept="image/*,.pdf" onChange={e => handleFileChange("docIdentidad", e.target.files?.[0] || null)} className="cursor-pointer" />
                         {formData.docIdentidad && <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="docLicenciaConducir">
+                        Licencia de Conducir *
+                      </Label>
+                      <div className="flex items-center gap-3">
+                        <Input id="docLicenciaConducir" type="file" accept="image/*,.pdf" onChange={e => handleFileChange("docLicenciaConducir", e.target.files?.[0] || null)} className="cursor-pointer" />
+                        {formData.docLicenciaConducir && <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="docCertificadoMedico">
+                        Certificado Médico *
+                      </Label>
+                      <div className="flex items-center gap-3">
+                        <Input id="docCertificadoMedico" type="file" accept="image/*,.pdf" onChange={e => handleFileChange("docCertificadoMedico", e.target.files?.[0] || null)} className="cursor-pointer" />
+                        {formData.docCertificadoMedico && <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />}
                       </div>
                     </div>
 
@@ -971,7 +993,7 @@ const ActivarPolizaNaturalPage = () => {
                       <Button onClick={() => setCurrentStep(4)} variant="outline" className="flex-1">
                         Anterior
                       </Button>
-                      <Button onClick={handleSubmit} variant="hero" className="flex-1" disabled={!formData.docIdentidad || !formData.docOrigenVehiculo || !formData.docFacturaCompra || !formData.docRIF}>
+                      <Button onClick={handleSubmit} variant="hero" className="flex-1" disabled={!formData.docIdentidad || !formData.docLicenciaConducir || !formData.docCertificadoMedico || !formData.docOrigenVehiculo || !formData.docFacturaCompra || !formData.docRIF}>
                         <Upload className="w-4 h-4 mr-2" />
                         Finalizar
                       </Button>
