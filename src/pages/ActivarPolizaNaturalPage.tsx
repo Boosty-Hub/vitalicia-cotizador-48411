@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Search, MessageCircle, CheckCircle2, Upload } from "lucide-react";
+import { ArrowLeft, Search, MessageCircle, CheckCircle2, Upload, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +19,7 @@ const ActivarPolizaNaturalPage = () => {
   const [placa, setPlaca] = useState("");
   const [placaValidada, setPlacaValidada] = useState(false);
   const [showError, setShowError] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
   const [vehicleData, setVehicleData] = useState<{
     Marca: string | null;
     Modelo: string | null;
@@ -80,6 +81,7 @@ const ActivarPolizaNaturalPage = () => {
   }, [toast]);
 
   const validatePlaca = async () => {
+    setIsValidating(true);
     try {
       const response = await fetch(`https://hook.us2.make.com/bvauv3534xqm83vqccqwgev20t5h7jxe?placa=${encodeURIComponent(placa)}`);
       
@@ -129,6 +131,8 @@ const ActivarPolizaNaturalPage = () => {
         description: "No se pudo validar la placa. Por favor, intenta nuevamente.",
         variant: "destructive",
       });
+    } finally {
+      setIsValidating(false);
     }
   };
 
@@ -254,9 +258,16 @@ const ActivarPolizaNaturalPage = () => {
                       variant="hero"
                       size="lg"
                       className="w-full"
-                      disabled={!placa}
+                      disabled={!placa || isValidating}
                     >
-                      Validar Placa
+                      {isValidating ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Validando...
+                        </>
+                      ) : (
+                        "Validar Placa"
+                      )}
                     </Button>
                   </CardContent>
                 </Card>
