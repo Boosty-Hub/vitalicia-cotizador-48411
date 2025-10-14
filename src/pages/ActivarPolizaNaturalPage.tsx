@@ -715,14 +715,6 @@ const ActivarPolizaNaturalPage = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="razonSocial">Razón Social</Label>
-                        <Input
-                          id="razonSocial"
-                          value={formData.razonSocial}
-                          onChange={(e) => handleInputChange("razonSocial", e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
                         <Label htmlFor="sexo">Sexo *</Label>
                         <Select value={formData.sexo} onValueChange={(value) => handleInputChange("sexo", value)}>
                           <SelectTrigger>
