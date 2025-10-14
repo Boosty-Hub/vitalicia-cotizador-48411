@@ -1034,11 +1034,13 @@ const ActivarPolizaNaturalPage = () => {
                             <SelectValue placeholder="Seleccione una opción" />
                           </SelectTrigger>
                           <SelectContent>
-                            {nacionalidades.map((nac) => (
-                              <SelectItem key={nac.cd_valdet} value={nac.cd_valdet || ""}>
-                                {nac.descripcion || ""}
-                              </SelectItem>
-                            ))}
+                            {nacionalidades
+                              .filter((nac) => nac.cd_valdet !== "G" && nac.cd_valdet !== "J")
+                              .map((nac) => (
+                                <SelectItem key={nac.cd_valdet} value={nac.cd_valdet || ""}>
+                                  {nac.descripcion || ""}
+                                </SelectItem>
+                              ))}
                           </SelectContent>
                         </Select>
                       </div>
