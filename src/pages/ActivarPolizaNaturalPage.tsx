@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Search, MessageCircle, CheckCircle2, Upload, Loader2 } from "lucide-react";
+import { ArrowLeft, Search, MessageCircle, CheckCircle2, Upload, Loader2, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -358,6 +358,78 @@ const ActivarPolizaNaturalPage = () => {
     setFormData(prev => ({ ...prev, beneficiarioNumeroCedula: formatted }));
   };
 
+  const autoFillPersonalData = () => {
+    const randomNames = ["Juan", "María", "Carlos", "Ana", "Pedro", "Laura", "José", "Carmen"];
+    const randomLastNames = ["García", "Rodríguez", "Martínez", "López", "González", "Pérez", "Sánchez", "Ramírez"];
+    const randomName = randomNames[Math.floor(Math.random() * randomNames.length)];
+    const randomLastName = randomLastNames[Math.floor(Math.random() * randomLastNames.length)];
+    const randomId = Math.floor(10000000 + Math.random() * 90000000);
+    const randomPhone = Math.floor(1000000 + Math.random() * 9000000);
+    
+    setFormData(prev => ({
+      ...prev,
+      nombre: randomName,
+      apellidos: `${randomLastName} ${randomLastNames[Math.floor(Math.random() * randomLastNames.length)]}`,
+      tipoIdentificacion: "V",
+      numeroCedula: `V-${randomId}`,
+      razonSocial: `${randomName} ${randomLastName}`,
+      sexo: Math.random() > 0.5 ? "M" : "F",
+      fechaNacimiento: `199${Math.floor(Math.random() * 10)}-0${Math.floor(1 + Math.random() * 9)}-${Math.floor(10 + Math.random() * 18)}`,
+      estadoCivil: ["S", "C", "D", "V"][Math.floor(Math.random() * 4)],
+      direccion: `Avenida Principal, Casa ${Math.floor(1 + Math.random() * 100)}`,
+      estado: estados[Math.floor(Math.random() * estados.length)]?.cd_estado || "",
+      codigoTelefonico: codigosTelefonicos[Math.floor(Math.random() * codigosTelefonicos.length)]?.cd_valdet || "",
+      numeroTelefonico: randomPhone.toString(),
+      email: `${randomName.toLowerCase()}.${randomLastName.toLowerCase()}@email.com`,
+      email2: `${randomName.toLowerCase()}${randomId.toString().slice(0, 3)}@gmail.com`
+    }));
+    
+    toast({
+      title: "Datos auto-rellenados",
+      description: "Se han generado datos de prueba aleatorios",
+    });
+  };
+
+  const autoFillVehicleData = () => {
+    const randomSerial = `VIN${Math.random().toString(36).substring(2, 15).toUpperCase()}`;
+    const randomDate = `202${Math.floor(Math.random() * 5)}-${String(Math.floor(1 + Math.random() * 12)).padStart(2, '0')}-${String(Math.floor(1 + Math.random() * 28)).padStart(2, '0')}`;
+    
+    setFormData(prev => ({
+      ...prev,
+      serialCarroceria: randomSerial,
+      fechaCompra: randomDate
+    }));
+    
+    toast({
+      title: "Datos del vehículo auto-rellenados",
+      description: "Se han generado datos de prueba aleatorios",
+    });
+  };
+
+  const autoFillBeneficiaryData = () => {
+    const randomNames = ["Carlos", "Ana", "Luis", "Elena", "Miguel", "Sofia", "Diego", "Isabel"];
+    const randomLastNames = ["Fernández", "Torres", "Ruiz", "Díaz", "Moreno", "Álvarez", "Romero", "Navarro"];
+    const randomName = randomNames[Math.floor(Math.random() * randomNames.length)];
+    const randomLastName = randomLastNames[Math.floor(Math.random() * randomLastNames.length)];
+    const randomId = Math.floor(10000000 + Math.random() * 90000000);
+    
+    setFormData(prev => ({
+      ...prev,
+      beneficiarioNombre: randomName,
+      beneficiarioApellidos: `${randomLastName} ${randomLastNames[Math.floor(Math.random() * randomLastNames.length)]}`,
+      beneficiarioTipoIdentificacion: "V",
+      beneficiarioNumeroCedula: `V-${randomId}`,
+      beneficiarioSexo: Math.random() > 0.5 ? "M" : "F",
+      beneficiarioFechaNacimiento: `198${Math.floor(Math.random() * 10)}-0${Math.floor(1 + Math.random() * 9)}-${Math.floor(10 + Math.random() * 18)}`,
+      beneficiarioEstadoCivil: ["S", "C", "D", "V"][Math.floor(Math.random() * 4)]
+    }));
+    
+    toast({
+      title: "Datos del beneficiario auto-rellenados",
+      description: "Se han generado datos de prueba aleatorios",
+    });
+  };
+
   const handleFileChange = (field: string, file: File | null) => {
     setFormData(prev => ({ ...prev, [field]: file }));
   };
@@ -580,7 +652,18 @@ const ActivarPolizaNaturalPage = () => {
               >
                 <Card>
                   <CardHeader>
-                    <CardTitle>Datos Personales y de Contacto</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>Datos Personales y de Contacto</CardTitle>
+                      <Button
+                        onClick={autoFillPersonalData}
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                      >
+                        <Zap className="w-4 h-4" />
+                        Auto-rellenar
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -854,7 +937,18 @@ const ActivarPolizaNaturalPage = () => {
               >
                 <Card>
                   <CardHeader>
-                    <CardTitle>Información del Vehículo</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>Información del Vehículo</CardTitle>
+                      <Button
+                        onClick={autoFillVehicleData}
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                      >
+                        <Zap className="w-4 h-4" />
+                        Auto-rellenar
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
@@ -909,7 +1003,18 @@ const ActivarPolizaNaturalPage = () => {
               >
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-primary">Beneficiarios Preferencial en Caso de Muerte</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-primary">Beneficiarios Preferencial en Caso de Muerte</CardTitle>
+                      <Button
+                        onClick={autoFillBeneficiaryData}
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                      >
+                        <Zap className="w-4 h-4" />
+                        Auto-rellenar
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
