@@ -18,6 +18,13 @@ const ActivarPolizaNaturalPage = () => {
   const [placa, setPlaca] = useState("");
   const [placaValidada, setPlacaValidada] = useState(false);
   const [showError, setShowError] = useState(false);
+  const [vehicleData, setVehicleData] = useState<{
+    Marca: string | null;
+    Modelo: string | null;
+    Año: string | null;
+    Color: string | null;
+    Carroceria: string | null;
+  } | null>(null);
   const [formData, setFormData] = useState({
     nombre: "",
     apellidos: "",
@@ -57,12 +64,19 @@ const ActivarPolizaNaturalPage = () => {
         
         // Verificar si la placa fue encontrada en el sistema
         if (data.Encontrado === true) {
+          setVehicleData({
+            Marca: data.Marca || null,
+            Modelo: data.Modelo || null,
+            Año: data.Año || null,
+            Color: data.Color || null,
+            Carroceria: data.Carroceria || null,
+          });
           setPlacaValidada(true);
           setShowError(false);
-          setCurrentStep(2);
+          setCurrentStep(1.5);
           toast({
-            title: "Placa encontrada",
-            description: "Continúa con el proceso de activación",
+            title: "Vehículo encontrado",
+            description: "Por favor, confirma los datos del vehículo",
           });
         } else {
           setShowError(true);
@@ -220,6 +234,75 @@ const ActivarPolizaNaturalPage = () => {
                     >
                       Validar Placa
                     </Button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {currentStep === 1.5 && vehicleData && (
+              <motion.div
+                key="step1.5"
+                variants={pageVariants}
+                initial="initial"
+                animate="in"
+                exit="out"
+                transition={{ duration: 0.3 }}
+              >
+                <Card className="bg-success/5 border-success/20">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-3 text-success">
+                      <CheckCircle2 className="w-6 h-6" />
+                      Vehículo Verificado
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-muted-foreground font-medium">Marca:</p>
+                          <p className="text-foreground text-lg">{vehicleData.Marca || "N/A"}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground font-medium">Modelo:</p>
+                          <p className="text-foreground text-lg">{vehicleData.Modelo || "N/A"}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground font-medium">Año:</p>
+                          <p className="text-foreground text-lg">{vehicleData.Año || "N/A"}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground font-medium">Color:</p>
+                          <p className="text-foreground text-lg">{vehicleData.Color || "N/A"}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-muted-foreground font-medium">Carrocería:</p>
+                          <p className="text-foreground text-lg">{vehicleData.Carroceria || "N/A"}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Button
+                        onClick={() => {
+                          setCurrentStep(1);
+                          setVehicleData(null);
+                          setPlacaValidada(false);
+                        }}
+                        variant="destructive"
+                        size="lg"
+                        className="flex-1"
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        onClick={() => setCurrentStep(2)}
+                        variant="hero"
+                        size="lg"
+                        className="flex-1"
+                      >
+                        Continuar
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               </motion.div>
