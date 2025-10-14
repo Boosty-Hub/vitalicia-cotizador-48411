@@ -713,22 +713,20 @@ const ActivarPolizaNaturalPage = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="sexo">Sexo *</Label>
-                        <Select value={formData.sexo} onValueChange={(value) => handleInputChange("sexo", value)}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccione una opción" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {sexos.map((sexo) => (
-                              <SelectItem key={sexo.cd_valdet} value={sexo.cd_valdet || ""}>
-                                {sexo.descripcion || ""}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="sexo">Sexo *</Label>
+                      <Select value={formData.sexo} onValueChange={(value) => handleInputChange("sexo", value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccione una opción" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sexos.map((sexo) => (
+                            <SelectItem key={sexo.cd_valdet} value={sexo.cd_valdet || ""}>
+                              {sexo.descripcion || ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
