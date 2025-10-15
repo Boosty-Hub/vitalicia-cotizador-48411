@@ -21,6 +21,7 @@ const ActivarPolizaJuridicaPage = () => {
   const [placaValidada, setPlacaValidada] = useState(false);
   const [showError, setShowError] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
+  const [numeroRIFError, setNumeroRIFError] = useState("");
   const [nacionalidades, setNacionalidades] = useState<Array<{ descripcion: string }>>([]);
   const [vehicleData, setVehicleData] = useState<{
     Marca: string | null;
@@ -186,9 +187,60 @@ const ActivarPolizaJuridicaPage = () => {
           value = prefix + value.replace(/^[A-Z]-?/, '');
         }
       }
+      
+      // Validar formato y longitud
+      const error = validateNumeroRIF(value, formData.tipoIdentificacion);
+      setNumeroRIFError(error);
     }
     
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const validateNumeroRIF = (value: string, tipo: string): string => {
+    if (!value || !tipo) return "";
+    
+    switch (tipo) {
+      case "Jurídico":
+      case "Juridico":
+      case "Gobierno":
+        // Formato: J-12345678-9 (13 caracteres)
+        if (value.length > 13) {
+          return "El RIF no puede exceder 13 caracteres (J-12345678-9)";
+        }
+        if (value.length > 2 && !/^J-\d{0,8}(-\d?)?$/.test(value)) {
+          return "Formato inválido. Use: J-12345678-9";
+        }
+        break;
+      case "Venezolano":
+        // Formato: V-12345678 (11 caracteres)
+        if (value.length > 11) {
+          return "La cédula no puede exceder 11 caracteres (V-12345678)";
+        }
+        if (value.length > 2 && !/^V-\d{0,8}$/.test(value)) {
+          return "Formato inválido. Use: V-12345678";
+        }
+        break;
+      case "Extranjero":
+        // Formato: E-12345678 (11 caracteres)
+        if (value.length > 11) {
+          return "La cédula no puede exceder 11 caracteres (E-12345678)";
+        }
+        if (value.length > 2 && !/^E-\d{0,8}$/.test(value)) {
+          return "Formato inválido. Use: E-12345678";
+        }
+        break;
+      case "Pasaporte":
+        // Formato alfanumérico, 6-15 caracteres
+        if (value.length > 15) {
+          return "El pasaporte no puede exceder 15 caracteres";
+        }
+        if (value.length > 0 && !/^[A-Z0-9]{0,15}$/.test(value)) {
+          return "Solo se permiten letras y números";
+        }
+        break;
+    }
+    
+    return "";
   };
 
   const getPrefixForTipoIdentificacion = (tipo: string): string => {
@@ -210,6 +262,7 @@ const ActivarPolizaJuridicaPage = () => {
 
   const handleTipoIdentificacionChange = (value: string) => {
     const prefix = getPrefixForTipoIdentificacion(value);
+    setNumeroRIFError(""); // Limpiar error al cambiar tipo
     setFormData(prev => ({ 
       ...prev, 
       tipoIdentificacion: value,
@@ -536,7 +589,11 @@ const ActivarPolizaJuridicaPage = () => {
                           }
                           value={formData.numeroRIF}
                           onChange={(e) => handleInputChange("numeroRIF", e.target.value)}
+                          className={numeroRIFError ? "border-destructive" : ""}
                         />
+                        {numeroRIFError && (
+                          <p className="text-sm text-destructive">{numeroRIFError}</p>
+                        )}
                       </div>
                     </div>
 
@@ -552,7 +609,7 @@ const ActivarPolizaJuridicaPage = () => {
                         onClick={() => setCurrentStep(3)}
                         variant="hero"
                         className="flex-1"
-                        disabled={!formData.nombreEmpresa || !formData.tipoIdentificacion || !formData.numeroRIF}
+                        disabled={!formData.nombreEmpresa || !formData.tipoIdentificacion || !formData.numeroRIF || !!numeroRIFError}
                       >
                         Siguiente
                       </Button>
