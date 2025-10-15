@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { FileUploader } from "@/components/ui/file-uploader";
 const ActivarPolizaNaturalPage = () => {
   const navigate = useNavigate();
   const {
@@ -921,65 +922,53 @@ const ActivarPolizaNaturalPage = () => {
                     </p>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="docIdentidad">
-                        Cédula de Identidad *
-                      </Label>
-                      <div className="flex items-center gap-3">
-                        <Input id="docIdentidad" type="file" accept="image/*,.pdf" onChange={e => handleFileChange("docIdentidad", e.target.files?.[0] || null)} className="cursor-pointer" />
-                        {formData.docIdentidad && <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />}
-                      </div>
-                    </div>
+                    <FileUploader
+                      id="docIdentidad"
+                      label="Cédula de Identidad"
+                      file={formData.docIdentidad}
+                      onFileChange={(file) => handleFileChange("docIdentidad", file)}
+                      required
+                    />
 
-                    <div className="space-y-2">
-                      <Label htmlFor="docLicenciaConducir">
-                        Licencia de Conducir *
-                      </Label>
-                      <div className="flex items-center gap-3">
-                        <Input id="docLicenciaConducir" type="file" accept="image/*,.pdf" onChange={e => handleFileChange("docLicenciaConducir", e.target.files?.[0] || null)} className="cursor-pointer" />
-                        {formData.docLicenciaConducir && <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />}
-                      </div>
-                    </div>
+                    <FileUploader
+                      id="docLicenciaConducir"
+                      label="Licencia de Conducir"
+                      file={formData.docLicenciaConducir}
+                      onFileChange={(file) => handleFileChange("docLicenciaConducir", file)}
+                      required
+                    />
 
-                    <div className="space-y-2">
-                      <Label htmlFor="docCertificadoMedico">
-                        Certificado Médico *
-                      </Label>
-                      <div className="flex items-center gap-3">
-                        <Input id="docCertificadoMedico" type="file" accept="image/*,.pdf" onChange={e => handleFileChange("docCertificadoMedico", e.target.files?.[0] || null)} className="cursor-pointer" />
-                        {formData.docCertificadoMedico && <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />}
-                      </div>
-                    </div>
+                    <FileUploader
+                      id="docCertificadoMedico"
+                      label="Certificado Médico"
+                      file={formData.docCertificadoMedico}
+                      onFileChange={(file) => handleFileChange("docCertificadoMedico", file)}
+                      required
+                    />
 
-                    <div className="space-y-2">
-                      <Label htmlFor="docOrigenVehiculo">
-                        Certificado de Origen del Vehículo *
-                      </Label>
-                      <div className="flex items-center gap-3">
-                        <Input id="docOrigenVehiculo" type="file" accept="image/*,.pdf" onChange={e => handleFileChange("docOrigenVehiculo", e.target.files?.[0] || null)} className="cursor-pointer" />
-                        {formData.docOrigenVehiculo && <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />}
-                      </div>
-                    </div>
+                    <FileUploader
+                      id="docOrigenVehiculo"
+                      label="Certificado de Origen del Vehículo"
+                      file={formData.docOrigenVehiculo}
+                      onFileChange={(file) => handleFileChange("docOrigenVehiculo", file)}
+                      required
+                    />
 
-                    <div className="space-y-2">
-                      <Label htmlFor="docFacturaCompra">
-                        Factura de Compra del Vehículo *
-                      </Label>
-                      <div className="flex items-center gap-3">
-                        <Input id="docFacturaCompra" type="file" accept="image/*,.pdf" onChange={e => handleFileChange("docFacturaCompra", e.target.files?.[0] || null)} className="cursor-pointer" />
-                        {formData.docFacturaCompra && <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />}
-                      </div>
-                    </div>
+                    <FileUploader
+                      id="docFacturaCompra"
+                      label="Factura de Compra del Vehículo"
+                      file={formData.docFacturaCompra}
+                      onFileChange={(file) => handleFileChange("docFacturaCompra", file)}
+                      required
+                    />
 
-                    <div className="space-y-2">
-                      <Label htmlFor="docRIF">
-                        RIF *
-                      </Label>
-                      <div className="flex items-center gap-3">
-                        <Input id="docRIF" type="file" accept="image/*,.pdf" onChange={e => handleFileChange("docRIF", e.target.files?.[0] || null)} className="cursor-pointer" />
-                        {formData.docRIF && <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />}
-                      </div>
-                    </div>
+                    <FileUploader
+                      id="docRIF"
+                      label="RIF"
+                      file={formData.docRIF}
+                      onFileChange={(file) => handleFileChange("docRIF", file)}
+                      required
+                    />
 
                     <div className="p-4 bg-muted rounded-lg">
                       <p className="text-xs text-muted-foreground leading-relaxed">
