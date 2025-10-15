@@ -278,7 +278,7 @@ const ActivarPolizaNaturalPage = () => {
             Año: data.Año || null,
             Color: data.Color || null,
             Carroceria: data.Carroceria || null,
-            Suma: data.n_suma || "0",
+            Suma: data["Precio Venta"] || "0",
             MondayId: data["BERA-EMPIRE ID Monday"] ?? null
           };
           
