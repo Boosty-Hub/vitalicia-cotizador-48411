@@ -32,6 +32,7 @@ const ActivarPolizaJuridicaPage = () => {
   const [formData, setFormData] = useState({
     // Datos de la empresa
     nombreEmpresa: "",
+    tipoIdentificacion: "",
     numeroRIF: "",
     // Dirección de la empresa
     pais: "República Bolivariana de Venezuela",
@@ -176,9 +177,8 @@ const ActivarPolizaJuridicaPage = () => {
     setFormData(prev => ({
       ...prev,
       nombreEmpresa: "Inversiones El Roble C.A.",
-      numeroRIF: "J-12345678-9",
-      nombresRepresentante: "Carlos Antonio Rodríguez",
-      cedulaRepresentante: "V-18765432"
+      tipoIdentificacion: "RIF",
+      numeroRIF: "J-12345678-9"
     }));
     toast({
       title: "Datos de prueba cargados",
@@ -405,7 +405,7 @@ const ActivarPolizaJuridicaPage = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
-                      <span>Datos de la Empresa</span>
+                      <span>Datos del Tomador</span>
                       <Button
                         onClick={fillTestDataStep2}
                         variant="outline"
@@ -427,30 +427,33 @@ const ActivarPolizaJuridicaPage = () => {
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="numeroRIF">RIF</Label>
-                      <Input
-                        id="numeroRIF"
-                        value={formData.numeroRIF}
-                        onChange={(e) => handleInputChange("numeroRIF", e.target.value)}
-                      />
-                    </div>
-
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="nombresRepresentante">Nombre del Representante</Label>
-                        <Input
-                          id="nombresRepresentante"
-                          value={formData.nombresRepresentante}
-                          onChange={(e) => handleInputChange("nombresRepresentante", e.target.value)}
-                        />
+                        <Label htmlFor="tipoIdentificacion">
+                          Tipo de Identificación <span className="text-destructive">*</span>
+                        </Label>
+                        <Select
+                          value={formData.tipoIdentificacion}
+                          onValueChange={(value) => handleInputChange("tipoIdentificacion", value)}
+                        >
+                          <SelectTrigger id="tipoIdentificacion">
+                            <SelectValue placeholder="Seleccione..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="RIF">RIF</SelectItem>
+                            <SelectItem value="Cédula">Cédula</SelectItem>
+                            <SelectItem value="Pasaporte">Pasaporte</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="cedulaRepresentante">Cédula del Representante</Label>
+                        <Label htmlFor="numeroRIF">
+                          Número de Cédula o RIF <span className="text-destructive">*</span>
+                        </Label>
                         <Input
-                          id="cedulaRepresentante"
-                          value={formData.cedulaRepresentante}
-                          onChange={(e) => handleInputChange("cedulaRepresentante", e.target.value)}
+                          id="numeroRIF"
+                          value={formData.numeroRIF}
+                          onChange={(e) => handleInputChange("numeroRIF", e.target.value)}
                         />
                       </div>
                     </div>
@@ -467,7 +470,7 @@ const ActivarPolizaJuridicaPage = () => {
                         onClick={() => setCurrentStep(3)}
                         variant="hero"
                         className="flex-1"
-                        disabled={!formData.nombreEmpresa || !formData.numeroRIF || !formData.nombresRepresentante || !formData.cedulaRepresentante}
+                        disabled={!formData.nombreEmpresa || !formData.tipoIdentificacion || !formData.numeroRIF}
                       >
                         Siguiente
                       </Button>
