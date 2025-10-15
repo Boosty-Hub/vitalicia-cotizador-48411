@@ -658,6 +658,11 @@ const ActivarPolizaNaturalPage = () => {
       .eq('cd_municipio', formData.municipio)
       .maybeSingle();
 
+    // Validar que la combinación de ubicación exista
+    if (!municipioData) {
+      throw new Error(`La combinación de ubicación no es válida: País: 001, Estado: ${formData.estado}, Ciudad: ${formData.ciudad}, Municipio: ${formData.municipio}. Por favor verifique los datos.`);
+    }
+
     const { data: nacionalidadData } = await supabase
       .from('codigo_nacionalidad')
       .select('descripcion')
