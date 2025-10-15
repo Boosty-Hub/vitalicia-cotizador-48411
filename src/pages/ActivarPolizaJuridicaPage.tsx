@@ -176,7 +176,11 @@ const ActivarPolizaJuridicaPage = () => {
       if (tlfError) {
         console.error('Error fetching codigos telefonicos:', tlfError);
       } else if (tlfData) {
-        setCodigosTelefonicos(tlfData);
+        // Filtrar duplicados usando Set
+        const uniqueTlf = Array.from(
+          new Set(tlfData.map(item => item.s_descripcion))
+        ).map(s_descripcion => ({ s_descripcion }));
+        setCodigosTelefonicos(uniqueTlf);
       }
     };
 
