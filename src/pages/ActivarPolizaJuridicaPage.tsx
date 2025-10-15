@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Search, MessageCircle, CheckCircle2, Upload, Loader2, Wand2 } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -474,11 +475,6 @@ const ActivarPolizaJuridicaPage = () => {
     setIsSubmitting(true);
     
     try {
-      toast({
-        title: "Procesando...",
-        description: "Subiendo documentos y enviando información",
-      });
-
       // Upload all documents to Supabase storage
       const [
         cedulaUrl,
@@ -1827,6 +1823,19 @@ const ActivarPolizaJuridicaPage = () => {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Popup Loader */}
+      <Dialog open={isSubmitting}>
+        <DialogContent className="sm:max-w-md">
+          <div className="flex flex-col items-center justify-center py-8">
+            <Loader2 className="w-16 h-16 animate-spin text-primary mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Procesando solicitud</h3>
+            <p className="text-sm text-muted-foreground text-center">
+              Subiendo documentos y enviando información...
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
