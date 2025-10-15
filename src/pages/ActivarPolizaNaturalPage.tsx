@@ -475,35 +475,35 @@ const ActivarPolizaNaturalPage = () => {
     return uploadedUrls;
   };
 
-  // Fetch vehicle codes from Supabase
+  // Fetch vehicle codes and descriptions from Supabase
   const fetchVehicleCodes = async () => {
     try {
-      // Fetch marca code
+      // Fetch marca code and description
       const { data: marcaData } = await supabase
         .from('board_cod_marca')
-        .select('cd_marca')
+        .select('cd_marca, descripcion')
         .ilike('descripcion', vehicleData?.Marca || '')
         .maybeSingle();
 
-      // Fetch modelo code
+      // Fetch modelo code and description
       const { data: modeloData } = await supabase
         .from('board_cod_modelo')
-        .select('cd_modelo')
+        .select('cd_modelo, descripcion')
         .eq('cd_marca', marcaData?.cd_marca || '')
         .ilike('descripcion', vehicleData?.Modelo || '')
         .maybeSingle();
 
-      // Fetch color code
+      // Fetch color code and description
       const { data: colorData } = await supabase
         .from('board_cod_color')
-        .select('cd_valdet')
+        .select('cd_valdet, descripcion')
         .ilike('descripcion', vehicleData?.Color || '')
         .maybeSingle();
 
-      // Fetch version code
+      // Fetch version code and description
       const { data: versionData } = await supabase
         .from('board_cod_version_moto')
-        .select('cd_version')
+        .select('cd_version, descripcion')
         .eq('cd_marca', marcaData?.cd_marca || '')
         .eq('cd_modelo', modeloData?.cd_modelo || '')
         .limit(1)
@@ -511,17 +511,25 @@ const ActivarPolizaNaturalPage = () => {
 
       return {
         c_cd_marca: marcaData?.cd_marca || "0000",
+        s_marca: marcaData?.descripcion || vehicleData?.Marca || "",
         c_cd_modelo: modeloData?.cd_modelo || "0000",
+        s_modelo: modeloData?.descripcion || vehicleData?.Modelo || "",
         c_cd_color: colorData?.cd_valdet || "0001",
-        c_cd_version: versionData?.cd_version || "0001"
+        s_color: colorData?.descripcion || vehicleData?.Color || "",
+        c_cd_version: versionData?.cd_version || "0001",
+        s_version: versionData?.descripcion || ""
       };
     } catch (error) {
       console.error("Error fetching vehicle codes:", error);
       return {
         c_cd_marca: "0000",
+        s_marca: vehicleData?.Marca || "",
         c_cd_modelo: "0000",
+        s_modelo: vehicleData?.Modelo || "",
         c_cd_color: "0001",
-        c_cd_version: "0001"
+        s_color: vehicleData?.Color || "",
+        c_cd_version: "0001",
+        s_version: ""
       };
     }
   };
@@ -531,25 +539,94 @@ const ActivarPolizaNaturalPage = () => {
     const vehicleCodes = await fetchVehicleCodes();
     const extractNumbers = (cedula: string) => cedula.replace(/[^0-9]/g, '');
 
+    // Fetch descriptions for form data codes
+    const { data: estadoData } = await supabase
+      .from('board_cod_estado')
+      .select('descripcion')
+      .eq('cd_estado', formData.estado)
+      .maybeSingle();
+
+    const { data: ciudadData } = await supabase
+      .from('board_cod_ciudad')
+      .select('descripcion')
+      .eq('cd_ciudad', formData.ciudad)
+      .maybeSingle();
+
+    const { data: municipioData } = await supabase
+      .from('board_cod_municipio')
+      .select('descripcion')
+      .eq('cd_municipio', formData.municipio)
+      .maybeSingle();
+
+    const { data: nacionalidadData } = await supabase
+      .from('codigo_nacionalidad')
+      .select('descripcion')
+      .eq('cd_valdet', formData.tipoIdentificacion)
+      .maybeSingle();
+
+    const { data: sexoData } = await supabase
+      .from('board_cod_sexo')
+      .select('descripcion')
+      .eq('cd_valdet', formData.sexo)
+      .maybeSingle();
+
+    const { data: edoCivilData } = await supabase
+      .from('board_cod_edo_civil')
+      .select('descripcion')
+      .eq('cd_valdet', formData.estadoCivil)
+      .maybeSingle();
+
+    const { data: telfData } = await supabase
+      .from('board_cod_tlf')
+      .select('s_descripcion')
+      .eq('cd_valdet', formData.codigoTelefonico)
+      .maybeSingle();
+
+    const { data: nacionalidadApData } = await supabase
+      .from('codigo_nacionalidad')
+      .select('descripcion')
+      .eq('cd_valdet', formData.beneficiarioTipoIdentificacion)
+      .maybeSingle();
+
+    const { data: sexoApData } = await supabase
+      .from('board_cod_sexo')
+      .select('descripcion')
+      .eq('cd_valdet', formData.beneficiarioSexo)
+      .maybeSingle();
+
+    const { data: edoCivilApData } = await supabase
+      .from('board_cod_edo_civil')
+      .select('descripcion')
+      .eq('cd_valdet', formData.beneficiarioEstadoCivil)
+      .maybeSingle();
+
     const payload = {
       f_fchdesde: new Date().toISOString().split('T')[0],
       c_placa: placa,
       c_carroceria: formData.serialCarroceria,
       c_cd_nacionalidad: formData.tipoIdentificacion,
+      s_nacionalidad: nacionalidadData?.descripcion || "",
       n_cedrif: extractNumbers(formData.numeroCedula),
       n_correlativo: 0,
       cd_sexo: formData.sexo,
+      s_sexo: sexoData?.descripcion || "",
       f_fecnac: formData.fechaNacimiento,
       cd_edocivil: formData.estadoCivil,
+      s_edocivil: edoCivilData?.descripcion || "",
       c_nombre: formData.nombre,
       c_apellido: formData.apellidos,
       c_razonsocial: `${formData.nombre} ${formData.apellidos}`,
       c_cd_pais: "001",
+      s_pais: "Venezuela",
       c_cd_estado: formData.estado,
+      s_estado: estadoData?.descripcion || "",
       c_cd_ciudad: formData.ciudad,
+      s_ciudad: ciudadData?.descripcion || "",
       c_cd_municipio: formData.municipio,
+      s_municipio: municipioData?.descripcion || "",
       c_direccion: formData.direccion,
       c_cd_telef1: formData.codigoTelefonico,
+      s_telef1: telfData?.s_descripcion || "",
       c_numtelef1: formData.numeroTelefonico,
       c_email1: formData.email,
       c_email2: formData.email2,
@@ -557,26 +634,37 @@ const ActivarPolizaNaturalPage = () => {
       c_cd_ocupacion: 0,
       n_ingresoanualnac: 0,
       c_cd_nacionalidadap: formData.beneficiarioTipoIdentificacion,
+      s_nacionalidadap: nacionalidadApData?.descripcion || "",
       n_cedrifap: extractNumbers(formData.beneficiarioNumeroCedula),
       cd_sexoap: formData.beneficiarioSexo,
+      s_sexoap: sexoApData?.descripcion || "",
       f_fecnacap: formData.beneficiarioFechaNacimiento,
       cd_edocivilap: formData.beneficiarioEstadoCivil,
+      s_edocivilap: edoCivilApData?.descripcion || "",
       c_nombreap: formData.beneficiarioNombre,
       c_apellidoap: formData.beneficiarioApellidos,
       c_cd_nacionalidadch: formData.tipoIdentificacion,
+      s_nacionalidadch: nacionalidadData?.descripcion || "",
       n_cedrifch: extractNumbers(formData.numeroCedula),
       cd_sexoch: formData.sexo,
+      s_sexoch: sexoData?.descripcion || "",
       f_fecnacch: formData.fechaNacimiento,
       cd_edocivilch: "N",
+      s_edocivilch: "No Aplica",
       c_nombrech: formData.nombre,
       c_apellidoch: formData.apellidos,
       cd_moneda: "DL",
+      s_moneda: "Dólar",
       c_cd_marca: vehicleCodes.c_cd_marca,
+      s_marca: vehicleCodes.s_marca,
       c_cd_modelo: vehicleCodes.c_cd_modelo,
+      s_modelo: vehicleCodes.s_modelo,
       c_cd_version: vehicleCodes.c_cd_version,
+      s_version: vehicleCodes.s_version,
       n_nu_centuria: vehicleData?.Año || "2025",
       c_motor: formData.serialCarroceria,
       c_cd_color: vehicleCodes.c_cd_color,
+      s_color: vehicleCodes.s_color,
       c_cd_versionseguro: "BERA2025",
       c_cd_subversionseguro: "BERAWEB01",
       n_suma: vehicleData?.Suma || "0",
