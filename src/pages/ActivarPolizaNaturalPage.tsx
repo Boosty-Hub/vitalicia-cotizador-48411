@@ -602,6 +602,7 @@ const ActivarPolizaNaturalPage = () => {
 
     const payload = {
       f_fchdesde: new Date().toISOString().split('T')[0],
+      f_fechacompra: formData.fechaCompra,
       c_placa: placa,
       c_carroceria: formData.serialCarroceria,
       c_cd_nacionalidad: formData.tipoIdentificacion,
