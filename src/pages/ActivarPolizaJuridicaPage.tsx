@@ -11,7 +11,6 @@ import { ArrowLeft, Search, MessageCircle, CheckCircle2, Upload, Loader2, Wand2 
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 const ActivarPolizaJuridicaPage = () => {
   const navigate = useNavigate();
@@ -21,7 +20,6 @@ const ActivarPolizaJuridicaPage = () => {
   const [placaValidada, setPlacaValidada] = useState(false);
   const [showError, setShowError] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [vehicleData, setVehicleData] = useState<{
     Marca: string | null;
     Modelo: string | null;
@@ -166,74 +164,13 @@ const ActivarPolizaJuridicaPage = () => {
     window.open(`https://wa.me/584123230188?text=Hola, necesito ayuda con la activación de mi póliza RCV. Placa: ${placa}`, '_blank');
   };
 
-  const extractNumbers = (str: string): string => {
-    return str.replace(/\D/g, '');
-  };
-
-  const handleSubmit = async () => {
-    setIsSubmitting(true);
-    
-    try {
-      console.log('📤 Iniciando envío de datos jurídicos...');
-      console.log('🏢 Datos del formulario:', formData);
-      console.log('🚗 Datos del vehículo:', vehicleData);
-
-      const payload = {
-        tipo_persona: "juridica",
-        c_placa: placa,
-        c_carroceria: formData.serialCarroceria || vehicleData?.Carroceria || "",
-        razon_social: formData.nombreEmpresa,
-        tipo_identificacion: formData.tipoIdentificacion,
-        numero_identificacion: formData.numeroRIF,
-        telefono: formData.telefonoCelular,
-        email: formData.correoElectronico,
-        direccion: formData.ciudad,
-        n_anio: vehicleData?.Año || "",
-        c_cd_marca: vehicleData?.Marca || "",
-        s_marca: vehicleData?.Marca || "",
-        c_cd_modelo: vehicleData?.Modelo || "",
-        s_modelo: vehicleData?.Modelo || "",
-        c_cd_color: vehicleData?.Color || "",
-        s_color: vehicleData?.Color || "",
-        n_suma: vehicleData?.Suma || "0",
-        mondayid: vehicleData?.MondayId ?? "null",
-        f_fchdesde: new Date().toISOString().split('T')[0],
-        desde: "web"
-      };
-
-      console.log('🚀 Payload que se enviará:', payload);
-
-      const response = await fetch('https://hook.us2.make.com/4squonwol5qr0mdhgozmvgom94kyr5bm', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al enviar los datos');
-      }
-
-      const result = await response.json();
-      console.log('✅ Respuesta del webhook:', result);
-
-      toast({
-        title: "Formulario enviado",
-        description: "Tu solicitud ha sido procesada exitosamente",
-      });
-      setCurrentStep(4);
-      
-    } catch (error) {
-      console.error('❌ Error al enviar formulario:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Hubo un problema al enviar el formulario. Por favor, intenta nuevamente.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleSubmit = () => {
+    console.log("Datos del formulario:", { placa, ...formData });
+    toast({
+      title: "Formulario enviado",
+      description: "Tu solicitud ha sido procesada exitosamente",
+    });
+    setCurrentStep(4);
   };
 
   const fillTestDataStep2 = () => {
@@ -609,16 +546,9 @@ const ActivarPolizaJuridicaPage = () => {
                         onClick={handleSubmit}
                         variant="hero"
                         className="flex-1"
-                        disabled={!formData.telefonoCelular || !formData.correoElectronico || !formData.ciudad || isSubmitting}
+                        disabled={!formData.telefonoCelular || !formData.correoElectronico || !formData.ciudad}
                       >
-                        {isSubmitting ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Enviando...
-                          </>
-                        ) : (
-                          "Finalizar"
-                        )}
+                        Finalizar
                       </Button>
                     </div>
                   </CardContent>
