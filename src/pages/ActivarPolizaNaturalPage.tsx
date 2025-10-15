@@ -103,6 +103,32 @@ const ActivarPolizaNaturalPage = () => {
   });
   const totalSteps = 5;
   const progress = currentStep / totalSteps * 100;
+
+  // Function to fix special characters encoding issues
+  const fixSpecialCharacters = (text: string | null): string | null => {
+    if (!text) return text;
+    
+    let fixed = text;
+    
+    // Apply replacements sequentially
+    fixed = fixed.replace(/Ã±/g, 'ñ');
+    fixed = fixed.replace(/Ã³/g, 'ó');
+    fixed = fixed.replace(/Ã¡/g, 'á');
+    fixed = fixed.replace(/Ã©/g, 'é');
+    fixed = fixed.replace(/Ã­/g, 'í');
+    fixed = fixed.replace(/Ãº/g, 'ú');
+    fixed = fixed.replace(/Ã'/g, 'Ñ');
+    fixed = fixed.replace(/Ã"/g, 'Ó');
+    fixed = fixed.replace(/Ã/g, 'Á');
+    fixed = fixed.replace(/Ã‰/g, 'É');
+    fixed = fixed.replace(/Ã/g, 'Í');
+    fixed = fixed.replace(/Ãš/g, 'Ú');
+    fixed = fixed.replace(/Ã¼/g, 'ü');
+    fixed = fixed.replace(/Ãœ/g, 'Ü');
+    fixed = fixed.replace(/�/g, 'ñ'); // Common replacement for broken ñ
+
+    return fixed;
+  };
   useEffect(() => {
     const fetchNacionalidades = async () => {
       const {
@@ -117,7 +143,11 @@ const ActivarPolizaNaturalPage = () => {
           variant: "destructive"
         });
       } else if (data) {
-        setNacionalidades(data);
+        const fixedData = data.map(item => ({
+          ...item,
+          descripcion: fixSpecialCharacters(item.descripcion)
+        }));
+        setNacionalidades(fixedData);
       }
     };
     fetchNacionalidades();
@@ -159,7 +189,11 @@ const ActivarPolizaNaturalPage = () => {
       if (error) {
         console.error('Error loading estados:', error);
       } else if (data) {
-        setEstados(data);
+        const fixedData = data.map(item => ({
+          ...item,
+          descripcion: fixSpecialCharacters(item.descripcion)
+        }));
+        setEstados(fixedData);
       }
     };
     fetchEstados();
@@ -193,7 +227,11 @@ const ActivarPolizaNaturalPage = () => {
       if (error) {
         console.error('Error loading ciudades:', error);
       } else if (data) {
-        setCiudades(data);
+        const fixedData = data.map(item => ({
+          ...item,
+          descripcion: fixSpecialCharacters(item.descripcion)
+        }));
+        setCiudades(fixedData);
       }
     };
     fetchCiudades();
@@ -213,7 +251,11 @@ const ActivarPolizaNaturalPage = () => {
       if (error) {
         console.error('Error loading municipios:', error);
       } else if (data) {
-        setMunicipios(data);
+        const fixedData = data.map(item => ({
+          ...item,
+          descripcion: fixSpecialCharacters(item.descripcion)
+        }));
+        setMunicipios(fixedData);
       }
     };
     fetchMunicipios();
