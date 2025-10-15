@@ -164,7 +164,11 @@ const ActivarPolizaJuridicaPage = () => {
       if (estadoError) {
         console.error('Error fetching estados:', estadoError);
       } else if (estadoData) {
-        setEstados(estadoData);
+        // Filtrar duplicados por descripción
+        const uniqueEstados = estadoData.filter((estado, index, self) =>
+          index === self.findIndex((e) => e.descripcion === estado.descripcion)
+        );
+        setEstados(uniqueEstados);
       }
 
       // Fetch códigos telefónicos
@@ -306,7 +310,11 @@ const ActivarPolizaJuridicaPage = () => {
     if (ciudadError) {
       console.error('Error fetching ciudades:', ciudadError);
     } else if (ciudadData) {
-      setCiudades(ciudadData);
+      // Filtrar duplicados
+      const uniqueCiudades = Array.from(
+        new Set(ciudadData.map(item => item.descripcion))
+      ).map(descripcion => ({ descripcion }));
+      setCiudades(uniqueCiudades);
     }
 
     // Fetch municipios para el estado seleccionado
@@ -319,7 +327,11 @@ const ActivarPolizaJuridicaPage = () => {
     if (municipioError) {
       console.error('Error fetching municipios:', municipioError);
     } else if (municipioData) {
-      setMunicipios(municipioData);
+      // Filtrar duplicados
+      const uniqueMunicipios = Array.from(
+        new Set(municipioData.map(item => item.descripcion))
+      ).map(descripcion => ({ descripcion }));
+      setMunicipios(uniqueMunicipios);
     }
   };
 
