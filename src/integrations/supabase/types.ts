@@ -413,6 +413,7 @@ export type Database = {
           modelo: string | null
           monday_id_elemento: string | null
           name: string | null
+          "precio venta": string | null
           precio_venta: string | null
         }
         Insert: {
@@ -423,6 +424,7 @@ export type Database = {
           modelo?: string | null
           monday_id_elemento?: string | null
           name?: string | null
+          "precio venta"?: string | null
           precio_venta?: string | null
         }
         Update: {
@@ -433,6 +435,7 @@ export type Database = {
           modelo?: string | null
           monday_id_elemento?: string | null
           name?: string | null
+          "precio venta"?: string | null
           precio_venta?: string | null
         }
         Relationships: []

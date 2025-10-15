@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { FileUploader } from "@/components/ui/file-uploader";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 const ActivarPolizaNaturalPage = () => {
   const navigate = useNavigate();
   const {
@@ -28,7 +29,10 @@ const ActivarPolizaNaturalPage = () => {
     Año: string | null;
     Color: string | null;
     Carroceria: string | null;
+    Suma?: string;
+    MondayId?: string;
   } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [nacionalidades, setNacionalidades] = useState<Array<{
     cd_valdet: string | null;
     descripcion: string | null;
@@ -226,7 +230,9 @@ const ActivarPolizaNaturalPage = () => {
             Modelo: data.Modelo || null,
             Año: data.Año || null,
             Color: data.Color || null,
-            Carroceria: data.Carroceria || null
+            Carroceria: data.Carroceria || null,
+            Suma: data.n_suma || "0",
+            MondayId: data.mondayid || "null"
           });
           setPlacaValidada(true);
           setShowError(false);
@@ -425,16 +431,237 @@ const ActivarPolizaNaturalPage = () => {
   const handleContactSupport = () => {
     window.open(`https://wa.me/584123230188?text=Hola, necesito ayuda con la activación de mi póliza RCV. Placa: ${placa}`, '_blank');
   };
-  const handleSubmit = () => {
-    console.log("Datos del formulario:", {
-      placa,
-      ...formData
-    });
-    toast({
-      title: "Formulario enviado",
-      description: "Tu solicitud ha sido procesada exitosamente"
-    });
-    setCurrentStep(6);
+  // Upload documents to Supabase Storage
+  const uploadDocumentsToStorage = async () => {
+    const timestamp = Date.now();
+    const uploadedUrls: Record<string, string> = {};
+    
+    const documentsToUpload = [
+      { key: 'docIdentidad', file: formData.docIdentidad, name: 'cedula-identidad' },
+      { key: 'docLicenciaConducir', file: formData.docLicenciaConducir, name: 'licencia-conducir' },
+      { key: 'docCertificadoMedico', file: formData.docCertificadoMedico, name: 'certificado-medico' },
+      { key: 'docOrigenVehiculo', file: formData.docOrigenVehiculo, name: 'certificado-origen' },
+      { key: 'docFacturaCompra', file: formData.docFacturaCompra, name: 'factura-compra' },
+      { key: 'docRIF', file: formData.docRIF, name: 'rif' }
+    ];
+
+    for (const doc of documentsToUpload) {
+      if (doc.file) {
+        const fileExt = doc.file.name.split('.').pop();
+        const fileName = `${placa}/${timestamp}-${doc.name}.${fileExt}`;
+        
+        const { data, error } = await supabase.storage
+          .from('poliza-documentos')
+          .upload(fileName, doc.file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (error) {
+          console.error(`Error uploading ${doc.key}:`, error);
+          throw new Error(`Error al subir ${doc.name}`);
+        }
+
+        if (data) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('poliza-documentos')
+            .getPublicUrl(fileName);
+          
+          uploadedUrls[doc.key] = publicUrl;
+        }
+      }
+    }
+
+    return uploadedUrls;
+  };
+
+  // Fetch vehicle codes from Supabase
+  const fetchVehicleCodes = async () => {
+    try {
+      // Fetch marca code
+      const { data: marcaData } = await supabase
+        .from('board_cod_marca')
+        .select('cd_marca')
+        .ilike('descripcion', vehicleData?.Marca || '')
+        .maybeSingle();
+
+      // Fetch modelo code
+      const { data: modeloData } = await supabase
+        .from('board_cod_modelo')
+        .select('cd_modelo')
+        .eq('cd_marca', marcaData?.cd_marca || '')
+        .ilike('descripcion', vehicleData?.Modelo || '')
+        .maybeSingle();
+
+      // Fetch color code
+      const { data: colorData } = await supabase
+        .from('board_cod_color')
+        .select('cd_valdet')
+        .ilike('descripcion', vehicleData?.Color || '')
+        .maybeSingle();
+
+      // Fetch version code
+      const { data: versionData } = await supabase
+        .from('board_cod_version_moto')
+        .select('cd_version')
+        .eq('cd_marca', marcaData?.cd_marca || '')
+        .eq('cd_modelo', modeloData?.cd_modelo || '')
+        .limit(1)
+        .maybeSingle();
+
+      return {
+        c_cd_marca: marcaData?.cd_marca || "0000",
+        c_cd_modelo: modeloData?.cd_modelo || "0000",
+        c_cd_color: colorData?.cd_valdet || "0001",
+        c_cd_version: versionData?.cd_version || "0001"
+      };
+    } catch (error) {
+      console.error("Error fetching vehicle codes:", error);
+      return {
+        c_cd_marca: "0000",
+        c_cd_modelo: "0000",
+        c_cd_color: "0001",
+        c_cd_version: "0001"
+      };
+    }
+  };
+
+  // Map form data to webhook payload
+  const mapFormDataToWebhook = async (documentUrls: Record<string, string>) => {
+    const vehicleCodes = await fetchVehicleCodes();
+    const extractNumbers = (cedula: string) => cedula.replace(/[^0-9]/g, '');
+
+    const payload = {
+      f_fchdesde: new Date().toISOString().split('T')[0],
+      c_placa: placa,
+      c_carroceria: formData.serialCarroceria,
+      c_cd_nacionalidad: formData.tipoIdentificacion,
+      n_cedrif: extractNumbers(formData.numeroCedula),
+      n_correlativo: 0,
+      cd_sexo: formData.sexo,
+      f_fecnac: formData.fechaNacimiento,
+      cd_edocivil: formData.estadoCivil,
+      c_nombre: formData.nombre,
+      c_apellido: formData.apellidos,
+      c_razonsocial: `${formData.nombre} ${formData.apellidos}`,
+      c_cd_pais: "001",
+      c_cd_estado: formData.estado,
+      c_cd_ciudad: formData.ciudad,
+      c_cd_municipio: formData.municipio,
+      c_direccion: formData.direccion,
+      c_cd_telef1: formData.codigoTelefonico,
+      c_numtelef1: formData.numeroTelefonico,
+      c_email1: formData.email,
+      c_email2: formData.email2,
+      c_cd_actividad: 0,
+      c_cd_ocupacion: 0,
+      n_ingresoanualnac: 0,
+      c_cd_nacionalidadap: formData.beneficiarioTipoIdentificacion,
+      n_cedrifap: extractNumbers(formData.beneficiarioNumeroCedula),
+      cd_sexoap: formData.beneficiarioSexo,
+      f_fecnacap: formData.beneficiarioFechaNacimiento,
+      cd_edocivilap: formData.beneficiarioEstadoCivil,
+      c_nombreap: formData.beneficiarioNombre,
+      c_apellidoap: formData.beneficiarioApellidos,
+      c_cd_nacionalidadch: formData.tipoIdentificacion,
+      n_cedrifch: extractNumbers(formData.numeroCedula),
+      cd_sexoch: formData.sexo,
+      f_fecnacch: formData.fechaNacimiento,
+      cd_edocivilch: "N",
+      c_nombrech: formData.nombre,
+      c_apellidoch: formData.apellidos,
+      cd_moneda: "DL",
+      c_cd_marca: vehicleCodes.c_cd_marca,
+      c_cd_modelo: vehicleCodes.c_cd_modelo,
+      c_cd_version: vehicleCodes.c_cd_version,
+      n_nu_centuria: vehicleData?.Año || "2025",
+      c_motor: formData.serialCarroceria,
+      c_cd_color: vehicleCodes.c_cd_color,
+      c_cd_versionseguro: "BERA2025",
+      c_cd_subversionseguro: "BERAWEB01",
+      n_suma: vehicleData?.Suma || "0",
+      desde: "web",
+      mondayid: vehicleData?.MondayId || "null",
+      listaColumnas: [
+        {
+          nombre: "Cédula de identidad URL",
+          url: documentUrls.docIdentidad || "",
+          columnaID: "file_mkpytq4p"
+        },
+        {
+          nombre: "Licencia de conducir URL",
+          url: documentUrls.docLicenciaConducir || "",
+          columnaID: "file_mkpz6yzk"
+        },
+        {
+          nombre: "Certificado médico URL",
+          url: documentUrls.docCertificadoMedico || "",
+          columnaID: "file_mkpz3ckf"
+        },
+        {
+          nombre: "Certificado de Origen del Vehículo URL",
+          url: documentUrls.docOrigenVehiculo || "",
+          columnaID: "file_mkpy886c"
+        },
+        {
+          nombre: "Factura de Compra del Vehículo URL",
+          url: documentUrls.docFacturaCompra || "",
+          columnaID: "file_mkpy429y"
+        },
+        {
+          nombre: "RIF URL",
+          url: documentUrls.docRIF || "",
+          columnaID: "file_mkpyt85x"
+        }
+      ]
+    };
+
+    return payload;
+  };
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    
+    try {
+      // Step 1: Upload documents
+      const documentUrls = await uploadDocumentsToStorage();
+      
+      // Step 2: Map form data to webhook payload
+      const payload = await mapFormDataToWebhook(documentUrls);
+      
+      // Step 3: Send to webhook
+      const response = await fetch('https://hook.us2.make.com/4squonwol5qr0mdhgozmvgom94kyr5bm', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al enviar los datos');
+      }
+
+      const result = await response.json();
+      console.log('Respuesta de webhook:', result);
+
+      toast({
+        title: "¡Formulario enviado exitosamente!",
+        description: "Tu póliza ha sido activada correctamente"
+      });
+
+      setCurrentStep(6);
+      
+    } catch (error) {
+      console.error('Error al enviar formulario:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Hubo un problema al enviar el formulario. Por favor, intenta nuevamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   const pageVariants = {
     initial: {
@@ -978,13 +1205,22 @@ const ActivarPolizaNaturalPage = () => {
                       </p>
                     </div>
 
-                    <div className="flex gap-3 pt-4">
-                      <Button onClick={() => setCurrentStep(4)} variant="outline" className="flex-1">
+                     <div className="flex gap-3 pt-4">
+                      <Button onClick={() => setCurrentStep(4)} variant="outline" className="flex-1" disabled={isSubmitting}>
                         Anterior
                       </Button>
-                      <Button onClick={handleSubmit} variant="hero" className="flex-1" disabled={!formData.docIdentidad || !formData.docLicenciaConducir || !formData.docCertificadoMedico || !formData.docOrigenVehiculo || !formData.docFacturaCompra || !formData.docRIF}>
-                        <Upload className="w-4 h-4 mr-2" />
-                        Finalizar
+                      <Button onClick={handleSubmit} variant="hero" className="flex-1" disabled={isSubmitting || !formData.docIdentidad || !formData.docLicenciaConducir || !formData.docCertificadoMedico || !formData.docOrigenVehiculo || !formData.docFacturaCompra || !formData.docRIF}>
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Enviando...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-4 h-4 mr-2" />
+                            Finalizar
+                          </>
+                        )}
                       </Button>
                     </div>
                   </CardContent>
@@ -1043,6 +1279,63 @@ const ActivarPolizaNaturalPage = () => {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Loading Dialog */}
+      <Dialog open={isSubmitting}>
+        <DialogContent className="sm:max-w-md border-none bg-card/95 backdrop-blur-sm">
+          <div className="flex flex-col items-center justify-center py-8 px-4">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              className="mb-6"
+            >
+              <Loader2 className="w-16 h-16 text-primary" />
+            </motion.div>
+            
+            <motion.h3
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="text-xl font-semibold text-foreground mb-2"
+            >
+              Procesando tu solicitud
+            </motion.h3>
+            
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="text-sm text-muted-foreground text-center"
+            >
+              Estamos subiendo tus documentos y enviando la información a la aseguradora. 
+              Por favor, espera un momento...
+            </motion.p>
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5, duration: 0.3 }}
+              className="mt-6 flex gap-2"
+            >
+              <motion.div
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+                className="w-2 h-2 rounded-full bg-primary"
+              />
+              <motion.div
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+                className="w-2 h-2 rounded-full bg-primary"
+              />
+              <motion.div
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
+                className="w-2 h-2 rounded-full bg-primary"
+              />
+            </motion.div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>;
 };
 export default ActivarPolizaNaturalPage;
