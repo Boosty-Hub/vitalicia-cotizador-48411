@@ -19,6 +19,7 @@ const ActivarPolizaJuridicaPage = () => {
   const [placa, setPlaca] = useState("");
   const [placaValidada, setPlacaValidada] = useState(false);
   const [showError, setShowError] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
   const [formData, setFormData] = useState({
     // Datos de la empresa
     nombreEmpresa: "",
@@ -77,21 +78,48 @@ const ActivarPolizaJuridicaPage = () => {
   const totalSteps = 6;
   const progress = (currentStep / totalSteps) * 100;
 
-  const validatePlaca = () => {
-    // Simulación de búsqueda en base de datos
-    const placasValidas = ["ABC123", "XYZ789", "DEF456"];
-    
-    if (placasValidas.includes(placa.toUpperCase())) {
-      setPlacaValidada(true);
-      setShowError(false);
-      setCurrentStep(2);
-      toast({
-        title: "Placa encontrada",
-        description: "Continúa con el proceso de activación",
+  const validatePlaca = async () => {
+    setIsValidating(true);
+    try {
+      const response = await fetch('https://avlbdqqwldjteafmzwjb.supabase.co/functions/v1/validate-placa-step1', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          placa: placa.toUpperCase()
+        })
       });
-    } else {
+
+      if (!response.ok) {
+        throw new Error('Error al validar la placa');
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        setPlacaValidada(true);
+        setShowError(false);
+        setCurrentStep(2);
+        toast({
+          title: "Placa encontrada",
+          description: "Continúa con el proceso de activación",
+        });
+      } else {
+        setShowError(true);
+        setPlacaValidada(false);
+      }
+    } catch (error) {
+      console.error('Error validating placa:', error);
       setShowError(true);
       setPlacaValidada(false);
+      toast({
+        title: "Error",
+        description: "No se pudo validar la placa. Por favor intente nuevamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsValidating(false);
     }
   };
 
@@ -217,9 +245,9 @@ const ActivarPolizaJuridicaPage = () => {
                       variant="hero"
                       size="lg"
                       className="w-full"
-                      disabled={!placa}
+                      disabled={!placa || isValidating}
                     >
-                      Validar Placa
+                      {isValidating ? "Validando..." : "Validar Placa"}
                     </Button>
                   </CardContent>
                 </Card>
