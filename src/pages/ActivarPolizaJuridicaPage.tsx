@@ -474,6 +474,11 @@ const ActivarPolizaJuridicaPage = () => {
     setIsSubmitting(true);
     
     try {
+      toast({
+        title: "Procesando...",
+        description: "Subiendo documentos y enviando información",
+      });
+
       // Upload all documents to Supabase storage
       const [
         cedulaUrl,
@@ -491,56 +496,61 @@ const ActivarPolizaJuridicaPage = () => {
         formData.docRIF ? uploadFileToStorage(formData.docRIF, 'rifs') : null,
       ]);
 
-      // Fetch database codes
+      // Validate all files were uploaded
+      if (!cedulaUrl || !licenciaUrl || !certificadoUrl || !origenUrl || !facturaUrl || !rifUrl) {
+        throw new Error('Error al subir uno o más documentos');
+      }
+
+      // Fetch database codes with maybeSingle to handle missing data
       const { data: marcaData } = await supabase
         .from('board_cod_marca')
         .select('cd_marca, descripcion')
         .eq('descripcion', vehicleData?.Marca || '')
-        .single();
+        .maybeSingle();
 
       const { data: modeloData } = await supabase
         .from('board_cod_modelo')
         .select('cd_modelo, descripcion')
         .eq('descripcion', vehicleData?.Modelo || '')
-        .single();
+        .maybeSingle();
 
       const { data: versionData } = await supabase
         .from('board_cod_version_moto')
         .select('cd_version, descripcion')
         .eq('descripcion', vehicleData?.Modelo || '')
-        .single();
+        .maybeSingle();
 
       const { data: colorData } = await supabase
         .from('board_cod_color')
         .select('cd_valdet, descripcion')
         .eq('descripcion', vehicleData?.Color || '')
-        .single();
+        .maybeSingle();
 
       const { data: estadoData } = await supabase
         .from('board_cod_estado')
         .select('cd_estado, descripcion')
         .eq('descripcion', formData.estado)
-        .single();
+        .maybeSingle();
 
       const { data: ciudadData } = await supabase
         .from('board_cod_ciudad')
         .select('cd_ciudad, descripcion')
         .eq('descripcion', formData.ciudad)
-        .eq('cd_estado', estadoData?.cd_estado)
-        .single();
+        .eq('cd_estado', estadoData?.cd_estado || '')
+        .maybeSingle();
 
       const { data: municipioData } = await supabase
         .from('board_cod_municipio')
         .select('cd_municipio, descripcion')
         .eq('descripcion', formData.municipio)
-        .eq('cd_estado', estadoData?.cd_estado)
-        .single();
+        .eq('cd_estado', estadoData?.cd_estado || '')
+        .maybeSingle();
 
       const { data: actividadData } = await supabase
         .from('cod_act_economica')
         .select('cd_actividad, descripcion')
         .eq('descripcion', formData.actividadEconomica)
-        .single();
+        .maybeSingle();
 
       // Extract prefix and number from RIF/Cedula
       const extractIdentification = (value: string) => {
@@ -654,38 +664,38 @@ const ActivarPolizaJuridicaPage = () => {
         listaColumnas: [
           {
             nombre: "Cédula de identidad URL",
-            url: cedulaUrl || "",
+            url: cedulaUrl,
             columnaID: "file_mkpytq4p"
           },
           {
             nombre: "Licencia de conducir URL",
-            url: licenciaUrl || "",
+            url: licenciaUrl,
             columnaID: "file_mkpz6yzk"
           },
           {
             nombre: "Certificado médico URL",
-            url: certificadoUrl || "",
+            url: certificadoUrl,
             columnaID: "file_mkpz3ckf"
           },
           {
             nombre: "Certificado de Origen del Vehículo URL",
-            url: origenUrl || "",
+            url: origenUrl,
             columnaID: "file_mkpy886c"
           },
           {
             nombre: "Factura de Compra del Vehículo URL",
-            url: facturaUrl || "",
+            url: facturaUrl,
             columnaID: "file_mkpy429y"
           },
           {
             nombre: "RIF URL",
-            url: rifUrl || "",
+            url: rifUrl,
             columnaID: "file_mkpyt85x"
           }
         ]
       };
 
-      console.log("JSON enviado al webhook:", jsonData);
+      console.log("📤 JSON enviado al webhook:", jsonData);
 
       // Send to webhook
       const response = await fetch('https://hook.us2.make.com/adb9tmwyo3b4he9lsr7spxwosjmfggdp', {
@@ -696,20 +706,21 @@ const ActivarPolizaJuridicaPage = () => {
         body: JSON.stringify(jsonData),
       });
 
-      if (response.ok) {
-        toast({
-          title: "Formulario enviado",
-          description: "Tu solicitud ha sido procesada exitosamente",
-        });
-        setCurrentStep(7);
-      } else {
-        throw new Error('Error en el webhook');
+      if (!response.ok) {
+        throw new Error(`Error del webhook: ${response.status}`);
       }
+
+      toast({
+        title: "✅ Formulario enviado",
+        description: "Tu solicitud ha sido procesada exitosamente",
+      });
+      setCurrentStep(7);
+
     } catch (error) {
-      console.error('Error al enviar el formulario:', error);
+      console.error('❌ Error al enviar el formulario:', error);
       toast({
         title: "Error",
-        description: "Hubo un problema al procesar tu solicitud. Por favor intenta nuevamente.",
+        description: error instanceof Error ? error.message : "Hubo un problema al procesar tu solicitud. Por favor intenta nuevamente.",
         variant: "destructive",
       });
     } finally {
