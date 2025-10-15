@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MegaMenuHeader } from "@/components/ui/MegaMenuHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import { ArrowLeft, Search, MessageCircle, CheckCircle2, Upload, Loader2, Wand2 
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const ActivarPolizaJuridicaPage = () => {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ const ActivarPolizaJuridicaPage = () => {
   const [placaValidada, setPlacaValidada] = useState(false);
   const [showError, setShowError] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
+  const [nacionalidades, setNacionalidades] = useState<Array<{ descripcion: string }>>([]);
   const [vehicleData, setVehicleData] = useState<{
     Marca: string | null;
     Modelo: string | null;
@@ -87,6 +89,23 @@ const ActivarPolizaJuridicaPage = () => {
 
   const totalSteps = 6;
   const progress = (currentStep / totalSteps) * 100;
+
+  useEffect(() => {
+    const fetchNacionalidades = async () => {
+      const { data, error } = await supabase
+        .from('codigo_nacionalidad')
+        .select('descripcion')
+        .order('descripcion');
+      
+      if (error) {
+        console.error('Error fetching nacionalidades:', error);
+      } else if (data) {
+        setNacionalidades(data);
+      }
+    };
+
+    fetchNacionalidades();
+  }, []);
 
   const validatePlaca = async () => {
     setIsValidating(true);
@@ -440,9 +459,11 @@ const ActivarPolizaJuridicaPage = () => {
                             <SelectValue placeholder="Seleccione..." />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="RIF">RIF</SelectItem>
-                            <SelectItem value="Cédula">Cédula</SelectItem>
-                            <SelectItem value="Pasaporte">Pasaporte</SelectItem>
+                            {nacionalidades.map((nac) => (
+                              <SelectItem key={nac.descripcion} value={nac.descripcion}>
+                                {nac.descripcion}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
