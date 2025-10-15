@@ -22,6 +22,7 @@ const ActivarPolizaJuridicaPage = () => {
   const [showError, setShowError] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [numeroRIFError, setNumeroRIFError] = useState("");
+  const [cedulaRepresentanteError, setCedulaRepresentanteError] = useState("");
   const [estadosCiviles, setEstadosCiviles] = useState<Array<{ descripcion: string }>>([]);
   const [sexos, setSexos] = useState<Array<{ descripcion: string }>>([]);
   const [nacionalidades, setNacionalidades] = useState<Array<{ descripcion: string }>>([]);
@@ -201,24 +202,36 @@ const ActivarPolizaJuridicaPage = () => {
   };
 
   const handleInputChange = (field: string, value: string | File | null) => {
-    // Si es el campo de número de identificación, agregar el prefijo según el tipo
+    // Si es el campo de número de identificación de la empresa
     if (field === "numeroRIF" && typeof value === "string") {
       const prefix = getPrefixForTipoIdentificacion(formData.tipoIdentificacion);
       
-      // Si el usuario borra el prefijo, restaurarlo
       if (prefix && !value.startsWith(prefix)) {
-        // Si el valor está vacío o no tiene el prefijo, agregarlo
         if (value.length === 0) {
           value = prefix;
         } else if (!value.startsWith(prefix)) {
-          // Si escribió algo sin el prefijo, agregarlo al inicio
           value = prefix + value.replace(/^[A-Z]-?/, '');
         }
       }
       
-      // Validar formato y longitud
       const error = validateNumeroRIF(value, formData.tipoIdentificacion);
       setNumeroRIFError(error);
+    }
+    
+    // Si es el campo de cédula del representante
+    if (field === "cedulaRepresentante" && typeof value === "string") {
+      const prefix = getPrefixForTipoIdentificacion(formData.tipoIdentificacionRepresentante);
+      
+      if (prefix && !value.startsWith(prefix)) {
+        if (value.length === 0) {
+          value = prefix;
+        } else if (!value.startsWith(prefix)) {
+          value = prefix + value.replace(/^[A-Z]-?/, '');
+        }
+      }
+      
+      const error = validateNumeroRIF(value, formData.tipoIdentificacionRepresentante);
+      setCedulaRepresentanteError(error);
     }
     
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -290,11 +303,21 @@ const ActivarPolizaJuridicaPage = () => {
 
   const handleTipoIdentificacionChange = (value: string) => {
     const prefix = getPrefixForTipoIdentificacion(value);
-    setNumeroRIFError(""); // Limpiar error al cambiar tipo
+    setNumeroRIFError("");
     setFormData(prev => ({ 
       ...prev, 
       tipoIdentificacion: value,
-      numeroRIF: prefix // Reiniciar con el nuevo prefijo
+      numeroRIF: prefix
+    }));
+  };
+
+  const handleTipoIdentificacionRepresentanteChange = (value: string) => {
+    const prefix = getPrefixForTipoIdentificacion(value);
+    setCedulaRepresentanteError("");
+    setFormData(prev => ({ 
+      ...prev, 
+      tipoIdentificacionRepresentante: value,
+      cedulaRepresentante: prefix
     }));
   };
 
@@ -706,7 +729,7 @@ const ActivarPolizaJuridicaPage = () => {
                         </Label>
                         <Select
                           value={formData.tipoIdentificacionRepresentante}
-                          onValueChange={(value) => handleInputChange("tipoIdentificacionRepresentante", value)}
+                          onValueChange={handleTipoIdentificacionRepresentanteChange}
                         >
                           <SelectTrigger id="tipoIdentificacionRepresentante">
                             <SelectValue placeholder="Seleccione..." />
@@ -722,13 +745,36 @@ const ActivarPolizaJuridicaPage = () => {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="cedulaRepresentante">
-                          Número de Cédula o RIF <span className="text-destructive">*</span>
+                          {formData.tipoIdentificacionRepresentante === "Jurídico" || formData.tipoIdentificacionRepresentante === "Juridico" || formData.tipoIdentificacionRepresentante === "Gobierno"
+                            ? "Número de RIF" 
+                            : formData.tipoIdentificacionRepresentante === "Venezolano"
+                            ? "Número de Cédula" 
+                            : formData.tipoIdentificacionRepresentante === "Extranjero"
+                            ? "Número de Cédula"
+                            : formData.tipoIdentificacionRepresentante === "Pasaporte"
+                            ? "Número de Pasaporte"
+                            : "Número de Identificación"} <span className="text-destructive">*</span>
                         </Label>
                         <Input
                           id="cedulaRepresentante"
+                          placeholder={
+                            formData.tipoIdentificacionRepresentante === "Jurídico" || formData.tipoIdentificacionRepresentante === "Juridico" || formData.tipoIdentificacionRepresentante === "Gobierno"
+                              ? "J-12345678-9" 
+                            : formData.tipoIdentificacionRepresentante === "Venezolano"
+                              ? "V-12345678" 
+                            : formData.tipoIdentificacionRepresentante === "Extranjero"
+                              ? "E-12345678"
+                              : formData.tipoIdentificacionRepresentante === "Pasaporte"
+                              ? "123456789"
+                              : "Ingrese el número"
+                          }
                           value={formData.cedulaRepresentante}
                           onChange={(e) => handleInputChange("cedulaRepresentante", e.target.value)}
+                          className={cedulaRepresentanteError ? "border-destructive" : ""}
                         />
+                        {cedulaRepresentanteError && (
+                          <p className="text-sm text-destructive">{cedulaRepresentanteError}</p>
+                        )}
                       </div>
                     </div>
 
@@ -806,7 +852,8 @@ const ActivarPolizaJuridicaPage = () => {
                           !formData.cedulaRepresentante ||
                           !formData.estadoCivilRepresentante ||
                           !formData.sexoRepresentante ||
-                          !formData.fechaNacimientoRepresentante
+                          !formData.fechaNacimientoRepresentante ||
+                          !!cedulaRepresentanteError
                         }
                       >
                         Siguiente
