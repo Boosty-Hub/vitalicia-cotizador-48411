@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { fixEncoding } from "@/lib/utils";
 
 const ActivarPolizaJuridicaPage = () => {
   const navigate = useNavigate();
@@ -152,7 +153,12 @@ const ActivarPolizaJuridicaPage = () => {
       if (actError) {
         console.error('Error fetching actividades:', actError);
       } else if (actData) {
-        setActividadesEconomicas(actData);
+        // Corregir caracteres especiales mal codificados
+        const actividadesCorregidas = actData.map(act => ({
+          ...act,
+          descripcion: fixEncoding(act.descripcion)
+        }));
+        setActividadesEconomicas(actividadesCorregidas);
       }
 
       // Fetch estados
