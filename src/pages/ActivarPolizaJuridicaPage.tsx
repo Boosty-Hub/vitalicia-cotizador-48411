@@ -22,6 +22,8 @@ const ActivarPolizaJuridicaPage = () => {
   const [showError, setShowError] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [numeroRIFError, setNumeroRIFError] = useState("");
+  const [estadosCiviles, setEstadosCiviles] = useState<Array<{ descripcion: string }>>([]);
+  const [sexos, setSexos] = useState<Array<{ descripcion: string }>>([]);
   const [nacionalidades, setNacionalidades] = useState<Array<{ descripcion: string }>>([]);
   const [vehicleData, setVehicleData] = useState<{
     Marca: string | null;
@@ -50,10 +52,11 @@ const ActivarPolizaJuridicaPage = () => {
     // Datos del representante legal
     nombresRepresentante: "",
     apellidosRepresentante: "",
+    tipoIdentificacionRepresentante: "",
     cedulaRepresentante: "",
-    fechaNacimientoRepresentante: "",
-    nacionalidadRepresentante: "",
+    estadoCivilRepresentante: "",
     sexoRepresentante: "",
+    fechaNacimientoRepresentante: "",
     telefonoCelularRepresentante: "",
     correoRepresentante: "",
     // Información del vehículo
@@ -92,20 +95,45 @@ const ActivarPolizaJuridicaPage = () => {
   const progress = (currentStep / totalSteps) * 100;
 
   useEffect(() => {
-    const fetchNacionalidades = async () => {
-      const { data, error } = await supabase
+    const fetchData = async () => {
+      // Fetch nacionalidades
+      const { data: nacData, error: nacError } = await supabase
         .from('codigo_nacionalidad')
         .select('descripcion')
         .order('descripcion');
       
-      if (error) {
-        console.error('Error fetching nacionalidades:', error);
-      } else if (data) {
-        setNacionalidades(data);
+      if (nacError) {
+        console.error('Error fetching nacionalidades:', nacError);
+      } else if (nacData) {
+        setNacionalidades(nacData);
+      }
+
+      // Fetch estados civiles
+      const { data: civilData, error: civilError } = await supabase
+        .from('board_cod_edo_civil')
+        .select('descripcion')
+        .order('descripcion');
+      
+      if (civilError) {
+        console.error('Error fetching estados civiles:', civilError);
+      } else if (civilData) {
+        setEstadosCiviles(civilData);
+      }
+
+      // Fetch sexos
+      const { data: sexoData, error: sexoError } = await supabase
+        .from('board_cod_sexo')
+        .select('descripcion')
+        .order('descripcion');
+      
+      if (sexoError) {
+        console.error('Error fetching sexos:', sexoError);
+      } else if (sexoData) {
+        setSexos(sexoData);
       }
     };
 
-    fetchNacionalidades();
+    fetchData();
   }, []);
 
   const validatePlaca = async () => {
@@ -303,9 +331,13 @@ const ActivarPolizaJuridicaPage = () => {
   const fillTestDataStep3 = () => {
     setFormData(prev => ({
       ...prev,
-      telefonoCelular: "0412-9876543",
-      correoElectronico: "contacto@empresa-test.com",
-      ciudad: "Av. Principal, Centro Empresarial Torre Norte, Piso 5, Caracas"
+      nombresRepresentante: "Carlos Alberto",
+      apellidosRepresentante: "González Pérez",
+      tipoIdentificacionRepresentante: "Venezolano",
+      cedulaRepresentante: "V-12345678",
+      estadoCivilRepresentante: "Casado",
+      sexoRepresentante: "Masculino",
+      fechaNacimientoRepresentante: "1985-05-15"
     }));
     toast({
       title: "Datos de prueba cargados",
@@ -631,7 +663,7 @@ const ActivarPolizaJuridicaPage = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
-                      <span>Información de Contacto</span>
+                      <span className="text-primary">DATOS DEL REPRESENTANTE LEGAL</span>
                       <Button
                         onClick={fillTestDataStep3}
                         variant="outline"
@@ -644,33 +676,115 @@ const ActivarPolizaJuridicaPage = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="telefonoCelular">Teléfono</Label>
-                      <Input
-                        id="telefonoCelular"
-                        type="tel"
-                        value={formData.telefonoCelular}
-                        onChange={(e) => handleInputChange("telefonoCelular", e.target.value)}
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="nombresRepresentante">
+                          Nombre <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="nombresRepresentante"
+                          value={formData.nombresRepresentante}
+                          onChange={(e) => handleInputChange("nombresRepresentante", e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="apellidosRepresentante">
+                          Apellidos <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="apellidosRepresentante"
+                          value={formData.apellidosRepresentante}
+                          onChange={(e) => handleInputChange("apellidosRepresentante", e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="tipoIdentificacionRepresentante">
+                          Tipo de Identificación <span className="text-destructive">*</span>
+                        </Label>
+                        <Select
+                          value={formData.tipoIdentificacionRepresentante}
+                          onValueChange={(value) => handleInputChange("tipoIdentificacionRepresentante", value)}
+                        >
+                          <SelectTrigger id="tipoIdentificacionRepresentante">
+                            <SelectValue placeholder="Seleccione..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {nacionalidades.map((nac) => (
+                              <SelectItem key={nac.descripcion} value={nac.descripcion}>
+                                {nac.descripcion}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="cedulaRepresentante">
+                          Número de Cédula o RIF <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="cedulaRepresentante"
+                          value={formData.cedulaRepresentante}
+                          onChange={(e) => handleInputChange("cedulaRepresentante", e.target.value)}
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="correoElectronico">Correo Electrónico</Label>
-                      <Input
-                        id="correoElectronico"
-                        type="email"
-                        value={formData.correoElectronico}
-                        onChange={(e) => handleInputChange("correoElectronico", e.target.value)}
-                      />
+                      <Label htmlFor="estadoCivilRepresentante">
+                        Estado Civil <span className="text-destructive">*</span>
+                      </Label>
+                      <Select
+                        value={formData.estadoCivilRepresentante}
+                        onValueChange={(value) => handleInputChange("estadoCivilRepresentante", value)}
+                      >
+                        <SelectTrigger id="estadoCivilRepresentante">
+                          <SelectValue placeholder="Seleccione..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {estadosCiviles.map((estado) => (
+                            <SelectItem key={estado.descripcion} value={estado.descripcion}>
+                              {estado.descripcion}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="ciudad">Dirección Fiscal</Label>
-                      <Input
-                        id="ciudad"
-                        value={formData.ciudad}
-                        onChange={(e) => handleInputChange("ciudad", e.target.value)}
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="sexoRepresentante">
+                          Sexo <span className="text-destructive">*</span>
+                        </Label>
+                        <Select
+                          value={formData.sexoRepresentante}
+                          onValueChange={(value) => handleInputChange("sexoRepresentante", value)}
+                        >
+                          <SelectTrigger id="sexoRepresentante">
+                            <SelectValue placeholder="Seleccione..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {sexos.map((sexo) => (
+                              <SelectItem key={sexo.descripcion} value={sexo.descripcion}>
+                                {sexo.descripcion}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="fechaNacimientoRepresentante">
+                          Fecha de Nacimiento <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="fechaNacimientoRepresentante"
+                          type="date"
+                          value={formData.fechaNacimientoRepresentante}
+                          onChange={(e) => handleInputChange("fechaNacimientoRepresentante", e.target.value)}
+                        />
+                      </div>
                     </div>
 
                     <div className="flex gap-3 pt-4">
@@ -682,12 +796,20 @@ const ActivarPolizaJuridicaPage = () => {
                         Anterior
                       </Button>
                       <Button
-                        onClick={handleSubmit}
+                        onClick={() => setCurrentStep(4)}
                         variant="hero"
                         className="flex-1"
-                        disabled={!formData.telefonoCelular || !formData.correoElectronico || !formData.ciudad}
+                        disabled={
+                          !formData.nombresRepresentante || 
+                          !formData.apellidosRepresentante || 
+                          !formData.tipoIdentificacionRepresentante || 
+                          !formData.cedulaRepresentante ||
+                          !formData.estadoCivilRepresentante ||
+                          !formData.sexoRepresentante ||
+                          !formData.fechaNacimientoRepresentante
+                        }
                       >
-                        Finalizar
+                        Siguiente
                       </Button>
                     </div>
                   </CardContent>
