@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Search, MessageCircle, CheckCircle2, Upload } from "lucide-react";
+import { ArrowLeft, Search, MessageCircle, CheckCircle2, Upload, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +20,15 @@ const ActivarPolizaJuridicaPage = () => {
   const [placaValidada, setPlacaValidada] = useState(false);
   const [showError, setShowError] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
+  const [vehicleData, setVehicleData] = useState<{
+    Marca: string | null;
+    Modelo: string | null;
+    Año: string | null;
+    Color: string | null;
+    Carroceria: string | null;
+    Suma: string;
+    MondayId: string | null;
+  } | null>(null);
   const [formData, setFormData] = useState({
     // Datos de la empresa
     nombreEmpresa: "",
@@ -88,12 +97,27 @@ const ActivarPolizaJuridicaPage = () => {
 
         // Verificar si la placa fue encontrada en el sistema
         if (data.Encontrado === true) {
+          console.log('🔍 Respuesta completa del webhook de validación de placa:', data);
+          console.log('📋 MondayId recibido:', data["BERA-EMPIRE ID Monday"]);
+          
+          const vehicleInfo = {
+            Marca: data.Marca || null,
+            Modelo: data.Modelo || null,
+            Año: data.Año || null,
+            Color: data.Color || null,
+            Carroceria: data.Carroceria || null,
+            Suma: data["Precio Venta"] || "0",
+            MondayId: data["BERA-EMPIRE ID Monday"] ?? null
+          };
+          
+          console.log('💾 VehicleData guardado:', vehicleInfo);
+          setVehicleData(vehicleInfo);
           setPlacaValidada(true);
           setShowError(false);
-          setCurrentStep(2);
+          setCurrentStep(1.5);
           toast({
-            title: "Placa encontrada",
-            description: "Continúa con el proceso de activación",
+            title: "Vehículo encontrado",
+            description: "Por favor, confirma los datos del vehículo"
           });
         } else {
           setShowError(true);
@@ -105,14 +129,14 @@ const ActivarPolizaJuridicaPage = () => {
           });
         }
       } else {
-        setShowError(true);
-        setPlacaValidada(false);
-        toast({
-          title: "Error",
-          description: "No se pudo validar la placa. Por favor intente nuevamente.",
-          variant: "destructive"
-        });
-      }
+          setShowError(true);
+          setPlacaValidada(false);
+          toast({
+            title: "Placa no encontrada",
+            description: "La placa no se encuentra en el sistema",
+            variant: "destructive"
+          });
+        }
     } catch (error) {
       console.error('Error validating placa:', error);
       setShowError(true);
@@ -251,8 +275,92 @@ const ActivarPolizaJuridicaPage = () => {
                       className="w-full"
                       disabled={!placa || isValidating}
                     >
-                      {isValidating ? "Validando..." : "Validar Placa"}
+                      {isValidating ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Validando...
+                        </>
+                      ) : (
+                        "Validar Placa"
+                      )}
                     </Button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {currentStep === 1.5 && vehicleData && (
+              <motion.div
+                key="step1.5"
+                variants={pageVariants}
+                initial="initial"
+                animate="in"
+                exit="out"
+                transition={{ duration: 0.3 }}
+              >
+                <Card className="bg-success/5 border-success/20">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-3 text-success">
+                      <CheckCircle2 className="w-6 h-6" />
+                      Vehículo Verificado
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-muted-foreground font-medium">Marca:</p>
+                          <p className="text-foreground text-lg">{vehicleData.Marca || "N/A"}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground font-medium">Modelo:</p>
+                          <p className="text-foreground text-lg">{vehicleData.Modelo || "N/A"}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground font-medium">Año:</p>
+                          <p className="text-foreground text-lg">{vehicleData.Año || "N/A"}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground font-medium">Color:</p>
+                          <p className="text-foreground text-lg">{vehicleData.Color || "N/A"}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-muted-foreground font-medium">Carrocería:</p>
+                          <p className="text-foreground text-lg">{vehicleData.Carroceria || "N/A"}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Button
+                        onClick={() => {
+                          setCurrentStep(1);
+                          setVehicleData(null);
+                          setPlacaValidada(false);
+                        }}
+                        variant="destructive"
+                        size="lg"
+                        className="flex-1"
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          if (vehicleData?.Carroceria) {
+                            setFormData(prev => ({
+                              ...prev,
+                              serialCarroceria: vehicleData.Carroceria || ""
+                            }));
+                          }
+                          setCurrentStep(2);
+                        }}
+                        variant="hero"
+                        size="lg"
+                        className="flex-1"
+                      >
+                        Continuar
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               </motion.div>
