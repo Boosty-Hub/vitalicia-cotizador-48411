@@ -23,6 +23,8 @@ const ActivarPolizaNaturalPage = () => {
   const [placaValidada, setPlacaValidada] = useState(false);
   const [showError, setShowError] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [email2Error, setEmail2Error] = useState("");
   const [vehicleData, setVehicleData] = useState<{
     Marca: string | null;
     Modelo: string | null;
@@ -302,11 +304,32 @@ const ActivarPolizaNaturalPage = () => {
         return value;
     }
   };
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleInputChange = (field: string, value: string | File | null) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+
+    // Validate email fields
+    if (field === "email" && typeof value === "string") {
+      if (value && !validateEmail(value)) {
+        setEmailError("Por favor ingrese un correo electrónico válido");
+      } else {
+        setEmailError("");
+      }
+    }
+    if (field === "email2" && typeof value === "string") {
+      if (value && !validateEmail(value)) {
+        setEmail2Error("Por favor ingrese un correo electrónico válido");
+      } else {
+        setEmail2Error("");
+      }
+    }
   };
   const handleTipoIdentificacionChange = (value: string) => {
     setFormData(prev => {
@@ -1081,11 +1104,29 @@ const ActivarPolizaNaturalPage = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="email">Dirección de correo electrónico *</Label>
-                        <Input id="email" type="email" value={formData.email} onChange={e => handleInputChange("email", e.target.value)} />
+                        <Input 
+                          id="email" 
+                          type="email" 
+                          value={formData.email} 
+                          onChange={e => handleInputChange("email", e.target.value)}
+                          className={emailError ? "border-destructive" : ""}
+                        />
+                        {emailError && (
+                          <p className="text-sm text-destructive">{emailError}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="email2">Email 2</Label>
-                        <Input id="email2" type="email" value={formData.email2} onChange={e => handleInputChange("email2", e.target.value)} />
+                        <Input 
+                          id="email2" 
+                          type="email" 
+                          value={formData.email2} 
+                          onChange={e => handleInputChange("email2", e.target.value)}
+                          className={email2Error ? "border-destructive" : ""}
+                        />
+                        {email2Error && (
+                          <p className="text-sm text-destructive">{email2Error}</p>
+                        )}
                       </div>
                     </div>
 
@@ -1093,7 +1134,7 @@ const ActivarPolizaNaturalPage = () => {
                       <Button onClick={() => setCurrentStep(1)} variant="outline" className="flex-1">
                         Anterior
                       </Button>
-                      <Button onClick={() => setCurrentStep(3)} variant="hero" className="flex-1" disabled={!formData.nombre || !formData.apellidos || !formData.numeroCedula || !formData.sexo || !formData.fechaNacimiento || !formData.estadoCivil || !formData.direccion || !formData.estado || !formData.ciudad || !formData.municipio || !formData.codigoTelefonico || !formData.numeroTelefonico || !formData.email}>
+                      <Button onClick={() => setCurrentStep(3)} variant="hero" className="flex-1" disabled={!formData.nombre || !formData.apellidos || !formData.numeroCedula || !formData.sexo || !formData.fechaNacimiento || !formData.estadoCivil || !formData.direccion || !formData.estado || !formData.ciudad || !formData.municipio || !formData.codigoTelefonico || !formData.numeroTelefonico || !formData.email || emailError !== "" || (formData.email2 && email2Error !== "")}>
                         Siguiente
                       </Button>
                     </div>
