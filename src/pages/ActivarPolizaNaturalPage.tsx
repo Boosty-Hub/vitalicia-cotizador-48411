@@ -237,29 +237,53 @@ const ActivarPolizaNaturalPage = () => {
     fetchCiudades();
   }, [formData.estado]);
 
-  // Fetch municipios when ciudad changes
+  // Fetch municipios when ciudad changes and validate combination
   useEffect(() => {
     const fetchMunicipios = async () => {
-      if (!formData.ciudad) {
+      if (!formData.ciudad || !formData.estado) {
         setMunicipios([]);
         return;
       }
+      
+      // Fetch municipios with full validation (pais, estado, ciudad)
       const {
         data,
         error
-      } = await supabase.from('board_cod_municipio').select('cd_municipio, descripcion, cd_ciudad').eq('cd_ciudad', formData.ciudad).order('descripcion');
+      } = await supabase
+        .from('board_cod_municipio')
+        .select('cd_municipio, descripcion, cd_ciudad, cd_estado, cd_pais')
+        .eq('cd_pais', '001')
+        .eq('cd_estado', formData.estado)
+        .eq('cd_ciudad', formData.ciudad)
+        .order('descripcion');
+      
       if (error) {
         console.error('Error loading municipios:', error);
-      } else if (data) {
+        toast({
+          title: "Error",
+          description: "Error al cargar los municipios",
+          variant: "destructive"
+        });
+      } else if (data && data.length > 0) {
         const fixedData = data.map(item => ({
           ...item,
           descripcion: fixSpecialCharacters(item.descripcion)
         }));
         setMunicipios(fixedData);
+      } else {
+        // No hay municipios válidos para esta combinación
+        setMunicipios([]);
+        if (formData.ciudad) {
+          toast({
+            title: "Advertencia",
+            description: `No hay municipios registrados para la combinación Estado: ${formData.estado}, Ciudad: ${formData.ciudad}. Por favor seleccione otra ciudad.`,
+            variant: "destructive"
+          });
+        }
       }
     };
     fetchMunicipios();
-  }, [formData.ciudad]);
+  }, [formData.ciudad, formData.estado, toast]);
   const validatePlaca = async () => {
     setIsValidating(true);
     try {
@@ -658,10 +682,6 @@ const ActivarPolizaNaturalPage = () => {
       .eq('cd_municipio', formData.municipio)
       .maybeSingle();
 
-    // Validar que la combinación de ubicación exista
-    if (!municipioData) {
-      throw new Error(`La combinación de ubicación no es válida: País: 001, Estado: ${formData.estado}, Ciudad: ${formData.ciudad}, Municipio: ${formData.municipio}. Por favor verifique los datos.`);
-    }
 
     const { data: nacionalidadData } = await supabase
       .from('codigo_nacionalidad')
