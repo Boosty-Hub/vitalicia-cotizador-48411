@@ -270,7 +270,7 @@ const ActivarPolizaNaturalPage = () => {
         // Verificar si la placa fue encontrada en el sistema
         if (data.Encontrado === true) {
           console.log('🔍 Respuesta completa del webhook de validación de placa:', data);
-          console.log('📋 MondayId recibido:', data.mondayid);
+          console.log('📋 MondayId recibido:', data["BERA-EMPIRE ID Monday"]);
           
           const vehicleInfo = {
             Marca: data.Marca || null,
@@ -279,7 +279,7 @@ const ActivarPolizaNaturalPage = () => {
             Color: data.Color || null,
             Carroceria: data.Carroceria || null,
             Suma: data.n_suma || "0",
-            MondayId: data.mondayid ?? null
+            MondayId: data["BERA-EMPIRE ID Monday"] ?? null
           };
           
           console.log('💾 VehicleData guardado:', vehicleInfo);
