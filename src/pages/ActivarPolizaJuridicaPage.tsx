@@ -469,10 +469,25 @@ const ActivarPolizaJuridicaPage = () => {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="numeroRIF">
-                          Número de Cédula o RIF <span className="text-destructive">*</span>
+                          {formData.tipoIdentificacion === "RIF" 
+                            ? "Número de RIF" 
+                            : formData.tipoIdentificacion === "Cédula" 
+                            ? "Número de Cédula" 
+                            : formData.tipoIdentificacion === "Pasaporte"
+                            ? "Número de Pasaporte"
+                            : "Número de Identificación"} <span className="text-destructive">*</span>
                         </Label>
                         <Input
                           id="numeroRIF"
+                          placeholder={
+                            formData.tipoIdentificacion === "RIF" 
+                              ? "Ej: J-12345678-9" 
+                              : formData.tipoIdentificacion === "Cédula" 
+                              ? "Ej: V-12345678" 
+                              : formData.tipoIdentificacion === "Pasaporte"
+                              ? "Ej: 123456789"
+                              : "Ingrese el número"
+                          }
                           value={formData.numeroRIF}
                           onChange={(e) => handleInputChange("numeroRIF", e.target.value)}
                         />
