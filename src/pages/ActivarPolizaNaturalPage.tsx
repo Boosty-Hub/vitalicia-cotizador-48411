@@ -353,8 +353,16 @@ const ActivarPolizaNaturalPage = () => {
     }
   };
   const validateEmail = (email: string): boolean => {
+    // Verificar que no contenga acentos o caracteres especiales latinos
+    const hasAccents = /[áéíóúÁÉÍÓÚñÑüÜ]/.test(email);
+    if (hasAccents) return false;
+    
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
+  };
+  
+  const removeAccents = (str: string): string => {
+    return str.replace(/[áéíóúÁÉÍÓÚñÑüÜ]/g, '');
   };
 
   const handleInputChange = (field: string, value: string | File | null) => {
@@ -363,20 +371,36 @@ const ActivarPolizaNaturalPage = () => {
       [field]: value
     }));
 
-    // Validate email fields
+    // Validate and sanitize email fields
     if (field === "email" && typeof value === "string") {
-      if (value && !validateEmail(value)) {
-        setEmailError("Por favor ingrese un correo electrónico válido");
+      // Remover acentos automáticamente
+      const cleanValue = removeAccents(value);
+      setFormData(prev => ({
+        ...prev,
+        [field]: cleanValue
+      }));
+      
+      if (cleanValue && !validateEmail(cleanValue)) {
+        setEmailError("Por favor ingrese un correo electrónico válido (sin acentos o tildes)");
       } else {
         setEmailError("");
       }
+      return; // Salir temprano para evitar el setFormData del inicio
     }
     if (field === "email2" && typeof value === "string") {
-      if (value && !validateEmail(value)) {
-        setEmail2Error("Por favor ingrese un correo electrónico válido");
+      // Remover acentos automáticamente
+      const cleanValue = removeAccents(value);
+      setFormData(prev => ({
+        ...prev,
+        [field]: cleanValue
+      }));
+      
+      if (cleanValue && !validateEmail(cleanValue)) {
+        setEmail2Error("Por favor ingrese un correo electrónico válido (sin acentos o tildes)");
       } else {
         setEmail2Error("");
       }
+      return; // Salir temprano para evitar el setFormData del inicio
     }
   };
   const handleTipoIdentificacionChange = (value: string) => {
