@@ -81,33 +81,37 @@ const ActivarPolizaJuridicaPage = () => {
   const validatePlaca = async () => {
     setIsValidating(true);
     try {
-      const response = await fetch('https://avlbdqqwldjteafmzwjb.supabase.co/functions/v1/validate-placa-step1', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          placa: placa.toUpperCase()
-        })
-      });
+      const response = await fetch(`https://hook.us2.make.com/bvauv3534xqm83vqccqwgev20t5h7jxe?placa=${encodeURIComponent(placa)}`);
+      
+      if (response.ok) {
+        const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error('Error al validar la placa');
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        setPlacaValidada(true);
-        setShowError(false);
-        setCurrentStep(2);
-        toast({
-          title: "Placa encontrada",
-          description: "Continúa con el proceso de activación",
-        });
+        // Verificar si la placa fue encontrada en el sistema
+        if (data.Encontrado === true) {
+          setPlacaValidada(true);
+          setShowError(false);
+          setCurrentStep(2);
+          toast({
+            title: "Placa encontrada",
+            description: "Continúa con el proceso de activación",
+          });
+        } else {
+          setShowError(true);
+          setPlacaValidada(false);
+          toast({
+            title: "Placa no encontrada",
+            description: "La placa no se encuentra en el sistema",
+            variant: "destructive"
+          });
+        }
       } else {
         setShowError(true);
         setPlacaValidada(false);
+        toast({
+          title: "Error",
+          description: "No se pudo validar la placa. Por favor intente nuevamente.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Error validating placa:', error);
