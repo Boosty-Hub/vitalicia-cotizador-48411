@@ -25,6 +25,11 @@ const ActivarPolizaJuridicaPage = () => {
   const [cedulaRepresentanteError, setCedulaRepresentanteError] = useState("");
   const [estadosCiviles, setEstadosCiviles] = useState<Array<{ descripcion: string }>>([]);
   const [sexos, setSexos] = useState<Array<{ descripcion: string }>>([]);
+  const [actividadesEconomicas, setActividadesEconomicas] = useState<Array<{ descripcion: string }>>([]);
+  const [estados, setEstados] = useState<Array<{ descripcion: string; cd_estado: string }>>([]);
+  const [ciudades, setCiudades] = useState<Array<{ descripcion: string }>>([]);
+  const [municipios, setMunicipios] = useState<Array<{ descripcion: string }>>([]);
+  const [codigosTelefonicos, setCodigosTelefonicos] = useState<Array<{ s_descripcion: string }>>([]);
   const [nacionalidades, setNacionalidades] = useState<Array<{ descripcion: string }>>([]);
   const [vehicleData, setVehicleData] = useState<{
     Marca: string | null;
@@ -45,9 +50,14 @@ const ActivarPolizaJuridicaPage = () => {
     estado: "",
     municipio: "",
     ciudad: "",
+    direccion: "",
+    codigoPostal: "",
+    codigoTelefonicoWhatsapp: "",
     telefonoCelular: "",
+    codigoTelefonicoResidencial: "",
     telefonoOficina: "",
     correoElectronico: "",
+    correoAlternativo: "",
     actividadEconomica: "",
     paginaWeb: "",
     // Datos del representante legal
@@ -131,6 +141,42 @@ const ActivarPolizaJuridicaPage = () => {
         console.error('Error fetching sexos:', sexoError);
       } else if (sexoData) {
         setSexos(sexoData);
+      }
+
+      // Fetch actividades económicas
+      const { data: actData, error: actError } = await supabase
+        .from('cod_act_economica')
+        .select('descripcion')
+        .order('descripcion');
+      
+      if (actError) {
+        console.error('Error fetching actividades:', actError);
+      } else if (actData) {
+        setActividadesEconomicas(actData);
+      }
+
+      // Fetch estados
+      const { data: estadoData, error: estadoError } = await supabase
+        .from('board_cod_estado')
+        .select('descripcion, cd_estado')
+        .order('descripcion');
+      
+      if (estadoError) {
+        console.error('Error fetching estados:', estadoError);
+      } else if (estadoData) {
+        setEstados(estadoData);
+      }
+
+      // Fetch códigos telefónicos
+      const { data: tlfData, error: tlfError } = await supabase
+        .from('board_cod_tlf')
+        .select('s_descripcion')
+        .order('s_descripcion');
+      
+      if (tlfError) {
+        console.error('Error fetching codigos telefonicos:', tlfError);
+      } else if (tlfData) {
+        setCodigosTelefonicos(tlfData);
       }
     };
 
@@ -233,8 +279,44 @@ const ActivarPolizaJuridicaPage = () => {
       const error = validateNumeroRIF(value, formData.tipoIdentificacionRepresentante);
       setCedulaRepresentanteError(error);
     }
+
+    // Si cambia el estado, cargar ciudades y municipios
+    if (field === "estado" && typeof value === "string") {
+      const estadoSeleccionado = estados.find(e => e.descripcion === value);
+      if (estadoSeleccionado) {
+        fetchCiudadesYMunicipios(estadoSeleccionado.cd_estado);
+      }
+    }
     
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const fetchCiudadesYMunicipios = async (cdEstado: string) => {
+    // Fetch ciudades para el estado seleccionado
+    const { data: ciudadData, error: ciudadError } = await supabase
+      .from('board_cod_ciudad')
+      .select('descripcion')
+      .eq('cd_estado', cdEstado)
+      .order('descripcion');
+    
+    if (ciudadError) {
+      console.error('Error fetching ciudades:', ciudadError);
+    } else if (ciudadData) {
+      setCiudades(ciudadData);
+    }
+
+    // Fetch municipios para el estado seleccionado
+    const { data: municipioData, error: municipioError } = await supabase
+      .from('board_cod_municipio')
+      .select('descripcion')
+      .eq('cd_estado', cdEstado)
+      .order('descripcion');
+    
+    if (municipioError) {
+      console.error('Error fetching municipios:', municipioError);
+    } else if (municipioData) {
+      setMunicipios(municipioData);
+    }
   };
 
   const validateNumeroRIF = (value: string, tipo: string): string => {
@@ -335,7 +417,7 @@ const ActivarPolizaJuridicaPage = () => {
       title: "Formulario enviado",
       description: "Tu solicitud ha sido procesada exitosamente",
     });
-    setCurrentStep(4);
+    setCurrentStep(5);
   };
 
   const fillTestDataStep2 = () => {
@@ -361,6 +443,28 @@ const ActivarPolizaJuridicaPage = () => {
       estadoCivilRepresentante: "Casado",
       sexoRepresentante: "Masculino",
       fechaNacimientoRepresentante: "1985-05-15"
+    }));
+    toast({
+      title: "Datos de prueba cargados",
+      description: "Formulario llenado con datos aleatorios"
+    });
+  };
+
+  const fillTestDataStep4 = () => {
+    setFormData(prev => ({
+      ...prev,
+      actividadEconomica: "Comercio",
+      direccion: "Av. Principal, Centro Empresarial Torre Norte, Piso 5",
+      estado: "Distrito Capital",
+      ciudad: "Caracas",
+      municipio: "Libertador",
+      codigoPostal: "1050",
+      codigoTelefonicoWhatsapp: "0412",
+      telefonoCelular: "9876543",
+      codigoTelefonicoResidencial: "0212",
+      telefonoOficina: "5551234",
+      correoElectronico: "contacto@empresa-test.com",
+      correoAlternativo: "info@empresa-test.com"
     }));
     toast({
       title: "Datos de prueba cargados",
@@ -867,6 +971,271 @@ const ActivarPolizaJuridicaPage = () => {
             {currentStep === 4 && (
               <motion.div
                 key="step4"
+                variants={pageVariants}
+                initial="initial"
+                animate="in"
+                exit="out"
+                transition={{ duration: 0.3 }}
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      <span className="text-primary">Información de Contacto</span>
+                      <Button
+                        onClick={fillTestDataStep4}
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                      >
+                        <Wand2 className="w-4 h-4" />
+                        Llenar Prueba
+                      </Button>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="pais">
+                        País <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="pais"
+                        value={formData.pais}
+                        disabled
+                        className="bg-muted"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="actividadEconomica">Actividad económica</Label>
+                      <Select
+                        value={formData.actividadEconomica}
+                        onValueChange={(value) => handleInputChange("actividadEconomica", value)}
+                      >
+                        <SelectTrigger id="actividadEconomica">
+                          <SelectValue placeholder="Seleccione..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {actividadesEconomicas.map((act) => (
+                            <SelectItem key={act.descripcion} value={act.descripcion}>
+                              {act.descripcion}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="direccion">
+                        Dirección <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="direccion"
+                        value={formData.direccion}
+                        onChange={(e) => handleInputChange("direccion", e.target.value)}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="estado">
+                          Estado <span className="text-destructive">*</span>
+                        </Label>
+                        <Select
+                          value={formData.estado}
+                          onValueChange={(value) => handleInputChange("estado", value)}
+                        >
+                          <SelectTrigger id="estado">
+                            <SelectValue placeholder="Seleccione..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {estados.map((estado) => (
+                              <SelectItem key={estado.cd_estado} value={estado.descripcion}>
+                                {estado.descripcion}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="ciudad">
+                          Ciudad <span className="text-destructive">*</span>
+                        </Label>
+                        <Select
+                          value={formData.ciudad}
+                          onValueChange={(value) => handleInputChange("ciudad", value)}
+                        >
+                          <SelectTrigger id="ciudad">
+                            <SelectValue placeholder="Seleccione..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ciudades.map((ciudad) => (
+                              <SelectItem key={ciudad.descripcion} value={ciudad.descripcion}>
+                                {ciudad.descripcion}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="municipio">
+                          Municipio <span className="text-destructive">*</span>
+                        </Label>
+                        <Select
+                          value={formData.municipio}
+                          onValueChange={(value) => handleInputChange("municipio", value)}
+                        >
+                          <SelectTrigger id="municipio">
+                            <SelectValue placeholder="Seleccione..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {municipios.map((municipio) => (
+                              <SelectItem key={municipio.descripcion} value={municipio.descripcion}>
+                                {municipio.descripcion}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="codigoPostal">Código Postal</Label>
+                        <Input
+                          id="codigoPostal"
+                          value={formData.codigoPostal}
+                          onChange={(e) => handleInputChange("codigoPostal", e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="codigoTelefonicoWhatsapp">
+                          Código Telefónico <span className="text-destructive">*</span>
+                        </Label>
+                        <Select
+                          value={formData.codigoTelefonicoWhatsapp}
+                          onValueChange={(value) => handleInputChange("codigoTelefonicoWhatsapp", value)}
+                        >
+                          <SelectTrigger id="codigoTelefonicoWhatsapp">
+                            <SelectValue placeholder="Seleccione..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {codigosTelefonicos.map((codigo) => (
+                              <SelectItem key={codigo.s_descripcion} value={codigo.s_descripcion}>
+                                {codigo.s_descripcion}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="telefonoCelular">
+                          Número Telefónico con Whatsapp <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="telefonoCelular"
+                          value={formData.telefonoCelular}
+                          onChange={(e) => handleInputChange("telefonoCelular", e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="codigoTelefonicoResidencial">
+                          Código Telefónico <span className="text-destructive">*</span>
+                        </Label>
+                        <Select
+                          value={formData.codigoTelefonicoResidencial}
+                          onValueChange={(value) => handleInputChange("codigoTelefonicoResidencial", value)}
+                        >
+                          <SelectTrigger id="codigoTelefonicoResidencial">
+                            <SelectValue placeholder="Seleccione..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {codigosTelefonicos.map((codigo) => (
+                              <SelectItem key={codigo.s_descripcion} value={codigo.s_descripcion}>
+                                {codigo.s_descripcion}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="telefonoOficina">
+                          Número Residencial <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="telefonoOficina"
+                          value={formData.telefonoOficina}
+                          onChange={(e) => handleInputChange("telefonoOficina", e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="correoElectronico">
+                          Dirección de correo electrónico <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="correoElectronico"
+                          type="email"
+                          value={formData.correoElectronico}
+                          onChange={(e) => handleInputChange("correoElectronico", e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="correoAlternativo">
+                          Correo alternativo <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="correoAlternativo"
+                          type="email"
+                          value={formData.correoAlternativo}
+                          onChange={(e) => handleInputChange("correoAlternativo", e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                      <Button
+                        onClick={() => setCurrentStep(3)}
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        Anterior
+                      </Button>
+                      <Button
+                        onClick={handleSubmit}
+                        variant="hero"
+                        className="flex-1"
+                        disabled={
+                          !formData.direccion ||
+                          !formData.estado ||
+                          !formData.ciudad ||
+                          !formData.municipio ||
+                          !formData.codigoTelefonicoWhatsapp ||
+                          !formData.telefonoCelular ||
+                          !formData.codigoTelefonicoResidencial ||
+                          !formData.telefonoOficina ||
+                          !formData.correoElectronico ||
+                          !formData.correoAlternativo
+                        }
+                      >
+                        Finalizar
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {currentStep === 5 && (
+              <motion.div
+                key="step5"
                 variants={pageVariants}
                 initial="initial"
                 animate="in"
