@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { fixEncoding } from "@/lib/utils";
+import { FileUploader } from "@/components/ui/file-uploader";
 
 const ActivarPolizaJuridicaPage = () => {
   const navigate = useNavigate();
@@ -97,14 +98,17 @@ const ActivarPolizaJuridicaPage = () => {
     gastosMedicos: "",
     asistenciaJuridica: "",
     // Document uploads
-    docCedulaLicenciaMedico: null as File | null,
+    docIdentidad: null as File | null,
+    docLicenciaConducir: null as File | null,
+    docCertificadoMedico: null as File | null,
     docOrigenVehiculo: null as File | null,
     docFacturaCompra: null as File | null,
     docRIF: null as File | null,
   });
 
   const [serialConfirmado, setSerialConfirmado] = useState<boolean | null>(null);
-  const totalSteps = 6;
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const totalSteps = 7;
   const progress = (currentStep / totalSteps) * 100;
 
   useEffect(() => {
@@ -449,7 +453,7 @@ const ActivarPolizaJuridicaPage = () => {
       title: "Formulario enviado",
       description: "Tu solicitud ha sido procesada exitosamente",
     });
-    setCurrentStep(5);
+    setCurrentStep(7);
   };
 
   const fillTestDataStep2 = () => {
@@ -1350,7 +1354,7 @@ const ActivarPolizaJuridicaPage = () => {
                         Anterior
                       </Button>
                       <Button
-                        onClick={handleSubmit}
+                        onClick={() => setCurrentStep(6)}
                         variant="hero"
                         className="flex-1"
                         disabled={
@@ -1360,7 +1364,7 @@ const ActivarPolizaJuridicaPage = () => {
                           !formData.fechaAdquisicion
                         }
                       >
-                        Finalizar
+                        Siguiente
                       </Button>
                     </div>
                   </CardContent>
@@ -1371,6 +1375,120 @@ const ActivarPolizaJuridicaPage = () => {
             {currentStep === 6 && (
               <motion.div
                 key="step6"
+                variants={pageVariants}
+                initial="initial"
+                animate="in"
+                exit="out"
+                transition={{ duration: 0.3 }}
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Carga de Documentos</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Por favor, cargue las fotos de los documentos que se indican a continuación:
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <FileUploader
+                      id="docIdentidad"
+                      label="Cédula de Identidad"
+                      file={formData.docIdentidad}
+                      onFileChange={(file) => handleFileChange("docIdentidad", file)}
+                      required
+                    />
+
+                    <FileUploader
+                      id="docLicenciaConducir"
+                      label="Licencia de Conducir"
+                      file={formData.docLicenciaConducir}
+                      onFileChange={(file) => handleFileChange("docLicenciaConducir", file)}
+                      required
+                    />
+
+                    <FileUploader
+                      id="docCertificadoMedico"
+                      label="Certificado Médico"
+                      file={formData.docCertificadoMedico}
+                      onFileChange={(file) => handleFileChange("docCertificadoMedico", file)}
+                      required
+                    />
+
+                    <FileUploader
+                      id="docOrigenVehiculo"
+                      label="Certificado de Origen del Vehículo"
+                      file={formData.docOrigenVehiculo}
+                      onFileChange={(file) => handleFileChange("docOrigenVehiculo", file)}
+                      required
+                    />
+
+                    <FileUploader
+                      id="docFacturaCompra"
+                      label="Factura de Compra del Vehículo"
+                      file={formData.docFacturaCompra}
+                      onFileChange={(file) => handleFileChange("docFacturaCompra", file)}
+                      required
+                    />
+
+                    <FileUploader
+                      id="docRIF"
+                      label="RIF"
+                      file={formData.docRIF}
+                      onFileChange={(file) => handleFileChange("docRIF", file)}
+                      required
+                    />
+
+                    <div className="p-4 bg-muted rounded-lg">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        El arriba identificado como asegurado propuesto, como solicitante de la póliza o en representación de este, 
+                        declaro que la información aquí suministrada es exacta, sin omisión alguna de detalle, hecho o circunstancia, 
+                        con el propósito de eliminar el riesgo, en el entendido que servirá de base para la emisión de la póliza.
+                      </p>
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                      <Button 
+                        onClick={() => setCurrentStep(5)} 
+                        variant="outline" 
+                        className="flex-1" 
+                        disabled={isSubmitting}
+                      >
+                        Anterior
+                      </Button>
+                      <Button 
+                        onClick={handleSubmit} 
+                        variant="hero" 
+                        className="flex-1" 
+                        disabled={
+                          isSubmitting || 
+                          !formData.docIdentidad || 
+                          !formData.docLicenciaConducir || 
+                          !formData.docCertificadoMedico || 
+                          !formData.docOrigenVehiculo || 
+                          !formData.docFacturaCompra || 
+                          !formData.docRIF
+                        }
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Enviando...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-4 h-4 mr-2" />
+                            Finalizar
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {currentStep === 7 && (
+              <motion.div
+                key="step7"
                 variants={pageVariants}
                 initial="initial"
                 animate="in"
