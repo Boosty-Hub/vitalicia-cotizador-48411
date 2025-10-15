@@ -103,6 +103,7 @@ const ActivarPolizaJuridicaPage = () => {
     docRIF: null as File | null,
   });
 
+  const [serialConfirmado, setSerialConfirmado] = useState<boolean | null>(null);
   const totalSteps = 6;
   const progress = (currentStep / totalSteps) * 100;
 
@@ -222,6 +223,15 @@ const ActivarPolizaJuridicaPage = () => {
           
           console.log('💾 VehicleData guardado:', vehicleInfo);
           setVehicleData(vehicleInfo);
+          
+          // Pre-llenar el campo de serial de carrocería en formData
+          if (data.Carroceria) {
+            setFormData(prev => ({
+              ...prev,
+              serialCarroceria: data.Carroceria
+            }));
+          }
+          
           setPlacaValidada(true);
           setShowError(false);
           setCurrentStep(1.5);
@@ -1231,7 +1241,7 @@ const ActivarPolizaJuridicaPage = () => {
                         Anterior
                       </Button>
                       <Button
-                        onClick={handleSubmit}
+                        onClick={() => setCurrentStep(5)}
                         variant="hero"
                         className="flex-1"
                         disabled={
@@ -1247,7 +1257,7 @@ const ActivarPolizaJuridicaPage = () => {
                           !formData.correoAlternativo
                         }
                       >
-                        Finalizar
+                        Siguiente
                       </Button>
                     </div>
                   </CardContent>
@@ -1258,6 +1268,109 @@ const ActivarPolizaJuridicaPage = () => {
             {currentStep === 5 && (
               <motion.div
                 key="step5"
+                variants={pageVariants}
+                initial="initial"
+                animate="in"
+                exit="out"
+                transition={{ duration: 0.3 }}
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-primary text-center">INFORMACION SOBRE EL VEHICULO</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="placaMoto">
+                        Placa de la Moto <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="placaMoto"
+                        value={placa.toUpperCase()}
+                        onChange={(e) => setPlaca(e.target.value.toUpperCase())}
+                        placeholder="Ingrese la placa"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="serialCarroceria">
+                        Serial de Carrocería <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="serialCarroceria"
+                        value={formData.serialCarroceria || vehicleData?.Carroceria || ""}
+                        onChange={(e) => {
+                          handleInputChange("serialCarroceria", e.target.value);
+                          setSerialConfirmado(null);
+                        }}
+                        placeholder="Ingrese el serial de carrocería"
+                      />
+                    </div>
+
+                    <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg space-y-4">
+                      <p className="text-blue-900 dark:text-blue-100 text-sm font-medium">
+                        Confirme que este sea su serial de carrocería.
+                      </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Button
+                          onClick={() => setSerialConfirmado(true)}
+                          variant={serialConfirmado === true ? "default" : "outline"}
+                          className={serialConfirmado === true ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
+                        >
+                          <CheckCircle2 className="w-4 h-4 mr-2" />
+                          Sí es
+                        </Button>
+                        <Button
+                          onClick={() => setSerialConfirmado(false)}
+                          variant={serialConfirmado === false ? "destructive" : "outline"}
+                        >
+                          <MessageCircle className="w-4 h-4 mr-2" />
+                          No es
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="fechaAdquisicion">
+                        Fecha de Compra en la Factura <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="fechaAdquisicion"
+                        type="date"
+                        value={formData.fechaAdquisicion}
+                        onChange={(e) => handleInputChange("fechaAdquisicion", e.target.value)}
+                      />
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                      <Button
+                        onClick={() => setCurrentStep(4)}
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        Anterior
+                      </Button>
+                      <Button
+                        onClick={handleSubmit}
+                        variant="hero"
+                        className="flex-1"
+                        disabled={
+                          !placa ||
+                          !formData.serialCarroceria ||
+                          serialConfirmado !== true ||
+                          !formData.fechaAdquisicion
+                        }
+                      >
+                        Finalizar
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {currentStep === 6 && (
+              <motion.div
+                key="step6"
                 variants={pageVariants}
                 initial="initial"
                 animate="in"
