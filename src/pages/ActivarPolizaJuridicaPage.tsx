@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Search, MessageCircle, CheckCircle2, Upload, Loader2 } from "lucide-react";
+import { ArrowLeft, Search, MessageCircle, CheckCircle2, Upload, Loader2, Wand2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -169,7 +169,34 @@ const ActivarPolizaJuridicaPage = () => {
       title: "Formulario enviado",
       description: "Tu solicitud ha sido procesada exitosamente",
     });
-    setCurrentStep(7);
+    setCurrentStep(4);
+  };
+
+  const fillTestDataStep2 = () => {
+    setFormData(prev => ({
+      ...prev,
+      nombreEmpresa: "Inversiones El Roble C.A.",
+      numeroRIF: "J-12345678-9",
+      nombresRepresentante: "Carlos Antonio Rodríguez",
+      cedulaRepresentante: "V-18765432"
+    }));
+    toast({
+      title: "Datos de prueba cargados",
+      description: "Formulario llenado con datos aleatorios"
+    });
+  };
+
+  const fillTestDataStep3 = () => {
+    setFormData(prev => ({
+      ...prev,
+      telefonoCelular: "0412-9876543",
+      correoElectronico: "contacto@empresa-test.com",
+      ciudad: "Av. Principal, Centro Empresarial Torre Norte, Piso 5, Caracas"
+    }));
+    toast({
+      title: "Datos de prueba cargados",
+      description: "Formulario llenado con datos aleatorios"
+    });
   };
 
   const pageVariants = {
@@ -377,7 +404,18 @@ const ActivarPolizaJuridicaPage = () => {
               >
                 <Card>
                   <CardHeader>
-                    <CardTitle>Datos de la Empresa</CardTitle>
+                    <CardTitle className="flex items-center justify-between">
+                      <span>Datos de la Empresa</span>
+                      <Button
+                        onClick={fillTestDataStep2}
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                      >
+                        <Wand2 className="w-4 h-4" />
+                        Llenar Prueba
+                      </Button>
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
@@ -450,7 +488,18 @@ const ActivarPolizaJuridicaPage = () => {
               >
                 <Card>
                   <CardHeader>
-                    <CardTitle>Información de Contacto</CardTitle>
+                    <CardTitle className="flex items-center justify-between">
+                      <span>Información de Contacto</span>
+                      <Button
+                        onClick={fillTestDataStep3}
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                      >
+                        <Wand2 className="w-4 h-4" />
+                        Llenar Prueba
+                      </Button>
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
