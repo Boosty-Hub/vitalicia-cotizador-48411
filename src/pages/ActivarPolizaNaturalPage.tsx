@@ -269,15 +269,21 @@ const ActivarPolizaNaturalPage = () => {
 
         // Verificar si la placa fue encontrada en el sistema
         if (data.Encontrado === true) {
-          setVehicleData({
+          console.log('🔍 Respuesta completa del webhook de validación de placa:', data);
+          console.log('📋 MondayId recibido:', data.mondayid);
+          
+          const vehicleInfo = {
             Marca: data.Marca || null,
             Modelo: data.Modelo || null,
             Año: data.Año || null,
             Color: data.Color || null,
             Carroceria: data.Carroceria || null,
             Suma: data.n_suma || "0",
-            MondayId: data.mondayid || "null"
-          });
+            MondayId: data.mondayid ?? null
+          };
+          
+          console.log('💾 VehicleData guardado:', vehicleInfo);
+          setVehicleData(vehicleInfo);
           setPlacaValidada(true);
           setShowError(false);
           setCurrentStep(1.5);
@@ -741,7 +747,7 @@ const ActivarPolizaNaturalPage = () => {
       c_cd_subversionseguro: "BERAWEB01",
       n_suma: vehicleData?.Suma || "0",
       desde: "web",
-      mondayid: vehicleData?.MondayId || "null",
+      mondayid: vehicleData?.MondayId ?? "null",
       listaColumnas: [
         {
           nombre: "Cédula de identidad URL",
@@ -788,6 +794,9 @@ const ActivarPolizaNaturalPage = () => {
       
       // Step 2: Map form data to webhook payload
       const payload = await mapFormDataToWebhook(documentUrls);
+      
+      console.log('🚀 Payload completo que se enviará al webhook final:', payload);
+      console.log('🔑 MondayId en el payload final:', payload.mondayid);
       
       // Step 3: Send to webhook
       const response = await fetch('https://hook.us2.make.com/4squonwol5qr0mdhgozmvgom94kyr5bm', {
