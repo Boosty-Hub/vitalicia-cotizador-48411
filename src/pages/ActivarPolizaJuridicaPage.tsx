@@ -193,14 +193,16 @@ const ActivarPolizaJuridicaPage = () => {
 
   const getPrefixForTipoIdentificacion = (tipo: string): string => {
     switch (tipo) {
+      case "Jurídico":
       case "Juridico":
+      case "Gobierno":
         return "J-";
-      case "Natural":
+      case "Venezolano":
         return "V-";
+      case "Extranjero":
+        return "E-";
       case "Pasaporte":
         return "";
-      case "RIF":
-        return "J-";
       default:
         return "";
     }
@@ -509,10 +511,12 @@ const ActivarPolizaJuridicaPage = () => {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="numeroRIF">
-                          {formData.tipoIdentificacion === "RIF" || formData.tipoIdentificacion === "Juridico"
+                          {formData.tipoIdentificacion === "Jurídico" || formData.tipoIdentificacion === "Juridico" || formData.tipoIdentificacion === "Gobierno"
                             ? "Número de RIF" 
-                            : formData.tipoIdentificacion === "Natural"
+                            : formData.tipoIdentificacion === "Venezolano"
                             ? "Número de Cédula" 
+                            : formData.tipoIdentificacion === "Extranjero"
+                            ? "Número de Cédula"
                             : formData.tipoIdentificacion === "Pasaporte"
                             ? "Número de Pasaporte"
                             : "Número de Identificación"} <span className="text-destructive">*</span>
@@ -520,10 +524,12 @@ const ActivarPolizaJuridicaPage = () => {
                         <Input
                           id="numeroRIF"
                           placeholder={
-                            formData.tipoIdentificacion === "RIF" || formData.tipoIdentificacion === "Juridico"
+                            formData.tipoIdentificacion === "Jurídico" || formData.tipoIdentificacion === "Juridico" || formData.tipoIdentificacion === "Gobierno"
                               ? "J-12345678-9" 
-                            : formData.tipoIdentificacion === "Natural"
+                            : formData.tipoIdentificacion === "Venezolano"
                               ? "V-12345678" 
+                            : formData.tipoIdentificacion === "Extranjero"
+                              ? "E-12345678"
                               : formData.tipoIdentificacion === "Pasaporte"
                               ? "123456789"
                               : "Ingrese el número"
