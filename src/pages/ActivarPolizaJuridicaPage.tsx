@@ -172,7 +172,47 @@ const ActivarPolizaJuridicaPage = () => {
   };
 
   const handleInputChange = (field: string, value: string | File | null) => {
+    // Si es el campo de número de identificación, agregar el prefijo según el tipo
+    if (field === "numeroRIF" && typeof value === "string") {
+      const prefix = getPrefixForTipoIdentificacion(formData.tipoIdentificacion);
+      
+      // Si el usuario borra el prefijo, restaurarlo
+      if (prefix && !value.startsWith(prefix)) {
+        // Si el valor está vacío o no tiene el prefijo, agregarlo
+        if (value.length === 0) {
+          value = prefix;
+        } else if (!value.startsWith(prefix)) {
+          // Si escribió algo sin el prefijo, agregarlo al inicio
+          value = prefix + value.replace(/^[A-Z]-?/, '');
+        }
+      }
+    }
+    
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const getPrefixForTipoIdentificacion = (tipo: string): string => {
+    switch (tipo) {
+      case "Juridico":
+        return "J-";
+      case "Natural":
+        return "V-";
+      case "Pasaporte":
+        return "";
+      case "RIF":
+        return "J-";
+      default:
+        return "";
+    }
+  };
+
+  const handleTipoIdentificacionChange = (value: string) => {
+    const prefix = getPrefixForTipoIdentificacion(value);
+    setFormData(prev => ({ 
+      ...prev, 
+      tipoIdentificacion: value,
+      numeroRIF: prefix // Reiniciar con el nuevo prefijo
+    }));
   };
 
   const handleFileChange = (field: string, file: File | null) => {
@@ -453,7 +493,7 @@ const ActivarPolizaJuridicaPage = () => {
                         </Label>
                         <Select
                           value={formData.tipoIdentificacion}
-                          onValueChange={(value) => handleInputChange("tipoIdentificacion", value)}
+                          onValueChange={handleTipoIdentificacionChange}
                         >
                           <SelectTrigger id="tipoIdentificacion">
                             <SelectValue placeholder="Seleccione..." />
@@ -469,9 +509,9 @@ const ActivarPolizaJuridicaPage = () => {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="numeroRIF">
-                          {formData.tipoIdentificacion === "RIF" 
+                          {formData.tipoIdentificacion === "RIF" || formData.tipoIdentificacion === "Juridico"
                             ? "Número de RIF" 
-                            : formData.tipoIdentificacion === "Cédula" 
+                            : formData.tipoIdentificacion === "Natural"
                             ? "Número de Cédula" 
                             : formData.tipoIdentificacion === "Pasaporte"
                             ? "Número de Pasaporte"
@@ -480,12 +520,12 @@ const ActivarPolizaJuridicaPage = () => {
                         <Input
                           id="numeroRIF"
                           placeholder={
-                            formData.tipoIdentificacion === "RIF" 
-                              ? "Ej: J-12345678-9" 
-                              : formData.tipoIdentificacion === "Cédula" 
-                              ? "Ej: V-12345678" 
+                            formData.tipoIdentificacion === "RIF" || formData.tipoIdentificacion === "Juridico"
+                              ? "J-12345678-9" 
+                            : formData.tipoIdentificacion === "Natural"
+                              ? "V-12345678" 
                               : formData.tipoIdentificacion === "Pasaporte"
-                              ? "Ej: 123456789"
+                              ? "123456789"
                               : "Ingrese el número"
                           }
                           value={formData.numeroRIF}
