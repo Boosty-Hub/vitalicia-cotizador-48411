@@ -549,12 +549,17 @@ const ActivarPolizaNaturalPage = () => {
     const { data: ciudadData } = await supabase
       .from('board_cod_ciudad')
       .select('descripcion')
+      .eq('cd_pais', '001')
+      .eq('cd_estado', formData.estado)
       .eq('cd_ciudad', formData.ciudad)
       .maybeSingle();
 
     const { data: municipioData } = await supabase
       .from('board_cod_municipio')
       .select('descripcion')
+      .eq('cd_pais', '001')
+      .eq('cd_estado', formData.estado)
+      .eq('cd_ciudad', formData.ciudad)
       .eq('cd_municipio', formData.municipio)
       .maybeSingle();
 
