@@ -447,13 +447,274 @@ const ActivarPolizaJuridicaPage = () => {
     window.open(`https://wa.me/584123230188?text=Hola, necesito ayuda con la activación de mi póliza RCV. Placa: ${placa}`, '_blank');
   };
 
-  const handleSubmit = () => {
-    console.log("Datos del formulario:", { placa, ...formData });
-    toast({
-      title: "Formulario enviado",
-      description: "Tu solicitud ha sido procesada exitosamente",
-    });
-    setCurrentStep(7);
+  const uploadFileToStorage = async (file: File, path: string): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${path}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('poliza-documentos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('poliza-documentos')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      return null;
+    }
+  };
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    
+    try {
+      // Upload all documents to Supabase storage
+      const [
+        cedulaUrl,
+        licenciaUrl,
+        certificadoUrl,
+        origenUrl,
+        facturaUrl,
+        rifUrl
+      ] = await Promise.all([
+        formData.docIdentidad ? uploadFileToStorage(formData.docIdentidad, 'cedulas') : null,
+        formData.docLicenciaConducir ? uploadFileToStorage(formData.docLicenciaConducir, 'licencias') : null,
+        formData.docCertificadoMedico ? uploadFileToStorage(formData.docCertificadoMedico, 'certificados') : null,
+        formData.docOrigenVehiculo ? uploadFileToStorage(formData.docOrigenVehiculo, 'origenes') : null,
+        formData.docFacturaCompra ? uploadFileToStorage(formData.docFacturaCompra, 'facturas') : null,
+        formData.docRIF ? uploadFileToStorage(formData.docRIF, 'rifs') : null,
+      ]);
+
+      // Fetch database codes
+      const { data: marcaData } = await supabase
+        .from('board_cod_marca')
+        .select('cd_marca, descripcion')
+        .eq('descripcion', vehicleData?.Marca || '')
+        .single();
+
+      const { data: modeloData } = await supabase
+        .from('board_cod_modelo')
+        .select('cd_modelo, descripcion')
+        .eq('descripcion', vehicleData?.Modelo || '')
+        .single();
+
+      const { data: versionData } = await supabase
+        .from('board_cod_version_moto')
+        .select('cd_version, descripcion')
+        .eq('descripcion', vehicleData?.Modelo || '')
+        .single();
+
+      const { data: colorData } = await supabase
+        .from('board_cod_color')
+        .select('cd_valdet, descripcion')
+        .eq('descripcion', vehicleData?.Color || '')
+        .single();
+
+      const { data: estadoData } = await supabase
+        .from('board_cod_estado')
+        .select('cd_estado, descripcion')
+        .eq('descripcion', formData.estado)
+        .single();
+
+      const { data: ciudadData } = await supabase
+        .from('board_cod_ciudad')
+        .select('cd_ciudad, descripcion')
+        .eq('descripcion', formData.ciudad)
+        .eq('cd_estado', estadoData?.cd_estado)
+        .single();
+
+      const { data: municipioData } = await supabase
+        .from('board_cod_municipio')
+        .select('cd_municipio, descripcion')
+        .eq('descripcion', formData.municipio)
+        .eq('cd_estado', estadoData?.cd_estado)
+        .single();
+
+      const { data: actividadData } = await supabase
+        .from('cod_act_economica')
+        .select('cd_actividad, descripcion')
+        .eq('descripcion', formData.actividadEconomica)
+        .single();
+
+      // Extract prefix and number from RIF/Cedula
+      const extractIdentification = (value: string) => {
+        const match = value.match(/^([A-Z])-(\d+)(-\d+)?$/);
+        return match ? { prefix: match[1], number: match[2] } : { prefix: '', number: value };
+      };
+
+      const empresaId = extractIdentification(formData.numeroRIF);
+      const representanteId = extractIdentification(formData.cedulaRepresentante);
+
+      // Create the JSON structure
+      const jsonData = {
+        f_fchdesde: new Date().toISOString().split('T')[0],
+        c_placa: placa,
+        c_placa_descripcion: placa,
+        c_carroceria: formData.serialCarroceria,
+        c_carroceria_descripcion: formData.serialCarroceria,
+        c_cd_nacionalidad: empresaId.prefix,
+        c_cd_nacionalidad_descripcion: formData.tipoIdentificacion,
+        n_cedrif: empresaId.number,
+        n_cedrif_descripcion: formData.numeroRIF,
+        n_correlativo: 0,
+        cd_sexo: formData.sexoRepresentante === "Masculino" ? "M" : formData.sexoRepresentante === "Femenino" ? "F" : "N",
+        cd_sexo_descripcion: formData.sexoRepresentante,
+        f_fecnac: formData.fechaNacimientoRepresentante,
+        f_fecnac_descripcion: formData.fechaNacimientoRepresentante,
+        cd_edocivil: formData.estadoCivilRepresentante?.charAt(0) || "S",
+        cd_edocivil_descripcion: formData.estadoCivilRepresentante,
+        c_nombre: formData.nombresRepresentante,
+        c_nombre_descripcion: formData.nombresRepresentante,
+        c_apellido: formData.apellidosRepresentante,
+        c_apellido_descripcion: formData.apellidosRepresentante,
+        c_razonsocial: formData.nombreEmpresa,
+        c_razonsocial_descripcion: formData.nombreEmpresa,
+        c_cd_pais: "001",
+        c_cd_pais_descripcion: formData.pais,
+        c_cd_estado: estadoData?.cd_estado || "",
+        c_cd_estado_descripcion: formData.estado,
+        c_cd_ciudad: ciudadData?.cd_ciudad || "",
+        c_cd_ciudad_descripcion: formData.ciudad,
+        c_cd_municipio: municipioData?.cd_municipio || "",
+        c_cd_municipio_descripcion: formData.municipio,
+        c_direccion: formData.direccion,
+        c_direccion_descripcion: formData.direccion,
+        c_cd_telef1: formData.codigoTelefonicoWhatsapp,
+        c_cd_telef1_descripcion: formData.codigoTelefonicoWhatsapp,
+        c_numtelef1: formData.telefonoCelular,
+        c_numtelef1_descripcion: formData.telefonoCelular,
+        c_email1: formData.correoElectronico,
+        c_email1_descripcion: formData.correoElectronico,
+        c_email2: formData.correoAlternativo,
+        c_email2_descripcion: formData.correoAlternativo,
+        c_cd_actividad: actividadData?.cd_actividad || "0",
+        c_cd_actividad_descripcion: formData.actividadEconomica,
+        c_cd_ocupacion: 0,
+        c_cd_ocupacion_descripcion: "No aplica",
+        n_ingresoanualnac: 0,
+        n_ingresoanualnac_descripcion: "0",
+        c_cd_nacionalidadap: representanteId.prefix,
+        c_cd_nacionalidadap_descripcion: formData.tipoIdentificacionRepresentante,
+        n_cedrifap: representanteId.number,
+        n_cedrifap_descripcion: formData.cedulaRepresentante,
+        cd_sexoap: formData.sexoRepresentante === "Masculino" ? "M" : formData.sexoRepresentante === "Femenino" ? "F" : "N",
+        cd_sexoap_descripcion: formData.sexoRepresentante,
+        f_fecnacap: formData.fechaNacimientoRepresentante,
+        f_fecnacap_descripcion: formData.fechaNacimientoRepresentante,
+        cd_edocivilap: formData.estadoCivilRepresentante?.charAt(0) || "S",
+        cd_edocivilap_descripcion: formData.estadoCivilRepresentante,
+        c_nombreap: formData.nombresRepresentante,
+        c_nombreap_descripcion: formData.nombresRepresentante,
+        c_apellidoap: formData.apellidosRepresentante,
+        c_apellidoap_descripcion: formData.apellidosRepresentante,
+        c_cd_nacionalidadch: representanteId.prefix,
+        c_cd_nacionalidadch_descripcion: formData.tipoIdentificacionRepresentante,
+        n_cedrifch: representanteId.number,
+        n_cedrifch_descripcion: formData.cedulaRepresentante,
+        cd_sexoch: formData.sexoRepresentante === "Masculino" ? "M" : formData.sexoRepresentante === "Femenino" ? "F" : "N",
+        cd_sexoch_descripcion: formData.sexoRepresentante,
+        f_fecnacch: formData.fechaNacimientoRepresentante,
+        f_fecnacch_descripcion: formData.fechaNacimientoRepresentante,
+        cd_edocivilch: formData.estadoCivilRepresentante?.charAt(0) || "S",
+        cd_edocivilch_descripcion: formData.estadoCivilRepresentante,
+        c_nombrech: formData.nombresRepresentante,
+        c_nombrech_descripcion: formData.nombresRepresentante,
+        c_apellidoch: formData.apellidosRepresentante,
+        c_apellidoch_descripcion: formData.apellidosRepresentante,
+        cd_moneda: "DL",
+        cd_moneda_descripcion: "Dólares",
+        c_cd_marca: marcaData?.cd_marca || "",
+        c_cd_marca_descripcion: vehicleData?.Marca || "",
+        c_cd_modelo: modeloData?.cd_modelo || "",
+        c_cd_modelo_descripcion: vehicleData?.Modelo || "",
+        c_cd_version: versionData?.cd_version || "",
+        c_cd_version_descripcion: vehicleData?.Modelo || "",
+        n_nu_centuria: vehicleData?.Año || new Date().getFullYear().toString(),
+        n_nu_centuria_descripcion: vehicleData?.Año || new Date().getFullYear().toString(),
+        c_motor: formData.serialCarroceria,
+        c_motor_descripcion: formData.serialCarroceria,
+        c_cd_color: colorData?.cd_valdet || "",
+        c_cd_color_descripcion: vehicleData?.Color || "",
+        c_cd_versionseguro: `BERA${new Date().getFullYear()}`,
+        c_cd_versionseguro_descripcion: `BERA${new Date().getFullYear()}`,
+        c_cd_subversionseguro: "BERAWEB01",
+        c_cd_subversionseguro_descripcion: "BERAWEB01",
+        n_suma: vehicleData?.Suma || "0",
+        n_suma_descripcion: vehicleData?.Suma || "0",
+        desde: "web",
+        desde_descripcion: "Plataforma Web",
+        mondayid: vehicleData?.MondayId || "null",
+        mondayid_descripcion: vehicleData?.MondayId || "null",
+        listaColumnas: [
+          {
+            nombre: "Cédula de identidad URL",
+            url: cedulaUrl || "",
+            columnaID: "file_mkpytq4p"
+          },
+          {
+            nombre: "Licencia de conducir URL",
+            url: licenciaUrl || "",
+            columnaID: "file_mkpz6yzk"
+          },
+          {
+            nombre: "Certificado médico URL",
+            url: certificadoUrl || "",
+            columnaID: "file_mkpz3ckf"
+          },
+          {
+            nombre: "Certificado de Origen del Vehículo URL",
+            url: origenUrl || "",
+            columnaID: "file_mkpy886c"
+          },
+          {
+            nombre: "Factura de Compra del Vehículo URL",
+            url: facturaUrl || "",
+            columnaID: "file_mkpy429y"
+          },
+          {
+            nombre: "RIF URL",
+            url: rifUrl || "",
+            columnaID: "file_mkpyt85x"
+          }
+        ]
+      };
+
+      console.log("JSON enviado al webhook:", jsonData);
+
+      // Send to webhook
+      const response = await fetch('https://hook.us2.make.com/adb9tmwyo3b4he9lsr7spxwosjmfggdp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(jsonData),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Formulario enviado",
+          description: "Tu solicitud ha sido procesada exitosamente",
+        });
+        setCurrentStep(7);
+      } else {
+        throw new Error('Error en el webhook');
+      }
+    } catch (error) {
+      console.error('Error al enviar el formulario:', error);
+      toast({
+        title: "Error",
+        description: "Hubo un problema al procesar tu solicitud. Por favor intenta nuevamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const fillTestDataStep2 = () => {
