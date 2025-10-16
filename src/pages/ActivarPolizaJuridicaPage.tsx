@@ -628,6 +628,7 @@ const ActivarPolizaJuridicaPage = () => {
         c_motor: formData.serialCarroceria,
         c_cd_color: colorData?.cd_valdet || "",
         c_cd_color_descripcion: vehicleData?.Color || "",
+        f_feccompra: formData.fechaAdquisicion,
         c_cd_versionseguro: "BERA2025",
         c_cd_subversionseguro: "BERAWEB01",
         n_suma: vehicleData?.Suma || "0",
