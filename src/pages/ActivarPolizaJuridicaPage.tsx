@@ -548,6 +548,18 @@ const ActivarPolizaJuridicaPage = () => {
         .eq('descripcion', formData.actividadEconomica)
         .maybeSingle();
 
+      const { data: codigoTelef1Data } = await supabase
+        .from('board_cod_tlf')
+        .select('cd_valdet, s_descripcion')
+        .eq('s_descripcion', formData.codigoTelefonicoWhatsapp)
+        .maybeSingle();
+
+      const { data: codigoTelef2Data } = await supabase
+        .from('board_cod_tlf')
+        .select('cd_valdet, s_descripcion')
+        .eq('s_descripcion', formData.codigoTelefonicoResidencial)
+        .maybeSingle();
+
       // Extract prefix and number from RIF/Cedula
       const extractIdentification = (value: string) => {
         const match = value.match(/^([A-Z])-(\d+)(-\d+)?$/);
@@ -584,9 +596,9 @@ const ActivarPolizaJuridicaPage = () => {
         c_cd_municipio_descripcion: formData.municipio,
         c_direccion: formData.direccion,
         c_codpostal: formData.codigoPostal,
-        c_cd_telef1: formData.codigoTelefonicoWhatsapp,
+        c_cd_telef1: codigoTelef1Data?.cd_valdet || "",
         c_numtelef1: formData.telefonoCelular,
-        c_cd_telef2: formData.codigoTelefonicoResidencial,
+        c_cd_telef2: codigoTelef2Data?.cd_valdet || "",
         c_cd_telef2_descripcion: formData.codigoTelefonicoResidencial,
         c_numtelef2: formData.telefonoOficina,
         c_email1: formData.correoElectronico,
