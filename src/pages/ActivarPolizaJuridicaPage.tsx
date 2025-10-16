@@ -535,30 +535,44 @@ const ActivarPolizaJuridicaPage = () => {
         .eq('cd_estado', estadoData?.cd_estado || '')
         .maybeSingle();
 
+      // Debug logs
+      console.log('Valores del formulario:', {
+        municipio: formData.municipio,
+        codigoTelefonicoWhatsapp: formData.codigoTelefonicoWhatsapp,
+        codigoTelefonicoResidencial: formData.codigoTelefonicoResidencial,
+        estadoCodigo: estadoData?.cd_estado
+      });
+
       const { data: municipioData } = await supabase
         .from('board_cod_municipio')
         .select('cd_municipio, descripcion')
-        .eq('descripcion', formData.municipio)
+        .ilike('descripcion', formData.municipio)
         .eq('cd_estado', estadoData?.cd_estado || '')
         .maybeSingle();
+
+      console.log('Municipio data:', municipioData);
 
       const { data: actividadData } = await supabase
         .from('cod_act_economica')
         .select('cd_actividad, descripcion')
-        .eq('descripcion', formData.actividadEconomica)
+        .ilike('descripcion', formData.actividadEconomica)
         .maybeSingle();
 
       const { data: codigoTelef1Data } = await supabase
         .from('board_cod_tlf')
         .select('cd_valdet, s_descripcion')
-        .eq('s_descripcion', formData.codigoTelefonicoWhatsapp)
+        .ilike('s_descripcion', formData.codigoTelefonicoWhatsapp)
         .maybeSingle();
+
+      console.log('Codigo telefono 1 data:', codigoTelef1Data);
 
       const { data: codigoTelef2Data } = await supabase
         .from('board_cod_tlf')
         .select('cd_valdet, s_descripcion')
-        .eq('s_descripcion', formData.codigoTelefonicoResidencial)
+        .ilike('s_descripcion', formData.codigoTelefonicoResidencial)
         .maybeSingle();
+
+      console.log('Codigo telefono 2 data:', codigoTelef2Data);
 
       // Extract prefix and number from RIF/Cedula
       const extractIdentification = (value: string) => {
