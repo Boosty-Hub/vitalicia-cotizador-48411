@@ -1023,7 +1023,7 @@ const ActivarPolizaJuridicaPage = () => {
                           <SelectContent>
                             {nacionalidades
                               .filter((nac) => 
-                                nac.descripcion.toLowerCase() === 'juridico' || 
+                                nac.descripcion.toLowerCase() === 'jurídico' || 
                                 nac.descripcion.toLowerCase() === 'gobierno'
                               )
                               .map((nac) => (
