@@ -528,12 +528,12 @@ const ActivarPolizaJuridicaPage = () => {
         .eq('descripcion', formData.estado)
         .maybeSingle();
 
-      const { data: ciudadData } = await supabase
+      let ciudadData = (await supabase
         .from('board_cod_ciudad')
         .select('cd_ciudad, descripcion')
         .eq('descripcion', formData.ciudad)
         .eq('cd_estado', estadoData?.cd_estado || '')
-        .maybeSingle();
+        .maybeSingle()).data;
 
       // Debug logs
       console.log('Valores del formulario:', {
@@ -544,27 +544,97 @@ const ActivarPolizaJuridicaPage = () => {
         estadoCodigo: estadoData?.cd_estado
       });
 
-      console.log('Ciudad data:', ciudadData);
+      console.log('Ciudad data inicial:', ciudadData);
 
-      // Query all municipios from the state and filter in frontend
+      // Query all municipios from the state and filter in frontend with full hierarchy validation
       const { data: municipios } = await supabase
         .from('board_cod_municipio')
         .select('cd_municipio, cd_ciudad, cd_estado, cd_pais, descripcion')
         .eq('cd_pais', '001')
         .eq('cd_estado', estadoData?.cd_estado || '');
 
-      // Filter in frontend for exact match
-      const municipioData = municipios?.find(m => 
+      console.log('📍 Todos los municipios del estado:', municipios?.length, 'encontrados');
+      console.log('🔍 Buscando municipio:', formData.municipio);
+      console.log('🔍 Con ciudad:', formData.ciudad, '| Código ciudad:', ciudadData?.cd_ciudad);
+
+      // First, try to find municipio matching the selected ciudad
+      let municipioData = municipios?.find(m => 
+        m.cd_ciudad === ciudadData?.cd_ciudad &&
         m.descripcion?.toLowerCase() === formData.municipio.toLowerCase()
       );
 
-      console.log('Municipio data:', municipioData);
-      console.log('Relaciones verificadas:', {
+      // If not found with ciudad, try to find the correct ciudad for this municipio
+      if (!municipioData) {
+        console.warn('⚠️ No se encontró municipio con la ciudad seleccionada, buscando municipio correcto...');
+        municipioData = municipios?.find(m => 
+          m.descripcion?.toLowerCase() === formData.municipio.toLowerCase()
+        );
+        
+        if (municipioData) {
+          console.log('✓ Municipio encontrado pero con ciudad diferente:', municipioData);
+          // Find the correct ciudad for this municipio
+          const { data: ciudadCorrecta } = await supabase
+            .from('board_cod_ciudad')
+            .select('cd_ciudad, descripcion')
+            .eq('cd_pais', '001')
+            .eq('cd_estado', estadoData?.cd_estado || '')
+            .eq('cd_ciudad', municipioData.cd_ciudad)
+            .maybeSingle();
+          
+          if (ciudadCorrecta) {
+            console.log(`✓ Ciudad correcta para municipio "${formData.municipio}": ${ciudadCorrecta.descripcion}`);
+            console.log(`ℹ️ La ciudad seleccionada "${formData.ciudad}" no contiene este municipio`);
+            // Update the ciudad code to match the municipio
+            ciudadData = ciudadCorrecta;
+          }
+        }
+      }
+
+      console.log('📋 Códigos finales para envío:', {
         pais: '001',
         estado: estadoData?.cd_estado,
         ciudad: ciudadData?.cd_ciudad,
         municipio: municipioData?.cd_municipio
       });
+
+      // Validate all required codes exist
+      if (!estadoData?.cd_estado) {
+        console.error('❌ ERROR: No se encontró el código del estado');
+        toast({
+          title: "Error",
+          description: `No se encontró el estado "${formData.estado}" en la base de datos.`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (!ciudadData?.cd_ciudad) {
+        console.error('❌ ERROR: No se encontró el código de la ciudad');
+        toast({
+          title: "Error",
+          description: `No se encontró la ciudad "${formData.ciudad}" en la base de datos.`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (!municipioData?.cd_municipio) {
+        console.error('❌ ERROR: No se encontró el municipio en la base de datos');
+        console.error('Datos buscados:', {
+          municipio: formData.municipio,
+          ciudad: formData.ciudad,
+          estado: formData.estado,
+          codigoCiudad: ciudadData?.cd_ciudad,
+          codigoEstado: estadoData?.cd_estado
+        });
+        toast({
+          title: "Error",
+          description: `No se encontró el municipio "${formData.municipio}". Por favor verifique el nombre del municipio.`,
+          variant: "destructive",
+          duration: 8000
+        });
+        return;
+      }
 
       const { data: actividadData } = await supabase
         .from('cod_act_economica')
