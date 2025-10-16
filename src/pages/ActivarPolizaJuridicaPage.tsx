@@ -546,14 +546,13 @@ const ActivarPolizaJuridicaPage = () => {
 
       console.log('Ciudad data:', ciudadData);
 
-      // Query municipio with proper relationships (cd_pais, cd_estado, cd_ciudad)
+      // Query municipio with proper relationships (cd_pais, cd_estado only)
       const { data: municipioData } = await supabase
         .from('board_cod_municipio')
         .select('cd_municipio, cd_ciudad, cd_estado, cd_pais, descripcion')
         .ilike('descripcion', formData.municipio)
         .eq('cd_pais', '001')
         .eq('cd_estado', estadoData?.cd_estado || '')
-        .eq('cd_ciudad', ciudadData?.cd_ciudad || '')
         .maybeSingle();
 
       console.log('Municipio data:', municipioData);
