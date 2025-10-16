@@ -572,19 +572,24 @@ const ActivarPolizaJuridicaPage = () => {
         .ilike('descripcion', formData.actividadEconomica)
         .maybeSingle();
 
-      const { data: codigoTelef1Data } = await supabase
+      // Query all phone codes and filter in frontend
+      const { data: codigosTelef1 } = await supabase
         .from('board_cod_tlf')
-        .select('cd_valdet, s_descripcion')
-        .ilike('s_descripcion', formData.codigoTelefonicoWhatsapp)
-        .maybeSingle();
+        .select('cd_valdet, s_descripcion');
+
+      const codigoTelef1Data = codigosTelef1?.find(c => 
+        c.s_descripcion?.toLowerCase() === formData.codigoTelefonicoWhatsapp.toLowerCase()
+      );
 
       console.log('Codigo telefono 1 data:', codigoTelef1Data);
 
-      const { data: codigoTelef2Data } = await supabase
+      const { data: codigosTelef2 } = await supabase
         .from('board_cod_tlf')
-        .select('cd_valdet, s_descripcion')
-        .ilike('s_descripcion', formData.codigoTelefonicoResidencial)
-        .maybeSingle();
+        .select('cd_valdet, s_descripcion');
+
+      const codigoTelef2Data = codigosTelef2?.find(c => 
+        c.s_descripcion?.toLowerCase() === formData.codigoTelefonicoResidencial.toLowerCase()
+      );
 
       console.log('Codigo telefono 2 data:', codigoTelef2Data);
 
