@@ -1152,11 +1152,17 @@ const ActivarPolizaJuridicaPage = () => {
                             <SelectValue placeholder="Seleccione..." />
                           </SelectTrigger>
                           <SelectContent>
-                            {nacionalidades.map((nac) => (
-                              <SelectItem key={nac.descripcion} value={nac.descripcion}>
-                                {nac.descripcion}
-                              </SelectItem>
-                            ))}
+                            {nacionalidades
+                              .filter((nac) => 
+                                nac.descripcion.toLowerCase() === 'venezolano' || 
+                                nac.descripcion.toLowerCase() === 'extranjero' ||
+                                nac.descripcion.toLowerCase() === 'pasaporte'
+                              )
+                              .map((nac) => (
+                                <SelectItem key={nac.descripcion} value={nac.descripcion}>
+                                  {nac.descripcion}
+                                </SelectItem>
+                              ))}
                           </SelectContent>
                         </Select>
                       </div>
