@@ -583,6 +583,7 @@ const ActivarPolizaJuridicaPage = () => {
         c_cd_municipio: municipioData?.cd_municipio || "",
         c_cd_municipio_descripcion: formData.municipio,
         c_direccion: formData.direccion,
+        c_codpostal: formData.codigoPostal,
         c_cd_telef1: formData.codigoTelefonicoWhatsapp,
         c_numtelef1: formData.telefonoCelular,
         c_cd_telef2: formData.codigoTelefonicoResidencial,
