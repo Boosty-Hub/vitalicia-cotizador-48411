@@ -537,20 +537,32 @@ const ActivarPolizaJuridicaPage = () => {
 
       // Debug logs
       console.log('Valores del formulario:', {
+        pais: 'República Bolivariana de Venezuela',
+        estado: formData.estado,
+        ciudad: formData.ciudad,
         municipio: formData.municipio,
-        codigoTelefonicoWhatsapp: formData.codigoTelefonicoWhatsapp,
-        codigoTelefonicoResidencial: formData.codigoTelefonicoResidencial,
         estadoCodigo: estadoData?.cd_estado
       });
 
+      console.log('Ciudad data:', ciudadData);
+
+      // Query municipio with proper relationships (cd_pais, cd_estado, cd_ciudad)
       const { data: municipioData } = await supabase
         .from('board_cod_municipio')
-        .select('cd_municipio, descripcion')
+        .select('cd_municipio, cd_ciudad, cd_estado, cd_pais, descripcion')
         .ilike('descripcion', formData.municipio)
+        .eq('cd_pais', '001')
         .eq('cd_estado', estadoData?.cd_estado || '')
+        .eq('cd_ciudad', ciudadData?.cd_ciudad || '')
         .maybeSingle();
 
       console.log('Municipio data:', municipioData);
+      console.log('Relaciones verificadas:', {
+        pais: '001',
+        estado: estadoData?.cd_estado,
+        ciudad: ciudadData?.cd_ciudad,
+        municipio: municipioData?.cd_municipio
+      });
 
       const { data: actividadData } = await supabase
         .from('cod_act_economica')
