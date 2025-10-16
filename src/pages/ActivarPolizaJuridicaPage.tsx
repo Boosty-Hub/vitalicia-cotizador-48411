@@ -519,7 +519,7 @@ const ActivarPolizaJuridicaPage = () => {
       const { data: colorData } = await supabase
         .from('board_cod_color')
         .select('cd_valdet, descripcion')
-        .eq('descripcion', vehicleData?.Color || '')
+        .ilike('descripcion', vehicleData?.Color || '')
         .maybeSingle();
 
       const { data: estadoData } = await supabase
