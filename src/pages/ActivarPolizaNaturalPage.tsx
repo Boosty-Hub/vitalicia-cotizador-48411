@@ -57,6 +57,7 @@ const ActivarPolizaNaturalPage = () => {
     cd_estado: string | null;
   }>>([]);
   const [municipios, setMunicipios] = useState<Array<{
+    id: string;
     cd_municipio: string | null;
     descripcion: string | null;
     cd_ciudad: string | null;
@@ -251,7 +252,7 @@ const ActivarPolizaNaturalPage = () => {
         error
       } = await supabase
         .from('board_cod_municipio')
-        .select('cd_municipio, descripcion, cd_ciudad')
+        .select('id, cd_municipio, descripcion, cd_ciudad')
         .eq('cd_ciudad', formData.ciudad)
         .order('descripcion');
       
@@ -665,13 +666,17 @@ const ActivarPolizaNaturalPage = () => {
       .eq('cd_ciudad', formData.ciudad)
       .maybeSingle();
 
+    // Get cd_municipio from the selected id
+    const selectedMunicipio = municipios.find(m => m.id === formData.municipio);
+    const cd_municipio = selectedMunicipio?.cd_municipio || formData.municipio;
+    
     const { data: municipioData } = await supabase
       .from('board_cod_municipio')
       .select('descripcion')
       .eq('cd_pais', '001')
       .eq('cd_estado', formData.estado)
       .eq('cd_ciudad', formData.ciudad)
-      .eq('cd_municipio', formData.municipio)
+      .eq('cd_municipio', cd_municipio)
       .maybeSingle();
 
 
@@ -741,7 +746,7 @@ const ActivarPolizaNaturalPage = () => {
       s_estado: estadoData?.descripcion || "",
       c_cd_ciudad: formData.ciudad,
       s_ciudad: ciudadData?.descripcion || "",
-      c_cd_municipio: formData.municipio,
+      c_cd_municipio: cd_municipio,
       s_municipio: municipioData?.descripcion || "",
       c_direccion: formData.direccion,
       c_cd_telef1: formData.codigoTelefonico,
@@ -1175,7 +1180,7 @@ const ActivarPolizaNaturalPage = () => {
                             <SelectValue placeholder={formData.ciudad ? "Seleccione un municipio" : "Seleccione ciudad primero"} />
                           </SelectTrigger>
                           <SelectContent>
-                            {municipios.map(municipio => <SelectItem key={municipio.cd_municipio} value={municipio.cd_municipio || ""}>
+                            {municipios.map(municipio => <SelectItem key={municipio.id} value={municipio.id}>
                                 {municipio.descripcion || ""}
                               </SelectItem>)}
                           </SelectContent>
