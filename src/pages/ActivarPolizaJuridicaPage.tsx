@@ -31,7 +31,7 @@ const ActivarPolizaJuridicaPage = () => {
   const [actividadesEconomicas, setActividadesEconomicas] = useState<Array<{ descripcion: string }>>([]);
   const [estados, setEstados] = useState<Array<{ descripcion: string; cd_estado: string }>>([]);
   const [ciudades, setCiudades] = useState<Array<{ cd_ciudad: string | null; descripcion: string | null; cd_estado: string | null }>>([]);
-  const [municipios, setMunicipios] = useState<Array<{ cd_municipio: string | null; descripcion: string | null; cd_ciudad: string | null }>>([]);
+  const [municipios, setMunicipios] = useState<Array<{ id: string; cd_municipio: string | null; descripcion: string | null; cd_ciudad: string | null }>>([]);
   const [codigosTelefonicos, setCodigosTelefonicos] = useState<Array<{ s_descripcion: string }>>([]);
   const [nacionalidades, setNacionalidades] = useState<Array<{ descripcion: string }>>([]);
   const [vehicleData, setVehicleData] = useState<{
@@ -244,7 +244,7 @@ const ActivarPolizaJuridicaPage = () => {
       // formData.ciudad ahora contiene el cd_ciudad
       const { data, error } = await supabase
         .from('board_cod_municipio')
-        .select('cd_municipio, descripcion, cd_ciudad')
+        .select('id, cd_municipio, descripcion, cd_ciudad')
         .eq('cd_ciudad', formData.ciudad)
         .order('descripcion');
       
@@ -559,11 +559,18 @@ const ActivarPolizaJuridicaPage = () => {
         .eq('descripcion', formData.estado)
         .maybeSingle();
 
+      // Get ciudad data using cd_ciudad stored in formData
       let ciudadData = (await supabase
         .from('board_cod_ciudad')
         .select('cd_ciudad, descripcion')
-        .eq('descripcion', formData.ciudad)
-        .eq('cd_estado', estadoData?.cd_estado || '')
+        .eq('cd_ciudad', formData.ciudad)
+        .maybeSingle()).data;
+
+      // Get municipio data using id stored in formData
+      let municipioData = (await supabase
+        .from('board_cod_municipio')
+        .select('cd_municipio, cd_ciudad, cd_estado, cd_pais, descripcion')
+        .eq('id', formData.municipio)
         .maybeSingle()).data;
 
       // Debug logs
@@ -575,51 +582,8 @@ const ActivarPolizaJuridicaPage = () => {
         estadoCodigo: estadoData?.cd_estado
       });
 
-      console.log('Ciudad data inicial:', ciudadData);
-
-      // Query all municipios from the state and filter in frontend with full hierarchy validation
-      const { data: municipios } = await supabase
-        .from('board_cod_municipio')
-        .select('cd_municipio, cd_ciudad, cd_estado, cd_pais, descripcion')
-        .eq('cd_pais', '001')
-        .eq('cd_estado', estadoData?.cd_estado || '');
-
-      console.log('📍 Todos los municipios del estado:', municipios?.length, 'encontrados');
-      console.log('🔍 Buscando municipio:', formData.municipio);
-      console.log('🔍 Con ciudad:', formData.ciudad, '| Código ciudad:', ciudadData?.cd_ciudad);
-
-      // First, try to find municipio matching the selected ciudad
-      let municipioData = municipios?.find(m => 
-        m.cd_ciudad === ciudadData?.cd_ciudad &&
-        m.descripcion?.toLowerCase() === formData.municipio.toLowerCase()
-      );
-
-      // If not found with ciudad, try to find the correct ciudad for this municipio
-      if (!municipioData) {
-        console.warn('⚠️ No se encontró municipio con la ciudad seleccionada, buscando municipio correcto...');
-        municipioData = municipios?.find(m => 
-          m.descripcion?.toLowerCase() === formData.municipio.toLowerCase()
-        );
-        
-        if (municipioData) {
-          console.log('✓ Municipio encontrado pero con ciudad diferente:', municipioData);
-          // Find the correct ciudad for this municipio
-          const { data: ciudadCorrecta } = await supabase
-            .from('board_cod_ciudad')
-            .select('cd_ciudad, descripcion')
-            .eq('cd_pais', '001')
-            .eq('cd_estado', estadoData?.cd_estado || '')
-            .eq('cd_ciudad', municipioData.cd_ciudad)
-            .maybeSingle();
-          
-          if (ciudadCorrecta) {
-            console.log(`✓ Ciudad correcta para municipio "${formData.municipio}": ${ciudadCorrecta.descripcion}`);
-            console.log(`ℹ️ La ciudad seleccionada "${formData.ciudad}" no contiene este municipio`);
-            // Update the ciudad code to match the municipio
-            ciudadData = ciudadCorrecta;
-          }
-        }
-      }
+      console.log('Ciudad data:', ciudadData);
+      console.log('Municipio data:', municipioData);
 
       console.log('📋 Códigos finales para envío:', {
         pais: '001',
@@ -643,7 +607,7 @@ const ActivarPolizaJuridicaPage = () => {
         console.error('❌ ERROR: No se encontró el código de la ciudad');
         toast({
           title: "Error",
-          description: `No se encontró la ciudad "${formData.ciudad}" en la base de datos.`,
+          description: `No se encontró la ciudad seleccionada en la base de datos.`,
           variant: "destructive"
         });
         return;
@@ -652,15 +616,13 @@ const ActivarPolizaJuridicaPage = () => {
       if (!municipioData?.cd_municipio) {
         console.error('❌ ERROR: No se encontró el municipio en la base de datos');
         console.error('Datos buscados:', {
-          municipio: formData.municipio,
+          municipioId: formData.municipio,
           ciudad: formData.ciudad,
-          estado: formData.estado,
-          codigoCiudad: ciudadData?.cd_ciudad,
-          codigoEstado: estadoData?.cd_estado
+          estado: formData.estado
         });
         toast({
           title: "Error",
-          description: `No se encontró el municipio "${formData.municipio}". Por favor verifique el nombre del municipio.`,
+          description: `No se encontró el municipio seleccionado. Por favor verifique la selección.`,
           variant: "destructive",
           duration: 8000
         });
@@ -725,9 +687,9 @@ const ActivarPolizaJuridicaPage = () => {
         c_cd_estado: estadoData?.cd_estado || "",
         c_cd_estado_descripcion: formData.estado,
         c_cd_ciudad: ciudadData?.cd_ciudad || "",
-        c_cd_ciudad_descripcion: formData.ciudad,
+        c_cd_ciudad_descripcion: ciudadData?.descripcion || "",
         c_cd_municipio: municipioData?.cd_municipio || "",
-        c_cd_municipio_descripcion: formData.municipio,
+        c_cd_municipio_descripcion: municipioData?.descripcion || "",
         c_direccion: formData.direccion,
         c_codpostal: formData.codigoPostal,
         c_cd_telef1: codigoTelef1Data?.cd_valdet || "",
@@ -1533,8 +1495,8 @@ const ActivarPolizaJuridicaPage = () => {
                           </SelectTrigger>
                           <SelectContent>
                             {municipios.map((municipio) => (
-                              <SelectItem key={municipio.cd_municipio} value={municipio.descripcion || ""}>
-                                {municipio.descripcion}
+                              <SelectItem key={municipio.id} value={municipio.id}>
+                                {municipio.descripcion || ""}
                               </SelectItem>
                             ))}
                           </SelectContent>
