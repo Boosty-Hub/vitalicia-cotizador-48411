@@ -1143,11 +1143,15 @@ const ActivarPolizaNaturalPage = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="ciudad">Ciudad *</Label>
-                        <Select value={formData.ciudad} onValueChange={value => {
-                      handleInputChange("ciudad", value);
-                      // Reset municipio when ciudad changes
-                      handleInputChange("municipio", "");
-                    }} disabled={!formData.estado}>
+                        <Select 
+                          value={formData.ciudad} 
+                          onValueChange={value => {
+                            handleInputChange("ciudad", value);
+                            // Reset municipio when ciudad changes
+                            setFormData(prev => ({ ...prev, municipio: "" }));
+                          }} 
+                          disabled={!formData.estado}
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder={formData.estado ? "Seleccione una ciudad" : "Seleccione estado primero"} />
                           </SelectTrigger>
@@ -1160,7 +1164,13 @@ const ActivarPolizaNaturalPage = () => {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="municipio">Municipio *</Label>
-                        <Select value={formData.municipio} onValueChange={value => handleInputChange("municipio", value)} disabled={!formData.ciudad}>
+                        <Select 
+                          value={typeof formData.municipio === 'string' ? formData.municipio : ""} 
+                          onValueChange={value => {
+                            setFormData(prev => ({ ...prev, municipio: value }));
+                          }} 
+                          disabled={!formData.ciudad}
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder={formData.ciudad ? "Seleccione un municipio" : "Seleccione ciudad primero"} />
                           </SelectTrigger>
