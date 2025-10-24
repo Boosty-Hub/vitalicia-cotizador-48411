@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MegaMenuHeader } from "@/components/ui/MegaMenuHeader";
+import { SimpleHeader } from "@/components/ui/SimpleHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -885,7 +885,7 @@ const ActivarPolizaJuridicaPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <MegaMenuHeader />
+      <SimpleHeader />
       
       <div className="container mx-auto px-4 py-8 sm:py-12">
         <div className="max-w-2xl mx-auto">
