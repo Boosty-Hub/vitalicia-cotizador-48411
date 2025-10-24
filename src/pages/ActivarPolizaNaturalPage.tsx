@@ -237,23 +237,21 @@ const ActivarPolizaNaturalPage = () => {
     fetchCiudades();
   }, [formData.estado]);
 
-  // Fetch municipios when ciudad changes and validate combination
+  // Fetch municipios when ciudad changes
   useEffect(() => {
     const fetchMunicipios = async () => {
-      if (!formData.ciudad || !formData.estado) {
+      if (!formData.ciudad) {
         setMunicipios([]);
         return;
       }
       
-      // Fetch municipios with full validation (pais, estado, ciudad)
+      // Fetch municipios filtered only by cd_ciudad
       const {
         data,
         error
       } = await supabase
         .from('board_cod_municipio')
-        .select('cd_municipio, descripcion, cd_ciudad, cd_estado, cd_pais')
-        .eq('cd_pais', '001')
-        .eq('cd_estado', formData.estado)
+        .select('cd_municipio, descripcion, cd_ciudad')
         .eq('cd_ciudad', formData.ciudad)
         .order('descripcion');
       
@@ -264,26 +262,20 @@ const ActivarPolizaNaturalPage = () => {
           description: "Error al cargar los municipios",
           variant: "destructive"
         });
-      } else if (data && data.length > 0) {
+      } else if (data) {
         const fixedData = data.map(item => ({
           ...item,
           descripcion: fixSpecialCharacters(item.descripcion)
         }));
         setMunicipios(fixedData);
-      } else {
-        // No hay municipios válidos para esta combinación
-        setMunicipios([]);
-        if (formData.ciudad) {
-          toast({
-            title: "Advertencia",
-            description: `No hay municipios registrados para la combinación Estado: ${formData.estado}, Ciudad: ${formData.ciudad}. Por favor seleccione otra ciudad.`,
-            variant: "destructive"
-          });
+        
+        if (data.length === 0) {
+          console.log(`No se encontraron municipios para cd_ciudad: ${formData.ciudad}`);
         }
       }
     };
     fetchMunicipios();
-  }, [formData.ciudad, formData.estado, toast]);
+  }, [formData.ciudad, toast]);
   const validatePlaca = async () => {
     setIsValidating(true);
     try {
