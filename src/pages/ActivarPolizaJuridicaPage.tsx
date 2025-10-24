@@ -237,7 +237,7 @@ const ActivarPolizaJuridicaPage = () => {
   // Fetch municipios when ciudad changes
   useEffect(() => {
     const fetchMunicipios = async () => {
-      if (!formData.ciudad) {
+      if (!formData.ciudad || !formData.estado) {
         setMunicipios([]);
         return;
       }
@@ -246,10 +246,16 @@ const ActivarPolizaJuridicaPage = () => {
       const ciudadSeleccionada = ciudades.find(c => c.id === formData.ciudad);
       if (!ciudadSeleccionada?.cd_ciudad) return;
 
+      // Get cd_estado from the selected estado
+      const estadoSeleccionado = estados.find(e => e.descripcion === formData.estado);
+      if (!estadoSeleccionado?.cd_estado) return;
+
       const { data, error } = await supabase
         .from('board_cod_municipio')
-        .select('id, cd_municipio, descripcion, cd_ciudad')
+        .select('id, cd_municipio, descripcion, cd_ciudad, cd_estado')
         .eq('cd_ciudad', ciudadSeleccionada.cd_ciudad)
+        .eq('cd_estado', estadoSeleccionado.cd_estado)
+        .not('descripcion', 'is', null)
         .order('descripcion');
       
       if (error) {
@@ -263,7 +269,7 @@ const ActivarPolizaJuridicaPage = () => {
       }
     };
     fetchMunicipios();
-  }, [formData.ciudad, ciudades]);
+  }, [formData.ciudad, formData.estado, ciudades, estados]);
 
   const validatePlaca = async () => {
     setIsValidating(true);
