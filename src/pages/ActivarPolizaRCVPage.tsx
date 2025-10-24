@@ -1,7 +1,7 @@
-import { MegaMenuHeader } from "@/components/ui/MegaMenuHeader";
+import { SimpleHeader } from "@/components/ui/SimpleHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Building2, User } from "lucide-react";
+import { Building2, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -28,20 +28,11 @@ const ActivarPolizaRCVPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <MegaMenuHeader />
+      <SimpleHeader />
       
       <div className="container mx-auto px-4 py-8 sm:py-12">
         <div className="max-w-4xl mx-auto">
-          <Button 
-            onClick={() => navigate('/')}
-            variant="ghost"
-            className="mb-6 text-primary hover:text-primary-dark transition-colors flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Volver al inicio
-          </Button>
-          
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
