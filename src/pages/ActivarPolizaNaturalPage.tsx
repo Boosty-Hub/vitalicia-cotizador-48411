@@ -224,7 +224,13 @@ const ActivarPolizaNaturalPage = () => {
       const {
         data,
         error
-      } = await supabase.from('board_cod_ciudad').select('cd_ciudad, descripcion, cd_estado').eq('cd_estado', formData.estado).order('descripcion');
+      } = await supabase
+        .from('board_cod_ciudad')
+        .select('cd_ciudad, descripcion, cd_estado')
+        .eq('cd_estado', formData.estado)
+        .not('cd_ciudad', 'is', null)
+        .order('descripcion');
+      
       if (error) {
         console.error('Error loading ciudades:', error);
       } else if (data) {
@@ -241,19 +247,21 @@ const ActivarPolizaNaturalPage = () => {
   // Fetch municipios when ciudad changes
   useEffect(() => {
     const fetchMunicipios = async () => {
-      if (!formData.ciudad) {
+      if (!formData.ciudad || !formData.estado) {
         setMunicipios([]);
         return;
       }
       
-      // Fetch municipios filtered only by cd_ciudad
+      // Fetch municipios filtered by cd_ciudad and cd_estado
       const {
         data,
         error
       } = await supabase
         .from('board_cod_municipio')
-        .select('id, cd_municipio, descripcion, cd_ciudad')
+        .select('id, cd_municipio, descripcion, cd_ciudad, cd_estado')
         .eq('cd_ciudad', formData.ciudad)
+        .eq('cd_estado', formData.estado)
+        .not('descripcion', 'is', null)
         .order('descripcion');
       
       if (error) {
@@ -271,12 +279,12 @@ const ActivarPolizaNaturalPage = () => {
         setMunicipios(fixedData);
         
         if (data.length === 0) {
-          console.log(`No se encontraron municipios para cd_ciudad: ${formData.ciudad}`);
+          console.log(`No se encontraron municipios para cd_ciudad: ${formData.ciudad} y cd_estado: ${formData.estado}`);
         }
       }
     };
     fetchMunicipios();
-  }, [formData.ciudad, toast]);
+  }, [formData.ciudad, formData.estado, toast]);
   const validatePlaca = async () => {
     setIsValidating(true);
     try {
