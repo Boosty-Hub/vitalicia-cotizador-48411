@@ -30,7 +30,7 @@ const ActivarPolizaJuridicaPage = () => {
   const [sexos, setSexos] = useState<Array<{ descripcion: string }>>([]);
   const [actividadesEconomicas, setActividadesEconomicas] = useState<Array<{ descripcion: string }>>([]);
   const [estados, setEstados] = useState<Array<{ descripcion: string; cd_estado: string }>>([]);
-  const [ciudades, setCiudades] = useState<Array<{ cd_ciudad: string | null; descripcion: string | null; cd_estado: string | null }>>([]);
+  const [ciudades, setCiudades] = useState<Array<{ id: string; cd_ciudad: string | null; descripcion: string | null; cd_estado: string | null }>>([]);
   const [municipios, setMunicipios] = useState<Array<{ id: string; cd_municipio: string | null; descripcion: string | null; cd_ciudad: string | null }>>([]);
   const [codigosTelefonicos, setCodigosTelefonicos] = useState<Array<{ s_descripcion: string }>>([]);
   const [nacionalidades, setNacionalidades] = useState<Array<{ descripcion: string }>>([]);
@@ -216,8 +216,9 @@ const ActivarPolizaJuridicaPage = () => {
 
       const { data, error } = await supabase
         .from('board_cod_ciudad')
-        .select('cd_ciudad, descripcion, cd_estado')
+        .select('id, cd_ciudad, descripcion, cd_estado')
         .eq('cd_estado', estadoSeleccionado.cd_estado)
+        .not('cd_ciudad', 'is', null)
         .order('descripcion');
       
       if (error) {
@@ -241,11 +242,14 @@ const ActivarPolizaJuridicaPage = () => {
         return;
       }
       
-      // formData.ciudad ahora contiene el cd_ciudad
+      // Get cd_ciudad from the selected ciudad id
+      const ciudadSeleccionada = ciudades.find(c => c.id === formData.ciudad);
+      if (!ciudadSeleccionada?.cd_ciudad) return;
+
       const { data, error } = await supabase
         .from('board_cod_municipio')
         .select('id, cd_municipio, descripcion, cd_ciudad')
-        .eq('cd_ciudad', formData.ciudad)
+        .eq('cd_ciudad', ciudadSeleccionada.cd_ciudad)
         .order('descripcion');
       
       if (error) {
@@ -259,7 +263,7 @@ const ActivarPolizaJuridicaPage = () => {
       }
     };
     fetchMunicipios();
-  }, [formData.ciudad]);
+  }, [formData.ciudad, ciudades]);
 
   const validatePlaca = async () => {
     setIsValidating(true);
@@ -559,11 +563,11 @@ const ActivarPolizaJuridicaPage = () => {
         .eq('descripcion', formData.estado)
         .maybeSingle();
 
-      // Get ciudad data using cd_ciudad stored in formData
+      // Get ciudad data using id stored in formData
       let ciudadData = (await supabase
         .from('board_cod_ciudad')
         .select('cd_ciudad, descripcion')
-        .eq('cd_ciudad', formData.ciudad)
+        .eq('id', formData.ciudad)
         .maybeSingle()).data;
 
       // Get municipio data using id stored in formData
@@ -1471,7 +1475,7 @@ const ActivarPolizaJuridicaPage = () => {
                           </SelectTrigger>
                           <SelectContent>
                             {ciudades.map((ciudad) => (
-                              <SelectItem key={ciudad.cd_ciudad} value={ciudad.cd_ciudad || ""}>
+                              <SelectItem key={ciudad.id} value={ciudad.id}>
                                 {ciudad.descripcion}
                               </SelectItem>
                             ))}
