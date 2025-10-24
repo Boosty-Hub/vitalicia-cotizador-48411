@@ -30,8 +30,8 @@ const ActivarPolizaJuridicaPage = () => {
   const [sexos, setSexos] = useState<Array<{ descripcion: string }>>([]);
   const [actividadesEconomicas, setActividadesEconomicas] = useState<Array<{ descripcion: string }>>([]);
   const [estados, setEstados] = useState<Array<{ descripcion: string; cd_estado: string }>>([]);
-  const [ciudades, setCiudades] = useState<Array<{ descripcion: string }>>([]);
-  const [municipios, setMunicipios] = useState<Array<{ descripcion: string }>>([]);
+  const [ciudades, setCiudades] = useState<Array<{ cd_ciudad: string | null; descripcion: string | null; cd_estado: string | null }>>([]);
+  const [municipios, setMunicipios] = useState<Array<{ cd_municipio: string | null; descripcion: string | null; cd_ciudad: string | null }>>([]);
   const [codigosTelefonicos, setCodigosTelefonicos] = useState<Array<{ s_descripcion: string }>>([]);
   const [nacionalidades, setNacionalidades] = useState<Array<{ descripcion: string }>>([]);
   const [vehicleData, setVehicleData] = useState<{
@@ -203,6 +203,66 @@ const ActivarPolizaJuridicaPage = () => {
     fetchData();
   }, []);
 
+  // Fetch ciudades when estado changes
+  useEffect(() => {
+    const fetchCiudades = async () => {
+      if (!formData.estado) {
+        setCiudades([]);
+        return;
+      }
+      
+      const estadoSeleccionado = estados.find(e => e.descripcion === formData.estado);
+      if (!estadoSeleccionado) return;
+
+      const { data, error } = await supabase
+        .from('board_cod_ciudad')
+        .select('cd_ciudad, descripcion, cd_estado')
+        .eq('cd_estado', estadoSeleccionado.cd_estado)
+        .order('descripcion');
+      
+      if (error) {
+        console.error('Error loading ciudades:', error);
+      } else if (data) {
+        const fixedData = data.map(item => ({
+          ...item,
+          descripcion: fixEncoding(item.descripcion)
+        }));
+        setCiudades(fixedData);
+      }
+    };
+    fetchCiudades();
+  }, [formData.estado, estados]);
+
+  // Fetch municipios when ciudad changes
+  useEffect(() => {
+    const fetchMunicipios = async () => {
+      if (!formData.ciudad) {
+        setMunicipios([]);
+        return;
+      }
+      
+      const ciudadSeleccionada = ciudades.find(c => c.descripcion === formData.ciudad);
+      if (!ciudadSeleccionada) return;
+
+      const { data, error } = await supabase
+        .from('board_cod_municipio')
+        .select('cd_municipio, descripcion, cd_ciudad')
+        .eq('cd_ciudad', ciudadSeleccionada.cd_ciudad)
+        .order('descripcion');
+      
+      if (error) {
+        console.error('Error loading municipios:', error);
+      } else if (data) {
+        const fixedData = data.map(item => ({
+          ...item,
+          descripcion: fixEncoding(item.descripcion)
+        }));
+        setMunicipios(fixedData);
+      }
+    };
+    fetchMunicipios();
+  }, [formData.ciudad, ciudades]);
+
   const validatePlaca = async () => {
     setIsValidating(true);
     try {
@@ -309,51 +369,24 @@ const ActivarPolizaJuridicaPage = () => {
       setCedulaRepresentanteError(error);
     }
 
-    // Si cambia el estado, cargar ciudades y municipios
+    // Si cambia el estado, resetear ciudad y municipio
     if (field === "estado" && typeof value === "string") {
-      const estadoSeleccionado = estados.find(e => e.descripcion === value);
-      if (estadoSeleccionado) {
-        fetchCiudadesYMunicipios(estadoSeleccionado.cd_estado);
-      }
+      setFormData(prev => ({ ...prev, estado: value, ciudad: "", municipio: "" }));
+      return;
+    }
+    
+    // Si cambia la ciudad, resetear municipio
+    if (field === "ciudad" && typeof value === "string") {
+      setFormData(prev => ({ ...prev, ciudad: value, municipio: "" }));
+      return;
     }
     
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const fetchCiudadesYMunicipios = async (cdEstado: string) => {
-    // Fetch ciudades para el estado seleccionado
-    const { data: ciudadData, error: ciudadError } = await supabase
-      .from('board_cod_ciudad')
-      .select('descripcion')
-      .eq('cd_estado', cdEstado)
-      .order('descripcion');
-    
-    if (ciudadError) {
-      console.error('Error fetching ciudades:', ciudadError);
-    } else if (ciudadData) {
-      // Filtrar duplicados
-      const uniqueCiudades = Array.from(
-        new Set(ciudadData.map(item => item.descripcion))
-      ).map(descripcion => ({ descripcion }));
-      setCiudades(uniqueCiudades);
-    }
-
-    // Fetch municipios para el estado seleccionado
-    const { data: municipioData, error: municipioError } = await supabase
-      .from('board_cod_municipio')
-      .select('descripcion')
-      .eq('cd_estado', cdEstado)
-      .order('descripcion');
-    
-    if (municipioError) {
-      console.error('Error fetching municipios:', municipioError);
-    } else if (municipioData) {
-      // Filtrar duplicados
-      const uniqueMunicipios = Array.from(
-        new Set(municipioData.map(item => item.descripcion))
-      ).map(descripcion => ({ descripcion }));
-      setMunicipios(uniqueMunicipios);
-    }
+    // Esta función ya no es necesaria, pero la mantenemos por compatibilidad
+    // El filtrado ahora se hace con useEffect
   };
 
   const validateNumeroRIF = (value: string, tipo: string): string => {
@@ -1471,13 +1504,14 @@ const ActivarPolizaJuridicaPage = () => {
                         <Select
                           value={formData.ciudad}
                           onValueChange={(value) => handleInputChange("ciudad", value)}
+                          disabled={!formData.estado}
                         >
                           <SelectTrigger id="ciudad">
-                            <SelectValue placeholder="Seleccione..." />
+                            <SelectValue placeholder={formData.estado ? "Seleccione una ciudad" : "Seleccione estado primero"} />
                           </SelectTrigger>
                           <SelectContent>
                             {ciudades.map((ciudad) => (
-                              <SelectItem key={ciudad.descripcion} value={ciudad.descripcion}>
+                              <SelectItem key={ciudad.cd_ciudad} value={ciudad.descripcion || ""}>
                                 {ciudad.descripcion}
                               </SelectItem>
                             ))}
@@ -1494,13 +1528,14 @@ const ActivarPolizaJuridicaPage = () => {
                         <Select
                           value={formData.municipio}
                           onValueChange={(value) => handleInputChange("municipio", value)}
+                          disabled={!formData.ciudad}
                         >
                           <SelectTrigger id="municipio">
-                            <SelectValue placeholder="Seleccione..." />
+                            <SelectValue placeholder={formData.ciudad ? "Seleccione un municipio" : "Seleccione ciudad primero"} />
                           </SelectTrigger>
                           <SelectContent>
                             {municipios.map((municipio) => (
-                              <SelectItem key={municipio.descripcion} value={municipio.descripcion}>
+                              <SelectItem key={municipio.cd_municipio} value={municipio.descripcion || ""}>
                                 {municipio.descripcion}
                               </SelectItem>
                             ))}
