@@ -80,6 +80,7 @@ const ActivarPolizaNaturalPage = () => {
     estado: "",
     ciudad: "",
     municipio: "",
+    codigoPostal: "",
     codigoTelefonico: "",
     numeroTelefonico: "",
     email: "",
@@ -486,6 +487,7 @@ const ActivarPolizaNaturalPage = () => {
     const randomLastName = randomLastNames[Math.floor(Math.random() * randomLastNames.length)];
     const randomId = Math.floor(10000000 + Math.random() * 90000000);
     const randomPhone = Math.floor(1000000 + Math.random() * 9000000);
+    const randomPostalCode = Math.floor(1000 + Math.random() * 9000);
     setFormData(prev => ({
       ...prev,
       nombre: randomName,
@@ -498,6 +500,7 @@ const ActivarPolizaNaturalPage = () => {
       estadoCivil: ["S", "C", "D", "V"][Math.floor(Math.random() * 4)],
       direccion: `Avenida Principal, Casa ${Math.floor(1 + Math.random() * 100)}`,
       estado: estados[Math.floor(Math.random() * estados.length)]?.cd_estado || "",
+      codigoPostal: randomPostalCode.toString(),
       codigoTelefonico: codigosTelefonicos[Math.floor(Math.random() * codigosTelefonicos.length)]?.cd_valdet || "",
       numeroTelefonico: randomPhone.toString(),
       email: `${randomName.toLowerCase()}.${randomLastName.toLowerCase()}@email.com`,
@@ -551,6 +554,38 @@ const ActivarPolizaNaturalPage = () => {
   const handleContactSupport = () => {
     window.open(`https://wa.me/584123230188?text=Hola, necesito ayuda con la activación de mi póliza RCV. Placa: ${placa}`, '_blank');
   };
+  // Fetch precio_venta for EMPIRE vehicles
+  const fetchPrecioVentaEmpire = async (): Promise<string> => {
+    const marca = vehicleData?.Marca?.toUpperCase();
+    
+    // Check if marca is EMPIRE or EK
+    if (marca !== 'EMPIRE' && marca !== 'EK') {
+      return vehicleData?.Suma || "0";
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('precios_empire')
+        .select('precio_venta, created_at')
+        .ilike('marca', vehicleData?.Marca || '')
+        .ilike('modelo', vehicleData?.Modelo || '')
+        .lte('created_at', formData.fechaCompra || new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching precio_venta:', error);
+        return vehicleData?.Suma || "0";
+      }
+
+      return data?.precio_venta || data?.["precio venta"] || vehicleData?.Suma || "0";
+    } catch (error) {
+      console.error('Error in fetchPrecioVentaEmpire:', error);
+      return vehicleData?.Suma || "0";
+    }
+  };
+
   // Upload documents to Supabase Storage
   const uploadDocumentsToStorage = async () => {
     const timestamp = Date.now();
@@ -839,6 +874,171 @@ const ActivarPolizaNaturalPage = () => {
     return payload;
   };
 
+  // Save to polizas_activas table
+  const saveToPolizasActivas = async (payload: any, documentUrls: Record<string, string>, precioVenta: string) => {
+    try {
+      // Calculate dates
+      const today = new Date();
+      const fechaVencimiento = new Date(today);
+      fechaVencimiento.setDate(fechaVencimiento.getDate() + 365);
+      
+      const recordatorioVencimiento = new Date(fechaVencimiento);
+      recordatorioVencimiento.setMonth(recordatorioVencimiento.getMonth() - 1);
+
+      // Get current user (if authenticated)
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const polizaData = {
+        // Estado y metadata
+        estado_principal_monday: "Nuevo registro",
+        api_monday: "BERA2025",
+        user_id: user?.id || null,
+        
+        // Fechas calculadas
+        fecha_de_vencimiento_monday: fechaVencimiento.toISOString().split('T')[0],
+        recordatorio_de_vencimiento_monday: recordatorioVencimiento.toISOString().split('T')[0],
+        
+        // Datos del vehículo
+        placa_monday: placa,
+        año_monday: payload.n_anio,
+        serial_carroceria_monday: payload.c_carroceria,
+        serial_motor_monday: payload.c_motor,
+        fecha_compra_monday: payload.f_fechacompra,
+        cod_modelo_monday: payload.c_cd_modelo,
+        version_modelo_monday: payload.s_version,
+        cod_color_empire_monday: payload.c_cd_color,
+        color_bera_monday: payload.s_color,
+        precio_venta_tienda_monday: precioVenta,
+        version_api_monday: payload.c_cd_versionseguro,
+        
+        // Datos del titular
+        nombre_titular_monday: payload.c_nombre,
+        apellidos_titular_monday: payload.c_apellido,
+        tipo_id_titular_monday: payload.c_cd_nacionalidad,
+        nro_documento_natural_monday: payload.n_cedrif,
+        fecha_nacimiento_titular_monday: payload.f_fecnac,
+        
+        // Dirección y contacto
+        pais_monday: payload.s_pais,
+        direccion_monday: payload.c_direccion,
+        ciudad_monday: payload.s_ciudad,
+        municipio_monday: payload.s_municipio,
+        codigo_postal_monday: formData.codigoPostal || "",
+        codigo_telefonico_titular_monday: payload.c_cd_telef1,
+        numero_telefonico_titular_monday: payload.c_numtelef1,
+        email_monday: payload.c_email1,
+        email_alternativo_monday: payload.c_email2,
+        
+        // Beneficiario/Apoderado
+        nombre_apoderado_monday: payload.c_nombreap,
+        apellido_apoderado_monday: payload.c_apellidoap,
+        numero_documento_apoderado_monday: payload.n_cedrifap,
+        fecha_nacimiento_apoderado_monday: payload.f_fecnacap,
+        estado_civil_apoderado_monday: payload.s_edocivilap,
+        sexo_apoderado_monday: payload.s_sexoap,
+        
+        // URLs de documentos
+        cedula_identidad_url: documentUrls.docIdentidad || "",
+        licencia_conducir_url: documentUrls.docLicenciaConducir || "",
+        certificado_medico_url: documentUrls.docCertificadoMedico || "",
+        certificado_origen_vehiculo_url: documentUrls.docOrigenVehiculo || "",
+        factura_compra_vehiculo_url: documentUrls.docFacturaCompra || "",
+        rif_url: documentUrls.docRIF || "",
+        
+        // Campos del payload completo (compatibilidad)
+        f_fchdesde: payload.f_fchdesde,
+        f_fechacompra: payload.f_fechacompra,
+        n_anio: payload.n_anio,
+        c_placa: payload.c_placa,
+        c_carroceria: payload.c_carroceria,
+        c_cd_nacionalidad: payload.c_cd_nacionalidad,
+        s_nacionalidad: payload.s_nacionalidad,
+        n_cedrif: payload.n_cedrif,
+        n_correlativo: payload.n_correlativo?.toString(),
+        cd_sexo: payload.cd_sexo,
+        s_sexo: payload.s_sexo,
+        f_fecnac: payload.f_fecnac,
+        cd_edocivil: payload.cd_edocivil,
+        s_edocivil: payload.s_edocivil,
+        c_nombre: payload.c_nombre,
+        c_apellido: payload.c_apellido,
+        c_razonsocial: payload.c_razonsocial,
+        c_cd_pais: payload.c_cd_pais,
+        s_pais: payload.s_pais,
+        c_cd_estado: payload.c_cd_estado,
+        s_estado: payload.s_estado,
+        c_cd_ciudad: payload.c_cd_ciudad,
+        s_ciudad: payload.s_ciudad,
+        c_cd_municipio: payload.c_cd_municipio,
+        s_municipio: payload.s_municipio,
+        c_direccion: payload.c_direccion,
+        c_cd_telef1: payload.c_cd_telef1,
+        s_telef1: payload.s_telef1,
+        c_numtelef1: payload.c_numtelef1,
+        c_email1: payload.c_email1,
+        c_email2: payload.c_email2,
+        c_cd_actividad: payload.c_cd_actividad?.toString(),
+        c_cd_ocupacion: payload.c_cd_ocupacion?.toString(),
+        n_ingresoanualnac: payload.n_ingresoanualnac?.toString(),
+        c_cd_nacionalidadap: payload.c_cd_nacionalidadap,
+        s_nacionalidadap: payload.s_nacionalidadap,
+        n_cedrifap: payload.n_cedrifap,
+        cd_sexoap: payload.cd_sexoap,
+        s_sexoap: payload.s_sexoap,
+        f_fecnacap: payload.f_fecnacap,
+        cd_edocivilap: payload.cd_edocivilap,
+        s_edocivilap: payload.s_edocivilap,
+        c_nombreap: payload.c_nombreap,
+        c_apellidoap: payload.c_apellidoap,
+        c_cd_nacionalidadch: payload.c_cd_nacionalidadch,
+        s_nacionalidadch: payload.s_nacionalidadch,
+        n_cedrifch: payload.n_cedrifch,
+        cd_sexoch: payload.cd_sexoch,
+        s_sexoch: payload.s_sexoch,
+        f_fecnacch: payload.f_fecnacch,
+        cd_edocivilch: payload.cd_edocivilch,
+        s_edocivilch: payload.s_edocivilch,
+        c_nombrech: payload.c_nombrech,
+        c_apellidoch: payload.c_apellidoch,
+        cd_moneda: payload.cd_moneda,
+        s_moneda: payload.s_moneda,
+        c_cd_marca: payload.c_cd_marca,
+        s_marca: payload.s_marca,
+        c_cd_modelo: payload.c_cd_modelo,
+        s_modelo: payload.s_modelo,
+        c_cd_version: payload.c_cd_version,
+        s_version: payload.s_version,
+        n_nu_centuria: payload.n_nu_centuria,
+        c_motor: payload.c_motor,
+        c_cd_color: payload.c_cd_color,
+        s_color: payload.s_color,
+        c_cd_versionseguro: payload.c_cd_versionseguro,
+        c_cd_subversionseguro: payload.c_cd_subversionseguro,
+        n_suma: payload.n_suma,
+        desde: payload.desde,
+        mondayid: payload.mondayid,
+        listacolumnas: JSON.stringify(payload.listaColumnas)
+      };
+
+      const { data, error } = await supabase
+        .from('polizas_activas')
+        .insert([polizaData])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error saving to polizas_activas:', error);
+        throw error;
+      }
+
+      console.log('✅ Registro guardado en polizas_activas:', data);
+      return data;
+    } catch (error) {
+      console.error('Error in saveToPolizasActivas:', error);
+      throw error;
+    }
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     
@@ -846,13 +1046,20 @@ const ActivarPolizaNaturalPage = () => {
       // Step 1: Upload documents
       const documentUrls = await uploadDocumentsToStorage();
       
-      // Step 2: Map form data to webhook payload
+      // Step 2: Fetch precio_venta for EMPIRE vehicles
+      const precioVenta = await fetchPrecioVentaEmpire();
+      
+      // Step 3: Map form data to webhook payload
       const payload = await mapFormDataToWebhook(documentUrls);
       
       console.log('🚀 Payload completo que se enviará al webhook final:', payload);
       console.log('🔑 MondayId en el payload final:', payload.mondayid);
+      console.log('💰 Precio venta EMPIRE:', precioVenta);
       
-      // Step 3: Send to webhook
+      // Step 4: Save to polizas_activas table BEFORE sending to webhook
+      await saveToPolizasActivas(payload, documentUrls, precioVenta);
+      
+      // Step 5: Send to webhook
       const response = await fetch('https://hook.us2.make.com/4squonwol5qr0mdhgozmvgom94kyr5bm', {
         method: 'POST',
         headers: {
@@ -1193,6 +1400,16 @@ const ActivarPolizaNaturalPage = () => {
                               </SelectItem>)}
                           </SelectContent>
                         </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="codigoPostal">Código Postal</Label>
+                        <Input 
+                          id="codigoPostal" 
+                          type="text" 
+                          value={formData.codigoPostal} 
+                          onChange={e => handleInputChange("codigoPostal", e.target.value)} 
+                          placeholder="Ej: 1010" 
+                        />
                       </div>
                     </div>
 
