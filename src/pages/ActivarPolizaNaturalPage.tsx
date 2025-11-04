@@ -564,12 +564,17 @@ const ActivarPolizaNaturalPage = () => {
     }
 
     try {
+      // Convert fechaCompra to end-of-day timestamp for proper comparison
+      const fechaComparison = formData.fechaCompra 
+        ? `${formData.fechaCompra}T23:59:59.999Z`
+        : new Date().toISOString();
+
       const { data, error } = await supabase
         .from('precios_empire')
-        .select('precio_venta, created_at')
+        .select('precio_venta, created_at, modelo, marca')
         .ilike('marca', vehicleData?.Marca || '')
         .ilike('modelo', vehicleData?.Modelo || '')
-        .lte('created_at', formData.fechaCompra || new Date().toISOString())
+        .lte('created_at', fechaComparison)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -577,6 +582,25 @@ const ActivarPolizaNaturalPage = () => {
       if (error) {
         console.error('Error fetching precio_venta:', error);
         return vehicleData?.Suma || "0";
+      }
+
+      // Enhanced logging for debugging
+      if (data) {
+        console.log('✅ Precio de venta encontrado:', {
+          modelo: data.modelo,
+          marca: data.marca,
+          precio_venta: data.precio_venta || data["precio venta"],
+          fecha_registro: data.created_at,
+          fecha_compra: formData.fechaCompra,
+          fecha_comparacion: fechaComparison
+        });
+      } else {
+        console.log('⚠️ No se encontró precio en precios_empire, usando Suma:', {
+          modelo: vehicleData?.Modelo,
+          marca: vehicleData?.Marca,
+          fecha_compra: formData.fechaCompra,
+          suma_fallback: vehicleData?.Suma || "0"
+        });
       }
 
       return data?.precio_venta || data?.["precio venta"] || vehicleData?.Suma || "0";
