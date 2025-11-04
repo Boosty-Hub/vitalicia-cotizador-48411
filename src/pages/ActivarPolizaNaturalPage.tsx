@@ -1056,28 +1056,12 @@ const ActivarPolizaNaturalPage = () => {
       console.log('🔑 MondayId en el payload final:', payload.mondayid);
       console.log('💰 Precio venta EMPIRE:', precioVenta);
       
-      // Step 4: Save to polizas_activas table BEFORE sending to webhook
+      // Step 4: Save to polizas_activas table
       await saveToPolizasActivas(payload, documentUrls, precioVenta);
       
-      // Step 5: Send to webhook
-      const response = await fetch('https://hook.us2.make.com/4squonwol5qr0mdhgozmvgom94kyr5bm', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al enviar los datos');
-      }
-
-      const result = await response.json();
-      console.log('Respuesta de webhook:', result);
-
       toast({
-        title: "¡Formulario enviado exitosamente!",
-        description: "Tu póliza ha sido activada correctamente"
+        title: "¡Póliza registrada exitosamente!",
+        description: "Tu póliza ha sido guardada correctamente en el sistema"
       });
 
       setCurrentStep(6);
