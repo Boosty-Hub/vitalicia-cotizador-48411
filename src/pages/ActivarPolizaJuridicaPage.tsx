@@ -729,8 +729,8 @@ const ActivarPolizaJuridicaPage = () => {
         cd_sexoch: formData.sexoRepresentante === "Masculino" ? "M" : formData.sexoRepresentante === "Femenino" ? "F" : "NA",
         s_sexoch: formData.sexoRepresentante,
         f_fecnacch: formData.fechaNacimientoRepresentante,
-        cd_edocivilch: "N",
-        s_edocivilch: "No Aplica",
+        cd_edocivilch: formData.estadoCivilRepresentante?.charAt(0) || "S",
+        s_edocivilch: formData.estadoCivilRepresentante,
         c_nombrech: formData.nombresRepresentante,
         c_apellidoch: formData.apellidosRepresentante,
         
