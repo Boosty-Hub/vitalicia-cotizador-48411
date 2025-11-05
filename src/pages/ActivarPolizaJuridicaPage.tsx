@@ -598,7 +598,12 @@ const ActivarPolizaJuridicaPage = () => {
       actividadCodigo: string,
       codigoTelef1: string,
       codigoTelef2: string
-    }
+    },
+    versionApiData: {
+      cd_version_seguro: string | null;
+      cd_subversion_seguro: string | null;
+      n_centuria: string | null;
+    } | null
   ) => {
     try {
       const empresaId = formData.numeroRIF.match(/^([A-Z])-(\d+)(-\d+)?$/);
@@ -616,7 +621,7 @@ const ActivarPolizaJuridicaPage = () => {
       const polizaData = {
         // Campos Monday
         estado_principal_monday: "Nuevo registro",
-        api_monday: "BERA2025",
+        api_monday: versionApiData?.cd_version_seguro || "BERA2025",
         user_id: null, // Anonymous user
         fecha_de_vencimiento_monday: fechaVencimiento,
         recordatorio_de_vencimiento_monday: fechaRecordatorio,
@@ -630,13 +635,14 @@ const ActivarPolizaJuridicaPage = () => {
         cod_color_empire_monday: codigosData.colorCodigo,
         color_bera_monday: vehicleData?.Color || "",
         precio_venta_tienda_monday: precioVenta,
-        version_api_monday: "BERA2025",
+        version_api_monday: versionApiData?.cd_version_seguro || "BERA2025",
         
-        // Datos de la empresa (como titular)
-        nombre_titular_monday: formData.nombreEmpresa,
-        apellidos_titular_monday: "", // Empresa no tiene apellidos
-        tipo_id_titular_monday: empresaId?.[1] || "J",
+        // Datos del representante legal (como titular en Monday)
+        nombre_titular_monday: formData.nombresRepresentante,
+        apellidos_titular_monday: formData.apellidosRepresentante,
+        tipo_id_titular_monday: formData.tipoIdentificacion,
         nro_documento_juridico_monday: empresaId?.[2] || "",
+        nro_documento_natural_monday: "",
         razon_social_juridico_monday: formData.nombreEmpresa,
         
         // Ubicación
@@ -741,8 +747,8 @@ const ActivarPolizaJuridicaPage = () => {
         c_motor: formData.serialCarroceria,
         c_cd_color: codigosData.colorCodigo,
         s_color: vehicleData?.Color || "",
-        c_cd_versionseguro: "BERA2025",
-        c_cd_subversionseguro: "BERAWEB01",
+        c_cd_versionseguro: versionApiData?.cd_version_seguro || "BERA2025",
+        c_cd_subversionseguro: versionApiData?.cd_subversion_seguro || "BERAWEB01",
         n_suma: "500",
         desde: "web",
         mondayid: vehicleData?.MondayId || "",
@@ -844,6 +850,15 @@ const ActivarPolizaJuridicaPage = () => {
         .select('cd_modelo, descripcion')
         .eq('descripcion', vehicleData?.Modelo || '')
         .maybeSingle();
+
+      // Buscar versión API basado en s_marca (Marca del vehículo)
+      const { data: versionApiData } = await supabase
+        .from('board_cod_version_api')
+        .select('cd_version_seguro, cd_subversion_seguro, n_centuria')
+        .ilike('cd_version_seguro', `%${vehicleData?.Marca || ''}%`)
+        .maybeSingle();
+
+      console.log('🔍 Versión API encontrada:', versionApiData);
 
       const { data: versionData } = await supabase
         .from('board_cod_version_moto')
@@ -985,7 +1000,8 @@ const ActivarPolizaJuridicaPage = () => {
         origenUrl,
         facturaUrl,
         rifUrl,
-        codigosData
+        codigosData,
+        versionApiData
       );
 
       toast({
