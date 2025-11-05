@@ -556,10 +556,10 @@ const ActivarPolizaNaturalPage = () => {
   };
   // Fetch precio_venta for EMPIRE vehicles
   const fetchPrecioVentaEmpire = async (): Promise<string> => {
-    const marca = vehicleData?.Marca?.toUpperCase();
+    const marcaUpper = vehicleData?.Marca?.toUpperCase();
     
-    // Check if marca is EMPIRE or EK
-    if (marca !== 'EMPIRE' && marca !== 'EK') {
+    // Solo procesar para vehículos EMPIRE/EK
+    if (!marcaUpper || (!marcaUpper.includes('EMPIRE') && !marcaUpper.includes('EK'))) {
       return vehicleData?.Suma || "0";
     }
 
@@ -569,31 +569,43 @@ const ActivarPolizaNaturalPage = () => {
         ? `${formData.fechaCompra}T23:59:59.999Z`
         : new Date().toISOString();
 
+      const modeloVehiculo = vehicleData?.Modelo || '';
+
+      console.log('🔍 Buscando precio en precios_empire:', {
+        modelo_vehiculo: modeloVehiculo,
+        marca_vehiculo: vehicleData?.Marca,
+        fecha_compra: formData.fechaCompra,
+        fecha_comparacion: fechaComparison
+      });
+
+      // Buscar por modelo en las columnas: modelo, name, o marca
       const { data, error } = await supabase
         .from('precios_empire')
-        .select('precio_venta, created_at, modelo, marca')
-        .ilike('marca', vehicleData?.Marca || '')
-        .ilike('modelo', vehicleData?.Modelo || '')
+        .select('precio_venta, "precio venta", created_at, modelo, marca, name')
+        .or(`modelo.ilike.%${modeloVehiculo}%,name.ilike.%${modeloVehiculo}%,marca.ilike.%${modeloVehiculo}%`)
         .lte('created_at', fechaComparison)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching precio_venta:', error);
+        console.error('❌ Error fetching precio_venta:', error);
         return vehicleData?.Suma || "0";
       }
 
       // Enhanced logging for debugging
       if (data) {
+        const precioFinal = data.precio_venta || data["precio venta"];
         console.log('✅ Precio de venta encontrado:', {
-          modelo: data.modelo,
-          marca: data.marca,
-          precio_venta: data.precio_venta || data["precio venta"],
+          modelo_encontrado: data.modelo,
+          marca_encontrada: data.marca,
+          name_encontrado: data.name,
+          precio_venta: precioFinal,
           fecha_registro: data.created_at,
           fecha_compra: formData.fechaCompra,
           fecha_comparacion: fechaComparison
         });
+        return precioFinal || vehicleData?.Suma || "0";
       } else {
         console.log('⚠️ No se encontró precio en precios_empire, usando Suma:', {
           modelo: vehicleData?.Modelo,
@@ -601,11 +613,10 @@ const ActivarPolizaNaturalPage = () => {
           fecha_compra: formData.fechaCompra,
           suma_fallback: vehicleData?.Suma || "0"
         });
+        return vehicleData?.Suma || "0";
       }
-
-      return data?.precio_venta || data?.["precio venta"] || vehicleData?.Suma || "0";
     } catch (error) {
-      console.error('Error in fetchPrecioVentaEmpire:', error);
+      console.error('❌ Error in fetchPrecioVentaEmpire:', error);
       return vehicleData?.Suma || "0";
     }
   };
