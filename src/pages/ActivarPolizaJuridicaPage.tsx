@@ -512,6 +512,295 @@ const ActivarPolizaJuridicaPage = () => {
     }
   };
 
+  // Fetch precio_venta for EMPIRE vehicles
+  const fetchPrecioVentaEmpire = async (): Promise<string> => {
+    const marcaUpper = vehicleData?.Marca?.toUpperCase();
+    
+    // Solo procesar para vehículos EMPIRE/EK
+    if (!marcaUpper || (!marcaUpper.includes('EMPIRE') && !marcaUpper.includes('EK'))) {
+      return vehicleData?.Suma || "0";
+    }
+
+    try {
+      const fechaComparison = formData.fechaAdquisicion 
+        ? `${formData.fechaAdquisicion}T23:59:59.999Z`
+        : new Date().toISOString();
+
+      const modeloVehiculo = vehicleData?.Modelo || '';
+
+      console.log('🔍 Buscando precio en precios_empire (Jurídica):', {
+        modelo_vehiculo: modeloVehiculo,
+        marca_vehiculo: vehicleData?.Marca,
+        fecha_adquisicion: formData.fechaAdquisicion,
+        fecha_comparacion: fechaComparison
+      });
+
+      // Buscar por modelo en las columnas: modelo, name, o marca
+      const { data, error } = await supabase
+        .from('precios_empire')
+        .select('precio_venta, "precio venta", created_at, modelo, marca, name')
+        .or(`modelo.ilike.%${modeloVehiculo}%,name.ilike.%${modeloVehiculo}%,marca.ilike.%${modeloVehiculo}%`)
+        .lte('created_at', fechaComparison)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('❌ Error fetching precio_venta (Jurídica):', error);
+        return vehicleData?.Suma || "0";
+      }
+
+      if (data) {
+        const precioFinal = data.precio_venta || data["precio venta"];
+        console.log('✅ Precio de venta encontrado (Jurídica):', {
+          modelo_encontrado: data.modelo,
+          marca_encontrada: data.marca,
+          name_encontrado: data.name,
+          precio_venta: precioFinal,
+          fecha_registro: data.created_at,
+          fecha_adquisicion: formData.fechaAdquisicion,
+          fecha_comparacion: fechaComparison
+        });
+        return precioFinal || vehicleData?.Suma || "0";
+      } else {
+        console.log('⚠️ No se encontró precio en precios_empire (Jurídica), usando Suma:', {
+          modelo: vehicleData?.Modelo,
+          marca: vehicleData?.Marca,
+          fecha_adquisicion: formData.fechaAdquisicion,
+          suma_fallback: vehicleData?.Suma || "0"
+        });
+        return vehicleData?.Suma || "0";
+      }
+    } catch (error) {
+      console.error('❌ Error in fetchPrecioVentaEmpire (Jurídica):', error);
+      return vehicleData?.Suma || "0";
+    }
+  };
+
+  const saveToPolizasActivas = async (
+    precioVenta: string,
+    cedulaUrl: string,
+    licenciaUrl: string,
+    certificadoUrl: string,
+    origenUrl: string,
+    facturaUrl: string,
+    rifUrl: string,
+    codigosData: {
+      marcaCodigo: string,
+      modeloCodigo: string,
+      versionCodigo: string,
+      colorCodigo: string,
+      estadoCodigo: string,
+      ciudadCodigo: string,
+      ciudadDescripcion: string,
+      municipioCodigo: string,
+      municipioDescripcion: string,
+      actividadCodigo: string,
+      codigoTelef1: string,
+      codigoTelef2: string
+    }
+  ) => {
+    try {
+      const empresaId = formData.numeroRIF.match(/^([A-Z])-(\d+)(-\d+)?$/);
+      const representanteId = formData.cedulaRepresentante.match(/^([A-Z])-(\d+)(-\d+)?$/);
+      
+      const hoy = new Date().toISOString().split('T')[0];
+      const vencimiento = new Date();
+      vencimiento.setFullYear(vencimiento.getFullYear() + 1);
+      const fechaVencimiento = vencimiento.toISOString().split('T')[0];
+      
+      const recordatorio = new Date(vencimiento);
+      recordatorio.setMonth(recordatorio.getMonth() - 1);
+      const fechaRecordatorio = recordatorio.toISOString().split('T')[0];
+
+      const polizaData = {
+        // Campos Monday
+        estado_principal_monday: "Nuevo registro",
+        api_monday: "BERA2025",
+        user_id: null, // Anonymous user
+        fecha_de_vencimiento_monday: fechaVencimiento,
+        recordatorio_de_vencimiento_monday: fechaRecordatorio,
+        placa_monday: placa,
+        año_monday: vehicleData?.Año || new Date().getFullYear().toString(),
+        serial_carroceria_monday: formData.serialCarroceria,
+        serial_motor_monday: formData.serialCarroceria,
+        fecha_compra_monday: formData.fechaAdquisicion,
+        cod_modelo_monday: codigosData.modeloCodigo,
+        version_modelo_monday: vehicleData?.Modelo || "",
+        cod_color_empire_monday: codigosData.colorCodigo,
+        color_bera_monday: vehicleData?.Color || "",
+        precio_venta_tienda_monday: precioVenta,
+        version_api_monday: "BERA2025",
+        
+        // Datos de la empresa (como titular)
+        nombre_titular_monday: formData.nombreEmpresa,
+        apellidos_titular_monday: "", // Empresa no tiene apellidos
+        tipo_id_titular_monday: empresaId?.[1] || "J",
+        nro_documento_juridico_monday: empresaId?.[2] || "",
+        razon_social_juridico_monday: formData.nombreEmpresa,
+        
+        // Ubicación
+        pais_monday: "Venezuela",
+        direccion_monday: formData.direccion,
+        ciudad_monday: codigosData.ciudadDescripcion,
+        municipio_monday: codigosData.municipioDescripcion,
+        codigo_postal_monday: formData.codigoPostal,
+        
+        // Contacto
+        codigo_telefonico_titular_monday: codigosData.codigoTelef1,
+        numero_telefonico_titular_monday: formData.telefonoCelular,
+        email_monday: formData.correoElectronico,
+        email_alternativo_monday: formData.correoAlternativo,
+        
+        // Datos del representante (apoderado)
+        nombre_apoderado_monday: formData.nombresRepresentante,
+        apellido_apoderado_monday: formData.apellidosRepresentante,
+        numero_documento_apoderado_monday: representanteId?.[2] || "",
+        fecha_nacimiento_apoderado_monday: formData.fechaNacimientoRepresentante,
+        estado_civil_apoderado_monday: formData.estadoCivilRepresentante,
+        sexo_apoderado_monday: formData.sexoRepresentante,
+        
+        // URLs de documentos
+        cedula_identidad_url: cedulaUrl,
+        licencia_conducir_url: licenciaUrl,
+        certificado_medico_url: certificadoUrl,
+        certificado_origen_vehiculo_url: origenUrl,
+        factura_compra_vehiculo_url: facturaUrl,
+        rif_url: rifUrl,
+        
+        // Campos de API (formato del webhook anterior)
+        f_fchdesde: hoy,
+        f_fechacompra: formData.fechaAdquisicion,
+        n_anio: vehicleData?.Año || new Date().getFullYear().toString(),
+        c_placa: placa,
+        c_carroceria: formData.serialCarroceria,
+        c_cd_nacionalidad: empresaId?.[1] || "J",
+        s_nacionalidad: formData.tipoIdentificacion,
+        n_cedrif: empresaId?.[2] || "",
+        n_correlativo: "0",
+        cd_sexo: formData.sexoRepresentante === "Masculino" ? "M" : formData.sexoRepresentante === "Femenino" ? "F" : "NA",
+        s_sexo: formData.sexoRepresentante,
+        f_fecnac: formData.fechaNacimientoRepresentante,
+        cd_edocivil: formData.estadoCivilRepresentante?.charAt(0) || "S",
+        s_edocivil: formData.estadoCivilRepresentante,
+        c_nombre: formData.nombresRepresentante,
+        c_apellido: formData.apellidosRepresentante,
+        c_razonsocial: formData.nombreEmpresa,
+        c_cd_pais: "001",
+        s_pais: "Venezuela",
+        c_cd_estado: codigosData.estadoCodigo,
+        s_estado: formData.estado,
+        c_cd_ciudad: codigosData.ciudadCodigo,
+        s_ciudad: codigosData.ciudadDescripcion,
+        c_cd_municipio: codigosData.municipioCodigo,
+        s_municipio: codigosData.municipioDescripcion,
+        c_direccion: formData.direccion,
+        c_cd_telef1: codigosData.codigoTelef1,
+        s_telef1: formData.codigoTelefonicoWhatsapp,
+        c_numtelef1: formData.telefonoCelular,
+        c_email1: formData.correoElectronico,
+        c_email2: formData.correoAlternativo,
+        c_cd_actividad: codigosData.actividadCodigo,
+        c_cd_ocupacion: "0",
+        n_ingresoanualnac: "0",
+        
+        // Datos apoderado (representante legal)
+        c_cd_nacionalidadap: representanteId?.[1] || "V",
+        s_nacionalidadap: formData.tipoIdentificacionRepresentante,
+        n_cedrifap: representanteId?.[2] || "",
+        cd_sexoap: formData.sexoRepresentante === "Masculino" ? "M" : formData.sexoRepresentante === "Femenino" ? "F" : "NA",
+        s_sexoap: formData.sexoRepresentante,
+        f_fecnacap: formData.fechaNacimientoRepresentante,
+        cd_edocivilap: formData.estadoCivilRepresentante?.charAt(0) || "S",
+        s_edocivilap: formData.estadoCivilRepresentante,
+        c_nombreap: formData.nombresRepresentante,
+        c_apellidoap: formData.apellidosRepresentante,
+        
+        // Datos chofer (mismo que representante para jurídica)
+        c_cd_nacionalidadch: representanteId?.[1] || "V",
+        s_nacionalidadch: formData.tipoIdentificacionRepresentante,
+        n_cedrifch: representanteId?.[2] || "",
+        cd_sexoch: formData.sexoRepresentante === "Masculino" ? "M" : formData.sexoRepresentante === "Femenino" ? "F" : "NA",
+        s_sexoch: formData.sexoRepresentante,
+        f_fecnacch: formData.fechaNacimientoRepresentante,
+        cd_edocivilch: "N",
+        s_edocivilch: "No Aplica",
+        c_nombrech: formData.nombresRepresentante,
+        c_apellidoch: formData.apellidosRepresentante,
+        
+        // Datos del vehículo
+        cd_moneda: "DL",
+        s_moneda: "Dólar",
+        c_cd_marca: codigosData.marcaCodigo,
+        s_marca: vehicleData?.Marca || "",
+        c_cd_modelo: codigosData.modeloCodigo,
+        s_modelo: vehicleData?.Modelo || "",
+        c_cd_version: codigosData.versionCodigo,
+        s_version: vehicleData?.Modelo || "",
+        n_nu_centuria: vehicleData?.Año || new Date().getFullYear().toString(),
+        c_motor: formData.serialCarroceria,
+        c_cd_color: codigosData.colorCodigo,
+        s_color: vehicleData?.Color || "",
+        c_cd_versionseguro: "BERA2025",
+        c_cd_subversionseguro: "BERAWEB01",
+        n_suma: "500",
+        desde: "web",
+        mondayid: vehicleData?.MondayId || "",
+        listacolumnas: JSON.stringify([
+          {
+            nombre: "Cédula de identidad URL",
+            url: cedulaUrl,
+            columnaID: "file_mkpytq4p"
+          },
+          {
+            nombre: "Licencia de conducir URL",
+            url: licenciaUrl,
+            columnaID: "file_mkpz6yzk"
+          },
+          {
+            nombre: "Certificado médico URL",
+            url: certificadoUrl,
+            columnaID: "file_mkpz3ckf"
+          },
+          {
+            nombre: "Certificado de Origen del Vehículo URL",
+            url: origenUrl,
+            columnaID: "file_mkpy886c"
+          },
+          {
+            nombre: "Factura de Compra del Vehículo URL",
+            url: facturaUrl,
+            columnaID: "file_mkpy429y"
+          },
+          {
+            nombre: "RIF URL",
+            url: rifUrl,
+            columnaID: "file_mkpyt85x"
+          }
+        ])
+      };
+
+      console.log('💾 Guardando en polizas_activas (Jurídica):', polizaData);
+
+      const { data, error } = await supabase
+        .from('polizas_activas')
+        .insert(polizaData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Error guardando en polizas_activas:', error);
+        throw error;
+      }
+
+      console.log('✅ Registro guardado exitosamente en polizas_activas:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ Error en saveToPolizasActivas:', error);
+      throw error;
+    }
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     
@@ -537,6 +826,10 @@ const ActivarPolizaJuridicaPage = () => {
       if (!cedulaUrl || !licenciaUrl || !certificadoUrl || !origenUrl || !facturaUrl || !rifUrl) {
         throw new Error('Error al subir uno o más documentos');
       }
+
+      // Fetch precio venta para EMPIRE
+      const precioVenta = await fetchPrecioVentaEmpire();
+      console.log('💰 Precio venta calculado (Jurídica):', precioVenta);
 
       // Fetch database codes with maybeSingle to handle missing data
       const { data: marcaData } = await supabase
@@ -666,144 +959,36 @@ const ActivarPolizaJuridicaPage = () => {
 
       console.log('Codigo telefono 2 data:', codigoTelef2Data);
 
-      // Extract prefix and number from RIF/Cedula
-      const extractIdentification = (value: string) => {
-        const match = value.match(/^([A-Z])-(\d+)(-\d+)?$/);
-        return match ? { prefix: match[1], number: match[2] } : { prefix: '', number: value };
+      // Preparar códigos para guardar
+      const codigosData = {
+        marcaCodigo: marcaData?.cd_marca || "",
+        modeloCodigo: modeloData?.cd_modelo || "",
+        versionCodigo: versionData?.cd_version || "",
+        colorCodigo: colorData?.cd_valdet || "",
+        estadoCodigo: estadoData?.cd_estado || "",
+        ciudadCodigo: ciudadData?.cd_ciudad || "",
+        ciudadDescripcion: ciudadData?.descripcion || "",
+        municipioCodigo: municipioData?.cd_municipio || "",
+        municipioDescripcion: municipioData?.descripcion || "",
+        actividadCodigo: actividadData?.cd_actividad || "0",
+        codigoTelef1: codigoTelef1Data?.cd_valdet || "",
+        codigoTelef2: codigoTelef2Data?.cd_valdet || ""
       };
 
-      const empresaId = extractIdentification(formData.numeroRIF);
-      const representanteId = extractIdentification(formData.cedulaRepresentante);
-
-      // Create the JSON structure
-      const jsonData = {
-        f_fchdesde: new Date().toISOString().split('T')[0],
-        c_placa: placa,
-        c_carroceria: formData.serialCarroceria,
-        c_cd_nacionalidad: empresaId.prefix,
-        c_cd_nacionalidad_descripcion: formData.tipoIdentificacion,
-        n_cedrif: empresaId.number,
-        n_correlativo: 0,
-        cd_sexo: formData.sexoRepresentante === "Masculino" ? "M" : formData.sexoRepresentante === "Femenino" ? "F" : "N",
-        cd_sexo_descripcion: formData.sexoRepresentante,
-        f_fecnac: formData.fechaNacimientoRepresentante,
-        cd_edocivil: formData.estadoCivilRepresentante?.charAt(0) || "S",
-        cd_edocivil_descripcion: formData.estadoCivilRepresentante,
-        c_nombre: formData.nombresRepresentante,
-        c_apellido: formData.apellidosRepresentante,
-        c_razonsocial: formData.nombreEmpresa,
-        c_cd_pais: "001",
-        c_cd_pais_descripcion: formData.pais,
-        c_cd_estado: estadoData?.cd_estado || "",
-        c_cd_estado_descripcion: formData.estado,
-        c_cd_ciudad: ciudadData?.cd_ciudad || "",
-        c_cd_ciudad_descripcion: ciudadData?.descripcion || "",
-        c_cd_municipio: municipioData?.cd_municipio || "",
-        c_cd_municipio_descripcion: municipioData?.descripcion || "",
-        c_direccion: formData.direccion,
-        c_codpostal: formData.codigoPostal,
-        c_cd_telef1: codigoTelef1Data?.cd_valdet || "",
-        c_numtelef1: formData.telefonoCelular,
-        c_cd_telef2: codigoTelef2Data?.cd_valdet || "",
-        c_cd_telef2_descripcion: formData.codigoTelefonicoResidencial,
-        c_numtelef2: formData.telefonoOficina,
-        c_email1: formData.correoElectronico,
-        c_email2: formData.correoAlternativo,
-        c_cd_actividad: actividadData?.cd_actividad || "0",
-        c_cd_actividad_descripcion: formData.actividadEconomica,
-        c_cd_ocupacion: 0,
-        c_cd_ocupacion_descripcion: "No aplica",
-        n_ingresoanualnac: 0,
-        c_cd_nacionalidadap: representanteId.prefix,
-        c_cd_nacionalidadap_descripcion: formData.tipoIdentificacionRepresentante,
-        n_cedrifap: representanteId.number,
-        cd_sexoap: formData.sexoRepresentante === "Masculino" ? "M" : formData.sexoRepresentante === "Femenino" ? "F" : "N",
-        cd_sexoap_descripcion: formData.sexoRepresentante,
-        f_fecnacap: formData.fechaNacimientoRepresentante,
-        cd_edocivilap: formData.estadoCivilRepresentante?.charAt(0) || "S",
-        cd_edocivilap_descripcion: formData.estadoCivilRepresentante,
-        c_nombreap: "Sin Nombre",
-        c_apellidoap: "Sin Nombre",
-        c_cd_nacionalidadch: representanteId.prefix,
-        c_cd_nacionalidadch_descripcion: formData.tipoIdentificacionRepresentante,
-        n_cedrifch: representanteId.number,
-        cd_sexoch: formData.sexoRepresentante === "Masculino" ? "M" : formData.sexoRepresentante === "Femenino" ? "F" : "N",
-        cd_sexoch_descripcion: formData.sexoRepresentante,
-        f_fecnacch: formData.fechaNacimientoRepresentante,
-        cd_edocivilch: formData.estadoCivilRepresentante?.charAt(0) || "S",
-        cd_edocivilch_descripcion: formData.estadoCivilRepresentante,
-        c_nombrech: formData.nombresRepresentante,
-        c_apellidoch: formData.apellidosRepresentante,
-        cd_moneda: "DL",
-        cd_moneda_descripcion: "Dólares",
-        c_cd_marca: marcaData?.cd_marca || "",
-        c_cd_marca_descripcion: vehicleData?.Marca || "",
-        c_cd_modelo: modeloData?.cd_modelo || "",
-        c_cd_modelo_descripcion: vehicleData?.Modelo || "",
-        c_cd_version: versionData?.cd_version || "",
-        c_cd_version_descripcion: vehicleData?.Modelo || "",
-        n_nu_centuria: vehicleData?.Año || new Date().getFullYear().toString(),
-        n_nu_centuria_descripcion: vehicleData?.Año || new Date().getFullYear().toString(),
-        c_motor: formData.serialCarroceria,
-        c_cd_color: colorData?.cd_valdet || "",
-        c_cd_color_descripcion: vehicleData?.Color || "",
-        f_feccompra: formData.fechaAdquisicion,
-        c_cd_versionseguro: "BERA2025",
-        c_cd_subversionseguro: "BERAWEB01",
-        n_suma: vehicleData?.Suma || "0",
-        desde: "web",
-        mondayid: vehicleData?.MondayId || "null",
-        listaColumnas: [
-          {
-            nombre: "Cédula de identidad URL",
-            url: cedulaUrl,
-            columnaID: "file_mkpytq4p"
-          },
-          {
-            nombre: "Licencia de conducir URL",
-            url: licenciaUrl,
-            columnaID: "file_mkpz6yzk"
-          },
-          {
-            nombre: "Certificado médico URL",
-            url: certificadoUrl,
-            columnaID: "file_mkpz3ckf"
-          },
-          {
-            nombre: "Certificado de Origen del Vehículo URL",
-            url: origenUrl,
-            columnaID: "file_mkpy886c"
-          },
-          {
-            nombre: "Factura de Compra del Vehículo URL",
-            url: facturaUrl,
-            columnaID: "file_mkpy429y"
-          },
-          {
-            nombre: "RIF URL",
-            url: rifUrl,
-            columnaID: "file_mkpyt85x"
-          }
-        ]
-      };
-
-      console.log("📤 JSON enviado al webhook:", jsonData);
-
-      // Send to webhook
-      const response = await fetch('https://hook.us2.make.com/adb9tmwyo3b4he9lsr7spxwosjmfggdp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(jsonData),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error del webhook: ${response.status}`);
-      }
+      // Guardar en polizas_activas
+      await saveToPolizasActivas(
+        precioVenta,
+        cedulaUrl,
+        licenciaUrl,
+        certificadoUrl,
+        origenUrl,
+        facturaUrl,
+        rifUrl,
+        codigosData
+      );
 
       toast({
-        title: "✅ Formulario enviado",
+        title: "✅ Póliza registrada",
         description: "Tu solicitud ha sido procesada exitosamente",
       });
       setCurrentStep(7);
