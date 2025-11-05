@@ -473,6 +473,7 @@ export type Database = {
           fecha_de_vencimiento_monday: string | null
           fecha_nacimiento_apoderado_monday: string | null
           fecha_nacimiento_titular_monday: string | null
+          formulario: string | null
           id: string
           licencia_conducir_url: string | null
           listacolumnas: string | null
@@ -599,6 +600,7 @@ export type Database = {
           fecha_de_vencimiento_monday?: string | null
           fecha_nacimiento_apoderado_monday?: string | null
           fecha_nacimiento_titular_monday?: string | null
+          formulario?: string | null
           id?: string
           licencia_conducir_url?: string | null
           listacolumnas?: string | null
@@ -725,6 +727,7 @@ export type Database = {
           fecha_de_vencimiento_monday?: string | null
           fecha_nacimiento_apoderado_monday?: string | null
           fecha_nacimiento_titular_monday?: string | null
+          formulario?: string | null
           id?: string
           licencia_conducir_url?: string | null
           listacolumnas?: string | null

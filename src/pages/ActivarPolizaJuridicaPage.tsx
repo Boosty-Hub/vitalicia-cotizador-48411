@@ -777,7 +777,8 @@ const ActivarPolizaJuridicaPage = () => {
             url: rifUrl,
             columnaID: "file_mkpyt85x"
           }
-        ])
+        ]),
+        formulario: "juridico"
       };
 
       console.log('💾 Guardando en polizas_activas (Jurídica):', polizaData);

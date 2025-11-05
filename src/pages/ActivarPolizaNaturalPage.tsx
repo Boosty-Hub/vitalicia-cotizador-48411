@@ -1052,7 +1052,8 @@ const ActivarPolizaNaturalPage = () => {
         n_suma: payload.n_suma,
         desde: payload.desde,
         mondayid: payload.mondayid,
-        listacolumnas: JSON.stringify(payload.listaColumnas)
+        listacolumnas: JSON.stringify(payload.listaColumnas),
+        formulario: "natural"
       };
 
       const { data, error } = await supabase
