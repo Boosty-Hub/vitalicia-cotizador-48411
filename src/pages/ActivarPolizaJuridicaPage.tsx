@@ -749,7 +749,7 @@ const ActivarPolizaJuridicaPage = () => {
         s_color: vehicleData?.Color || "",
         c_cd_versionseguro: versionApiData?.cd_version_seguro || "BERA2025",
         c_cd_subversionseguro: versionApiData?.cd_subversion_seguro || "BERAWEB01",
-        n_suma: "500",
+        n_suma: precioVenta,
         desde: "web",
         mondayid: vehicleData?.MondayId || "",
         listacolumnas: JSON.stringify([
