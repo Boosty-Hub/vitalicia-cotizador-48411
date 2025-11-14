@@ -32,7 +32,7 @@ const ActivarPolizaJuridicaPage = () => {
   const [estados, setEstados] = useState<Array<{ descripcion: string; cd_estado: string }>>([]);
   const [ciudades, setCiudades] = useState<Array<{ id: string; cd_ciudad: string | null; descripcion: string | null; cd_estado: string | null }>>([]);
   const [municipios, setMunicipios] = useState<Array<{ id: string; cd_municipio: string | null; descripcion: string | null; cd_ciudad: string | null }>>([]);
-  const [codigosTelefonicos, setCodigosTelefonicos] = useState<Array<{ s_descripcion: string }>>([]);
+  const [codigosTelefonicos, setCodigosTelefonicos] = useState<Array<{ cd_valdet: string; s_descripcion: string }>>([]);
   const [nacionalidades, setNacionalidades] = useState<Array<{ descripcion: string }>>([]);
   const [vehicleData, setVehicleData] = useState<{
     Marca: string | null;
@@ -186,16 +186,16 @@ const ActivarPolizaJuridicaPage = () => {
       // Fetch códigos telefónicos
       const { data: tlfData, error: tlfError } = await supabase
         .from('board_cod_tlf')
-        .select('s_descripcion')
-        .order('s_descripcion');
+        .select('cd_valdet, s_descripcion')
+        .order('cd_valdet');
       
       if (tlfError) {
         console.error('Error fetching codigos telefonicos:', tlfError);
       } else if (tlfData) {
-        // Filtrar duplicados usando Set
-        const uniqueTlf = Array.from(
-          new Set(tlfData.map(item => item.s_descripcion))
-        ).map(s_descripcion => ({ s_descripcion }));
+        // Filtrar duplicados por cd_valdet
+        const uniqueTlf = tlfData.filter((item, index, self) =>
+          item.cd_valdet && index === self.findIndex((t) => t.cd_valdet === item.cd_valdet)
+        );
         setCodigosTelefonicos(uniqueTlf);
       }
     };
@@ -960,7 +960,7 @@ const ActivarPolizaJuridicaPage = () => {
         .select('cd_valdet, s_descripcion');
 
       const codigoTelef1Data = codigosTelef1?.find(c => 
-        c.s_descripcion?.toLowerCase() === formData.codigoTelefonicoWhatsapp.toLowerCase()
+        c.cd_valdet?.toLowerCase() === formData.codigoTelefonicoWhatsapp.toLowerCase()
       );
 
       console.log('Codigo telefono 1 data:', codigoTelef1Data);
@@ -970,7 +970,7 @@ const ActivarPolizaJuridicaPage = () => {
         .select('cd_valdet, s_descripcion');
 
       const codigoTelef2Data = codigosTelef2?.find(c => 
-        c.s_descripcion?.toLowerCase() === formData.codigoTelefonicoResidencial.toLowerCase()
+        c.cd_valdet?.toLowerCase() === formData.codigoTelefonicoResidencial.toLowerCase()
       );
 
       console.log('Codigo telefono 2 data:', codigoTelef2Data);
@@ -1738,8 +1738,8 @@ const ActivarPolizaJuridicaPage = () => {
                           </SelectTrigger>
                           <SelectContent>
                             {codigosTelefonicos.map((codigo) => (
-                              <SelectItem key={codigo.s_descripcion} value={codigo.s_descripcion}>
-                                {codigo.s_descripcion}
+                              <SelectItem key={codigo.cd_valdet} value={codigo.cd_valdet}>
+                                {codigo.cd_valdet}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -1771,8 +1771,8 @@ const ActivarPolizaJuridicaPage = () => {
                           </SelectTrigger>
                           <SelectContent>
                             {codigosTelefonicos.map((codigo) => (
-                              <SelectItem key={codigo.s_descripcion} value={codigo.s_descripcion}>
-                                {codigo.s_descripcion}
+                              <SelectItem key={codigo.cd_valdet} value={codigo.cd_valdet}>
+                                {codigo.cd_valdet}
                               </SelectItem>
                             ))}
                           </SelectContent>
