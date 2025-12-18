@@ -18,12 +18,23 @@ const loginSchema = z.object({
 
 const formatAuthError = (message?: string) => {
   const msg = (message || "").toLowerCase();
+
   if (msg.includes("failed to fetch") || msg.includes("name_not_resolved")) {
     return "No se pudo conectar con Supabase (ERR_NAME_NOT_RESOLVED). Revisa tu DNS/VPN o bloqueadores de red e intenta de nuevo.";
   }
   if (msg.includes("timeout") || msg.includes("aborted")) {
     return "La conexión con Supabase está tardando demasiado. Verifica tu red/VPN e intenta nuevamente.";
   }
+
+  // Supabase suele responder 400 en /token con códigos como email_not_confirmed
+  if (msg.includes("email_not_confirmed") || (msg.includes("email") && msg.includes("not confirmed"))) {
+    return "Tu correo aún no está confirmado. Revisa tu bandeja de entrada o pídele a un administrador que lo confirme en Supabase.";
+  }
+
+  if (msg.includes("invalid login credentials") || msg.includes("invalid_credentials")) {
+    return "Credenciales inválidas. Verifica el correo/contraseña. Si el usuario es nuevo, primero debe confirmar el correo.";
+  }
+
   return message || "Credenciales inválidas";
 };
 
