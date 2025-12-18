@@ -293,6 +293,38 @@ const ActivarPolizaNaturalPage = () => {
     try {
       const placaUpper = placa.toUpperCase().trim();
       
+      // PRIMERO: Verificar si la placa ya tiene una póliza activa
+      const { data: polizaResults, error: polizaError } = await supabase
+        .from('polizas_activas')
+        .select('numero_poliza_monday, placa_monday, estado_principal_monday, nombre_titular_monday, apellidos_titular_monday, fecha_de_vencimiento_monday')
+        .ilike('placa_monday', placaUpper)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (polizaError) {
+        console.error('Error buscando en polizas_activas:', polizaError);
+      }
+
+      const polizaData = polizaResults?.[0] || null;
+
+      if (polizaData) {
+        // La placa ya tiene una póliza registrada
+        const fechaVencimiento = polizaData.fecha_de_vencimiento_monday;
+        const esActiva = fechaVencimiento ? new Date(fechaVencimiento) > new Date() : false;
+        
+        console.log('⚠️ Placa encontrada en polizas_activas:', polizaData, 'Activa:', esActiva);
+        setShowError(true);
+        setPlacaValidada(false);
+        toast({
+          title: esActiva ? "Póliza Activa" : "Placa ya registrada",
+          description: esActiva 
+            ? `Esta placa ya tiene una póliza ACTIVA (${polizaData.numero_poliza_monday || 'Sin número'}). Fecha de vencimiento: ${fechaVencimiento}`
+            : `Esta placa tiene una póliza vencida. Contacte soporte para renovar.`,
+          variant: "destructive"
+        });
+        return;
+      }
+
       // 1. Buscar en bd_bera (priorizar no duplicados, tomar el primero)
       const { data: beraResults, error: beraError } = await supabase
         .from('bd_bera')
@@ -395,36 +427,7 @@ const ActivarPolizaNaturalPage = () => {
         return;
       }
 
-      // 3. Si no está en inventario, buscar en polizas_activas
-      const { data: polizaData, error: polizaError } = await supabase
-        .from('polizas_activas')
-        .select('numero_poliza_monday, placa_monday, estado_principal_monday, nombre_titular_monday, apellidos_titular_monday, fecha_de_vencimiento_monday')
-        .ilike('placa_monday', placaUpper)
-        .maybeSingle();
-
-      if (polizaError) {
-        console.error('Error buscando en polizas_activas:', polizaError);
-      }
-
-      if (polizaData) {
-        // La placa ya tiene una póliza registrada
-        const fechaVencimiento = polizaData.fecha_de_vencimiento_monday;
-        const esActiva = fechaVencimiento ? new Date(fechaVencimiento) > new Date() : false;
-        
-        console.log('⚠️ Placa encontrada en polizas_activas:', polizaData);
-        setShowError(true);
-        setPlacaValidada(false);
-        toast({
-          title: "Placa ya registrada",
-          description: esActiva 
-            ? `Esta placa ya tiene una póliza activa (${polizaData.numero_poliza_monday || 'Sin número'}). Vence: ${fechaVencimiento}`
-            : `Esta placa tiene una póliza vencida. Contacte soporte para renovar.`,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // 4. No se encontró en ninguna base de datos
+      // 3. No se encontró en ninguna base de datos
       setShowError(true);
       setPlacaValidada(false);
       toast({
@@ -476,17 +479,30 @@ const ActivarPolizaNaturalPage = () => {
         return value;
     }
   };
-  const validateEmail = (email: string): boolean => {
+  const validateEmail = (email: string): { valid: boolean; error: string } => {
+    if (!email) return { valid: true, error: "" };
+    
     // Verificar que no contenga acentos o caracteres especiales latinos
     const hasAccents = /[áéíóúÁÉÍÓÚñÑüÜ]/.test(email);
-    if (hasAccents) return false;
+    if (hasAccents) {
+      return { valid: false, error: "El correo no debe contener acentos o tildes" };
+    }
+    
+    // Verificar longitud máxima (API RMS requiere máximo 70 caracteres)
+    if (email.length > 70) {
+      return { valid: false, error: `El correo no puede tener más de 70 caracteres (actual: ${email.length})` };
+    }
     
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+    if (!emailRegex.test(email)) {
+      return { valid: false, error: "Por favor ingrese un correo electrónico válido" };
+    }
+    
+    return { valid: true, error: "" };
   };
   
   const removeAccents = (str: string): string => {
-    return str.replace(/[áéíóúÁÉÍÓÚñÑüÜ]/g, '');
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[ñÑ]/g, (match) => match === 'ñ' ? 'n' : 'N');
   };
 
   const handleInputChange = (field: string, value: string | File | null) => {
@@ -498,33 +514,27 @@ const ActivarPolizaNaturalPage = () => {
     // Validate and sanitize email fields
     if (field === "email" && typeof value === "string") {
       // Remover acentos automáticamente
-      const cleanValue = removeAccents(value);
+      const cleanValue = removeAccents(value.trim());
       setFormData(prev => ({
         ...prev,
         [field]: cleanValue
       }));
       
-      if (cleanValue && !validateEmail(cleanValue)) {
-        setEmailError("Por favor ingrese un correo electrónico válido (sin acentos o tildes)");
-      } else {
-        setEmailError("");
-      }
-      return; // Salir temprano para evitar el setFormData del inicio
+      const validation = validateEmail(cleanValue);
+      setEmailError(validation.error);
+      return;
     }
     if (field === "email2" && typeof value === "string") {
       // Remover acentos automáticamente
-      const cleanValue = removeAccents(value);
+      const cleanValue = removeAccents(value.trim());
       setFormData(prev => ({
         ...prev,
         [field]: cleanValue
       }));
       
-      if (cleanValue && !validateEmail(cleanValue)) {
-        setEmail2Error("Por favor ingrese un correo electrónico válido (sin acentos o tildes)");
-      } else {
-        setEmail2Error("");
-      }
-      return; // Salir temprano para evitar el setFormData del inicio
+      const validation = validateEmail(cleanValue);
+      setEmail2Error(validation.error);
+      return;
     }
   };
   const handleTipoIdentificacionChange = (value: string) => {
