@@ -39,11 +39,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Search, Eye, Trash2, ChevronLeft, ChevronRight, FileDown, Loader2, Pencil, Save, X, ExternalLink } from "lucide-react";
+import { Search, Eye, Trash2, ChevronLeft, ChevronRight, FileDown, Loader2, Pencil, Save, X, ExternalLink, RefreshCw } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Database } from "@/integrations/supabase/types";
+import { PolicyStatusBadge, getPolizaStatus, PolicyStatus } from "@/components/admin/PolicyStatusBadge";
+import { refreshPolizaConfig } from "@/utils/refreshPolizaConfig";
 
 type Poliza = Database["public"]["Tables"]["polizas_activas"]["Row"];
 
@@ -61,6 +63,7 @@ export default function AdminPolizasPage() {
   const [polizaToDelete, setPolizaToDelete] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [processingPolizaId, setProcessingPolizaId] = useState<string | null>(null);
   const pageSize = 10;
 
   useEffect(() => {
@@ -165,6 +168,129 @@ export default function AdminPolizasPage() {
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Reprocesar póliza: actualiza configuración y llama a RMS API
+  const handleReprocess = async (poliza: Poliza) => {
+    if (processingPolizaId) return;
+    
+    setProcessingPolizaId(poliza.id);
+    
+    try {
+      // 1. Refrescar datos de configuración
+      toast({
+        title: "Actualizando configuración...",
+        description: "Obteniendo datos actualizados de las tablas de configuración",
+      });
+      
+      const refreshResult = await refreshPolizaConfig({
+        id: poliza.id,
+        s_marca: poliza.s_marca,
+        s_modelo: poliza.s_modelo,
+        s_color: poliza.s_color,
+        año_monday: poliza.año_monday,
+        formulario: poliza.formulario,
+        placa_monday: poliza.placa_monday,
+      });
+
+      if (!refreshResult.success) {
+        toast({
+          title: "Error al actualizar configuración",
+          description: refreshResult.error,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (Object.keys(refreshResult.updatedFields).length > 0) {
+        toast({
+          title: "Configuración actualizada",
+          description: `Se actualizaron ${Object.keys(refreshResult.updatedFields).length} campos`,
+        });
+      }
+
+      // 2. Obtener la póliza actualizada
+      const { data: updatedPoliza, error: fetchError } = await supabase
+        .from('polizas_activas')
+        .select('*')
+        .eq('id', poliza.id)
+        .single();
+
+      if (fetchError || !updatedPoliza) {
+        throw new Error('No se pudo obtener la póliza actualizada');
+      }
+
+      // 3. Llamar al API de RMS
+      toast({
+        title: "Procesando con RMS...",
+        description: "Enviando datos para obtener número de póliza",
+      });
+
+      const { data: rmsResult, error: rmsError } = await supabase.functions.invoke('rms-create-policy', {
+        body: {
+          polizaId: poliza.id,
+          formData: {
+            ...updatedPoliza,
+            n_suma: updatedPoliza.n_suma,
+            c_cd_marca: updatedPoliza.c_cd_marca,
+            c_cd_modelo: updatedPoliza.c_cd_modelo,
+            c_cd_version: updatedPoliza.c_cd_version,
+            c_cd_color: updatedPoliza.c_cd_color,
+            n_nu_centuria: updatedPoliza.n_nu_centuria,
+            c_cd_versionseguro: updatedPoliza.c_cd_versionseguro,
+            c_cd_subversionseguro: updatedPoliza.c_cd_subversionseguro,
+          },
+          tipoFormulario: poliza.formulario || 'natural'
+        }
+      });
+
+      if (rmsError) {
+        console.error('Error llamando a RMS:', rmsError);
+        
+        // Guardar el error en la póliza
+        await supabase
+          .from('polizas_activas')
+          .update({
+            api_status: 'error',
+            api_message: rmsError.message || 'Error al procesar con RMS',
+          })
+          .eq('id', poliza.id);
+        
+        toast({
+          title: "Error al procesar",
+          description: rmsError.message || 'Error al comunicarse con RMS',
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!rmsResult?.success) {
+        toast({
+          title: "Error de RMS",
+          description: rmsResult?.error || 'La API de RMS retornó un error',
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "¡Póliza procesada exitosamente!",
+        description: `Número de póliza: ${rmsResult.numeroPoliza}`,
+      });
+
+      // Refrescar la lista
+      fetchPolizas();
+      
+    } catch (error) {
+      console.error('Error en handleReprocess:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Error desconocido',
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingPolizaId(null);
     }
   };
 
@@ -311,6 +437,7 @@ export default function AdminPolizasPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Estado</TableHead>
                 <TableHead>Titular</TableHead>
                 <TableHead>Documento</TableHead>
                 <TableHead>Placa</TableHead>
@@ -324,52 +451,75 @@ export default function AdminPolizasPage() {
             <TableBody>
               {polizas.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     No se encontraron pólizas
                   </TableCell>
                 </TableRow>
               ) : (
-                polizas.map((poliza) => (
-                  <TableRow key={poliza.id}>
-                    <TableCell className="font-medium">
-                      {poliza.nombre_titular_monday} {poliza.apellidos_titular_monday}
-                    </TableCell>
-                    <TableCell>{poliza.nro_documento_natural_monday || poliza.nro_documento_juridico_monday}</TableCell>
-                    <TableCell>{poliza.placa_monday}</TableCell>
-                    <TableCell>
-                      {poliza.s_marca} {poliza.s_modelo}
-                    </TableCell>
-                    <TableCell>{poliza.numero_poliza_monday}</TableCell>
-                    <TableCell>{poliza.fecha_de_vencimiento_monday}</TableCell>
-                    <TableCell>
-                      <Badge variant={poliza.formulario === "natural" ? "default" : "secondary"}>
-                        {poliza.formulario === "natural" ? "Natural" : "Jurídico"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openDetailDialog(poliza)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            setPolizaToDelete(poliza.id);
-                            setShowDeleteDialog(true);
-                          }}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                polizas.map((poliza) => {
+                  const { status, message } = getPolizaStatus(poliza);
+                  const isProcessing = processingPolizaId === poliza.id;
+                  
+                  return (
+                    <TableRow key={poliza.id}>
+                      <TableCell>
+                        <PolicyStatusBadge
+                          status={isProcessing ? 'processing' : status}
+                          message={message}
+                          onClick={status === 'error' || status === 'pending' ? () => handleReprocess(poliza) : undefined}
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {poliza.nombre_titular_monday} {poliza.apellidos_titular_monday}
+                      </TableCell>
+                      <TableCell>{poliza.nro_documento_natural_monday || poliza.nro_documento_juridico_monday}</TableCell>
+                      <TableCell>{poliza.placa_monday}</TableCell>
+                      <TableCell>
+                        {poliza.s_marca} {poliza.s_modelo}
+                      </TableCell>
+                      <TableCell>{poliza.numero_poliza_monday || '-'}</TableCell>
+                      <TableCell>{poliza.fecha_de_vencimiento_monday}</TableCell>
+                      <TableCell>
+                        <Badge variant={poliza.formulario === "natural" ? "default" : "secondary"}>
+                          {poliza.formulario === "natural" ? "Natural" : "Jurídico"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          {(status === 'error' || status === 'pending') && (
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => handleReprocess(poliza)}
+                              disabled={isProcessing}
+                              title="Reprocesar póliza"
+                            >
+                              <RefreshCw className={`h-4 w-4 ${isProcessing ? 'animate-spin' : ''}`} />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openDetailDialog(poliza)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setPolizaToDelete(poliza.id);
+                              setShowDeleteDialog(true);
+                            }}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
@@ -721,6 +871,48 @@ export default function AdminPolizasPage() {
 
                 {/* Datos Técnicos */}
                 <TabsContent value="tecnico" className="space-y-4 mt-4">
+                  {/* Estado API y Reprocesar */}
+                  {selectedPoliza && (() => {
+                    const { status, message } = getPolizaStatus(selectedPoliza);
+                    const isProcessing = processingPolizaId === selectedPoliza.id;
+                    const showReprocess = status === 'error' || status === 'pending';
+                    
+                    return (
+                      <Card className={status === 'error' ? 'border-red-300 bg-red-50/50' : status === 'pending' ? 'border-amber-300 bg-amber-50/50' : ''}>
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-base">Estado de Procesamiento</CardTitle>
+                            <PolicyStatusBadge status={isProcessing ? 'processing' : status} message={message} />
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="grid grid-cols-3 gap-4">
+                            {renderField("API Status", "api_status")}
+                            {renderField("API Message", "api_message")}
+                            {renderField("n_serialcontrato", "n_serialcontrato")}
+                            {renderField("n_serialcertif", "n_serialcertif")}
+                          </div>
+                          
+                          {showReprocess && (
+                            <div className="pt-2 border-t">
+                              <Button
+                                onClick={() => handleReprocess(selectedPoliza)}
+                                disabled={isProcessing}
+                                className="gap-2"
+                              >
+                                <RefreshCw className={`h-4 w-4 ${isProcessing ? 'animate-spin' : ''}`} />
+                                {isProcessing ? 'Procesando...' : 'Reprocesar Póliza'}
+                              </Button>
+                              <p className="text-xs text-muted-foreground mt-2">
+                                Esto actualizará los datos de configuración (precio, códigos de marca/modelo/versión) y volverá a enviar a RMS.
+                              </p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })()}
+                  
                   <Card>
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base">Información de Póliza</CardTitle>
