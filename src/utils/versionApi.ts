@@ -41,7 +41,7 @@ export const fetchVersionApi = async (
 
   try {
     // Query the table filtering by brand prefix and year (centuria)
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('board_cod_version_api')
       .select('cd_version_seguro, cd_subversion_seguro, n_centuria')
       .ilike('cd_version_seguro', `${prefijo}%`)
@@ -53,17 +53,39 @@ export const fetchVersionApi = async (
       return null;
     }
 
+    // If not found, try with the previous year as fallback
     if (!data) {
-      console.warn(`fetchVersionApi: No version API found for ${prefijo} ${año}`);
-      return null;
+      const añoAnterior = String(parseInt(año) - 1);
+      console.log(`fetchVersionApi: No encontrado para ${prefijo} ${año}, buscando año anterior: ${añoAnterior}`);
+      
+      const fallbackResult = await supabase
+        .from('board_cod_version_api')
+        .select('cd_version_seguro, cd_subversion_seguro, n_centuria')
+        .ilike('cd_version_seguro', `${prefijo}%`)
+        .eq('n_centuria', añoAnterior)
+        .maybeSingle();
+      
+      if (fallbackResult.error) {
+        console.error('fetchVersionApi: Error en fallback:', fallbackResult.error);
+        return null;
+      }
+      
+      data = fallbackResult.data;
+      
+      if (!data) {
+        console.warn(`fetchVersionApi: No version API found for ${prefijo} ${año} ni ${añoAnterior}`);
+        return null;
+      }
+      
+      console.log(`fetchVersionApi: Usando versión API del año anterior (${añoAnterior}):`, data);
+    } else {
+      console.log('fetchVersionApi: Found version API data:', data);
     }
-
-    console.log('fetchVersionApi: Found version API data:', data);
     
     return {
       cd_version_seguro: data.cd_version_seguro || '',
       cd_subversion_seguro: data.cd_subversion_seguro || '',
-      n_centuria: data.n_centuria || año
+      n_centuria: data.n_centuria || ''
     };
   } catch (error) {
     console.error('fetchVersionApi: Unexpected error:', error);
