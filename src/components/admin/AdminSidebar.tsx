@@ -1,5 +1,5 @@
 import { FileText, Settings, LogOut, Shield, LayoutDashboard, Bike } from "lucide-react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -45,7 +45,14 @@ const menuItems = [
 
 export function AdminSidebar() {
   const navigate = useNavigate();
-  const { signOut, user } = useAdminAuth();
+  const location = useLocation();
+  const { signOut } = useAdminAuth();
+
+  const pathname = location.pathname;
+  const isItemActive = (url: string) => {
+    if (url === "/admin") return pathname === "/admin";
+    return pathname === url || pathname.startsWith(`${url}/`);
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -60,12 +67,8 @@ export function AdminSidebar() {
             <Shield className="h-5 w-5 text-primary-foreground" />
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-semibold text-sidebar-foreground">
-              VITALICIA
-            </span>
-            <span className="text-xs text-sidebar-foreground/60">
-              Panel Admin
-            </span>
+            <span className="text-sm font-semibold text-sidebar-foreground">VITALICIA</span>
+            <span className="text-xs text-sidebar-foreground/60">Panel Admin</span>
           </div>
         </div>
       </SidebarHeader>
@@ -77,26 +80,28 @@ export function AdminSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end={item.url === "/admin"}
-                      className={({ isActive }) =>
-                        cn(
-                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                          isActive &&
-                            "bg-sidebar-accent text-sidebar-accent-foreground font-medium border-l-2 border-primary"
-                        )
-                      }
+              {menuItems.map((item) => {
+                const active = isItemActive(item.url);
+
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={active}
+                      className={cn(
+                        "rounded-lg px-3 py-2 gap-3 transition-colors",
+                        "data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:shadow-soft",
+                        "data-[active=true]:border-l-2 data-[active=true]:border-primary",
+                      )}
                     >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+                      <Link to={item.url} aria-current={active ? "page" : undefined}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -118,3 +123,4 @@ export function AdminSidebar() {
     </Sidebar>
   );
 }
+
