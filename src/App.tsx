@@ -36,6 +36,8 @@ import { AdminAuthProvider } from "./contexts/AdminAuthContext";
 import { ProtectedAdminRoute } from "./components/admin/ProtectedAdminRoute";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminLoginPage from "./pages/admin/AdminLoginPage";
+import AdminForgotPasswordPage from "./pages/admin/AdminForgotPasswordPage";
+import AdminResetPasswordPage from "./pages/admin/AdminResetPasswordPage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminPolizasPage from "./pages/admin/AdminPolizasPage";
 import AdminConfiguracionesPage from "./pages/admin/AdminConfiguracionesPage";
@@ -88,6 +90,8 @@ const App = () => (
             
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Route path="/admin/forgot-password" element={<AdminForgotPasswordPage />} />
+            <Route path="/admin/reset-password" element={<AdminResetPasswordPage />} />
             <Route
               path="/admin"
               element={
