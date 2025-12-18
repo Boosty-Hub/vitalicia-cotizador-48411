@@ -1,4 +1,4 @@
-import { FileText, Settings, LogOut, Shield, LayoutDashboard } from "lucide-react";
+import { FileText, Settings, LogOut, Shield, LayoutDashboard, Bike } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -25,6 +25,16 @@ const menuItems = [
     title: "Pólizas",
     url: "/admin/polizas",
     icon: FileText,
+  },
+  {
+    title: "Inventario BERA",
+    url: "/admin/inventario-bera",
+    icon: Bike,
+  },
+  {
+    title: "Inventario EMPIRE",
+    url: "/admin/inventario-empire",
+    icon: Bike,
   },
   {
     title: "Configuraciones",
