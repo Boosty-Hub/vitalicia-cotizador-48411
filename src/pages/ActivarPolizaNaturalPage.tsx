@@ -1166,6 +1166,37 @@ const ActivarPolizaNaturalPage = () => {
     }
   };
 
+  // Call RMS API to get policy number
+  const callRmsApi = async (polizaId: string, payload: any) => {
+    try {
+      console.log('🔄 Llamando a RMS API para obtener número de póliza...');
+      
+      const { data, error } = await supabase.functions.invoke('rms-create-policy', {
+        body: {
+          polizaId,
+          formData: payload,
+          tipoFormulario: 'natural'
+        }
+      });
+
+      if (error) {
+        console.error('❌ Error llamando a RMS API:', error);
+        throw error;
+      }
+
+      if (!data?.success) {
+        console.error('❌ RMS API retornó error:', data?.error);
+        throw new Error(data?.error || 'Error al obtener número de póliza');
+      }
+
+      console.log('✅ Número de póliza obtenido:', data.numeroPoliza);
+      return data;
+    } catch (error) {
+      console.error('❌ Error en callRmsApi:', error);
+      throw error;
+    }
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     
@@ -1184,12 +1215,23 @@ const ActivarPolizaNaturalPage = () => {
       console.log('💰 Precio venta EMPIRE:', precioVenta);
       
       // Step 4: Save to polizas_activas table
-      await saveToPolizasActivas(payload, documentUrls, precioVenta);
+      const savedPoliza = await saveToPolizasActivas(payload, documentUrls, precioVenta);
       
-      toast({
-        title: "¡Póliza registrada exitosamente!",
-        description: "Tu póliza ha sido guardada correctamente en el sistema"
-      });
+      // Step 5: Call RMS API to get policy number
+      try {
+        const rmsResponse = await callRmsApi(savedPoliza.id, payload);
+        toast({
+          title: "¡Póliza activada exitosamente!",
+          description: `Tu número de póliza es: ${rmsResponse.numeroPoliza}`
+        });
+      } catch (rmsError) {
+        console.error('⚠️ Error al obtener número de póliza, pero la póliza fue guardada:', rmsError);
+        toast({
+          title: "Póliza registrada",
+          description: "Tu póliza ha sido guardada. El número de póliza se asignará pronto.",
+          variant: "default"
+        });
+      }
 
       setCurrentStep(6);
       

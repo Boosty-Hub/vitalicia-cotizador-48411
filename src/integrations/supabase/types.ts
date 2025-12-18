@@ -535,7 +535,11 @@ export type Database = {
           año_monday: string | null
           apellido_apoderado_monday: string | null
           apellidos_titular_monday: string | null
+          api_coberturas: Json | null
+          api_message: string | null
           api_monday: string | null
+          api_recibos: Json | null
+          api_status: string | null
           c_apellido: string | null
           c_apellidoap: string | null
           c_apellidoch: string | null
@@ -612,6 +616,8 @@ export type Database = {
           n_correlativo: string | null
           n_ingresoanualnac: string | null
           n_nu_centuria: string | null
+          n_serialcertif: string | null
+          n_serialcontrato: string | null
           n_suma: string | null
           nombre_apoderado_monday: string | null
           nombre_titular_monday: string | null
@@ -662,7 +668,11 @@ export type Database = {
           año_monday?: string | null
           apellido_apoderado_monday?: string | null
           apellidos_titular_monday?: string | null
+          api_coberturas?: Json | null
+          api_message?: string | null
           api_monday?: string | null
+          api_recibos?: Json | null
+          api_status?: string | null
           c_apellido?: string | null
           c_apellidoap?: string | null
           c_apellidoch?: string | null
@@ -739,6 +749,8 @@ export type Database = {
           n_correlativo?: string | null
           n_ingresoanualnac?: string | null
           n_nu_centuria?: string | null
+          n_serialcertif?: string | null
+          n_serialcontrato?: string | null
           n_suma?: string | null
           nombre_apoderado_monday?: string | null
           nombre_titular_monday?: string | null
@@ -789,7 +801,11 @@ export type Database = {
           año_monday?: string | null
           apellido_apoderado_monday?: string | null
           apellidos_titular_monday?: string | null
+          api_coberturas?: Json | null
+          api_message?: string | null
           api_monday?: string | null
+          api_recibos?: Json | null
+          api_status?: string | null
           c_apellido?: string | null
           c_apellidoap?: string | null
           c_apellidoch?: string | null
@@ -866,6 +882,8 @@ export type Database = {
           n_correlativo?: string | null
           n_ingresoanualnac?: string | null
           n_nu_centuria?: string | null
+          n_serialcertif?: string | null
+          n_serialcontrato?: string | null
           n_suma?: string | null
           nombre_apoderado_monday?: string | null
           nombre_titular_monday?: string | null

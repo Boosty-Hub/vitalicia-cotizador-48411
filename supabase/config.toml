@@ -1,1 +1,4 @@
 project_id = "avlbdqqwldjteafmzwjb"
+
+[functions.rms-create-policy]
+verify_jwt = false
