@@ -229,10 +229,11 @@ export default function AdminPolizasPage() {
       );
     }
 
+    const displayValue = typeof value === 'object' ? JSON.stringify(value) : value;
     return (
       <div className="space-y-1">
         <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-sm font-medium">{value || "-"}</p>
+        <p className="text-sm font-medium">{displayValue || "-"}</p>
       </div>
     );
   };
