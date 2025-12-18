@@ -25,47 +25,100 @@ export async function refreshPolizaConfig(poliza: PolizaConfigData): Promise<Ref
   try {
     const updatedFields: Record<string, any> = {};
     
+    console.log('🔄 Iniciando refreshPolizaConfig para:', poliza.id);
+    console.log('📋 Datos de entrada:', { s_marca: poliza.s_marca, s_modelo: poliza.s_modelo, s_color: poliza.s_color });
+    
     // 1. Fetch marca code and description
     if (poliza.s_marca) {
-      const { data: marcaData } = await supabase
+      // Normalize marca name for better matching
+      const marcaNormalized = poliza.s_marca.trim();
+      
+      const { data: marcaData, error: marcaError } = await supabase
         .from('board_cod_marca')
         .select('cd_marca, descripcion')
-        .ilike('descripcion', poliza.s_marca)
+        .ilike('descripcion', marcaNormalized)
         .maybeSingle();
+
+      console.log('🏷️ Búsqueda de marca:', { marcaNormalized, marcaData, marcaError });
 
       if (marcaData) {
         updatedFields.c_cd_marca = marcaData.cd_marca;
         updatedFields.s_marca = marcaData.descripcion;
+        console.log('✅ Marca encontrada:', marcaData);
+      } else {
+        // Try partial match if exact match fails
+        const { data: marcaPartialData } = await supabase
+          .from('board_cod_marca')
+          .select('cd_marca, descripcion')
+          .or(`descripcion.ilike.%${marcaNormalized}%,descripcion.ilike.%${marcaNormalized.replace(/\s+/g, '')}%`)
+          .limit(1)
+          .maybeSingle();
+        
+        if (marcaPartialData) {
+          updatedFields.c_cd_marca = marcaPartialData.cd_marca;
+          updatedFields.s_marca = marcaPartialData.descripcion;
+          console.log('✅ Marca encontrada (parcial):', marcaPartialData);
+        } else {
+          console.warn('⚠️ No se encontró marca para:', marcaNormalized);
+        }
       }
     }
 
     // 2. Fetch modelo code and description
     if (poliza.s_modelo && updatedFields.c_cd_marca) {
-      const { data: modeloData } = await supabase
+      const modeloNormalized = poliza.s_modelo.trim();
+      
+      const { data: modeloData, error: modeloError } = await supabase
         .from('board_cod_modelo')
         .select('cd_modelo, descripcion')
         .eq('cd_marca', updatedFields.c_cd_marca)
-        .ilike('descripcion', poliza.s_modelo)
+        .ilike('descripcion', modeloNormalized)
         .maybeSingle();
+
+      console.log('🚗 Búsqueda de modelo:', { modeloNormalized, cd_marca: updatedFields.c_cd_marca, modeloData, modeloError });
 
       if (modeloData) {
         updatedFields.c_cd_modelo = modeloData.cd_modelo;
         updatedFields.s_modelo = modeloData.descripcion;
         updatedFields.cod_modelo_monday = modeloData.cd_modelo;
+        console.log('✅ Modelo encontrado:', modeloData);
+      } else {
+        // Try partial match
+        const { data: modeloPartialData } = await supabase
+          .from('board_cod_modelo')
+          .select('cd_modelo, descripcion')
+          .eq('cd_marca', updatedFields.c_cd_marca)
+          .ilike('descripcion', `%${modeloNormalized}%`)
+          .limit(1)
+          .maybeSingle();
+        
+        if (modeloPartialData) {
+          updatedFields.c_cd_modelo = modeloPartialData.cd_modelo;
+          updatedFields.s_modelo = modeloPartialData.descripcion;
+          updatedFields.cod_modelo_monday = modeloPartialData.cd_modelo;
+          console.log('✅ Modelo encontrado (parcial):', modeloPartialData);
+        } else {
+          console.warn('⚠️ No se encontró modelo para:', modeloNormalized);
+        }
       }
     }
 
     // 3. Fetch color code and description
     if (poliza.s_color) {
-      const { data: colorData } = await supabase
+      const colorNormalized = poliza.s_color.trim();
+      
+      const { data: colorData, error: colorError } = await supabase
         .from('board_cod_color')
         .select('cd_valdet, descripcion')
-        .ilike('descripcion', poliza.s_color)
+        .ilike('descripcion', colorNormalized)
         .maybeSingle();
+
+      console.log('🎨 Búsqueda de color:', { colorNormalized, colorData, colorError });
 
       if (colorData) {
         updatedFields.c_cd_color = colorData.cd_valdet;
         updatedFields.cod_color_empire_monday = colorData.cd_valdet;
+        console.log('✅ Color encontrado:', colorData);
       }
     }
 
@@ -130,6 +183,7 @@ export async function refreshPolizaConfig(poliza: PolizaConfigData): Promise<Ref
 
     // If no fields were updated, return success but no changes
     if (Object.keys(updatedFields).length === 0) {
+      console.log('⚠️ No se encontraron campos para actualizar');
       return {
         success: true,
         updatedFields: {},
@@ -137,14 +191,17 @@ export async function refreshPolizaConfig(poliza: PolizaConfigData): Promise<Ref
       };
     }
 
+    console.log('📝 Campos a actualizar en la DB:', updatedFields);
+
     // Update the poliza in the database
-    const { error: updateError } = await supabase
+    const { data: updateData, error: updateError } = await supabase
       .from('polizas_activas')
       .update(updatedFields)
-      .eq('id', poliza.id);
+      .eq('id', poliza.id)
+      .select();
 
     if (updateError) {
-      console.error('Error updating poliza config:', updateError);
+      console.error('❌ Error updating poliza config:', updateError);
       return {
         success: false,
         updatedFields: {},
@@ -152,6 +209,7 @@ export async function refreshPolizaConfig(poliza: PolizaConfigData): Promise<Ref
       };
     }
 
+    console.log('✅ Póliza actualizada exitosamente:', updateData);
     console.log('✅ Poliza config refreshed:', updatedFields);
     return {
       success: true,
@@ -159,7 +217,7 @@ export async function refreshPolizaConfig(poliza: PolizaConfigData): Promise<Ref
     };
 
   } catch (error) {
-    console.error('Error in refreshPolizaConfig:', error);
+    console.error('❌ Error in refreshPolizaConfig:', error);
     return {
       success: false,
       updatedFields: {},
