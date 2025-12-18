@@ -196,7 +196,7 @@ const LoginPage = () => {
               <Button
                 variant="ghost"
                 className="text-muted-foreground hover:text-foreground"
-                onClick={() => navigate('/admin')}
+                onClick={() => navigate('/admin/login')}
               >
                 <Settings className="mr-2 w-4 h-4" />
                 Acceso Administrador

@@ -32,10 +32,14 @@ import ActivarPolizaNaturalPage from "./pages/ActivarPolizaNaturalPage";
 import ActivarPolizaJuridicaPage from "./pages/ActivarPolizaJuridicaPage";
 
 // Admin imports
+import { AdminAuthProvider } from "./contexts/AdminAuthContext";
+import { ProtectedAdminRoute } from "./components/admin/ProtectedAdminRoute";
 import AdminLayout from "./pages/admin/AdminLayout";
+import AdminLoginPage from "./pages/admin/AdminLoginPage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminPolizasPage from "./pages/admin/AdminPolizasPage";
 import AdminConfiguracionesPage from "./pages/admin/AdminConfiguracionesPage";
+import AdminUsuariosPage from "./pages/admin/AdminUsuariosPage";
 
 const queryClient = new QueryClient();
 
@@ -44,46 +48,57 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/salud" element={<SaludPage />} />
-          <Route path="/auto" element={<AutoPage />} />
-          <Route path="/viajes" element={<ViajesPage />} />
-          <Route path="/hogar" element={<HogarPage />} />
-          <Route path="/vida" element={<VidaPage />} />
-          <Route path="/empresas" element={<EmpresasPage />} />
-          <Route path="/salud-colectiva" element={<SaludColectivaPage />} />
-          <Route path="/auto-individual" element={<AutoIndividualPage />} />
-          <Route path="/cotizar-salud" element={<CotizarSaludPage />} />
-          <Route path="/cotizar-vehiculo" element={<CotizarVehiculoMejoradoPage />} />
-          <Route path="/cotizar-viajes" element={<CotizarViajesMejoradoPage />} />
-          <Route path="/cotizar-hogar" element={<CotizarHogarPage />} />
-          <Route path="/cotizar-vida" element={<CotizarVidaPage />} />
-          <Route path="/cotizar-empresa" element={<CotizarEmpresaPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/dashboard-cliente" element={<DashboardClientePage />} />
-          <Route path="/dashboard-intermediario" element={<DashboardIntermediarioPage />} />
-          <Route path="/hogar-individual" element={<HogarIndividualPage />} />
-          <Route path="/nueva-poliza" element={<NuevaPolizaPage />} />
-          <Route path="/nueva-cotizacion-empresa" element={<NuevaCotizacionEmpresaPage />} />
-          <Route path="/cotizar-vehiculo-mejorado" element={<CotizarVehiculoMejoradoPage />} />
-          <Route path="/activar-poliza-rcv" element={<ActivarPolizaRCVPage />} />
-          <Route path="/activar-poliza-natural" element={<ActivarPolizaNaturalPage />} />
-          <Route path="/activar-poliza-juridica" element={<ActivarPolizaJuridicaPage />} />
-          
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminDashboardPage />} />
-            <Route path="polizas" element={<AdminPolizasPage />} />
-            <Route path="configuraciones" element={<AdminConfiguracionesPage />} />
-            <Route path="configuraciones/:tabla" element={<AdminConfiguracionesPage />} />
-          </Route>
-          
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AdminAuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/salud" element={<SaludPage />} />
+            <Route path="/auto" element={<AutoPage />} />
+            <Route path="/viajes" element={<ViajesPage />} />
+            <Route path="/hogar" element={<HogarPage />} />
+            <Route path="/vida" element={<VidaPage />} />
+            <Route path="/empresas" element={<EmpresasPage />} />
+            <Route path="/salud-colectiva" element={<SaludColectivaPage />} />
+            <Route path="/auto-individual" element={<AutoIndividualPage />} />
+            <Route path="/cotizar-salud" element={<CotizarSaludPage />} />
+            <Route path="/cotizar-vehiculo" element={<CotizarVehiculoMejoradoPage />} />
+            <Route path="/cotizar-viajes" element={<CotizarViajesMejoradoPage />} />
+            <Route path="/cotizar-hogar" element={<CotizarHogarPage />} />
+            <Route path="/cotizar-vida" element={<CotizarVidaPage />} />
+            <Route path="/cotizar-empresa" element={<CotizarEmpresaPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/dashboard-cliente" element={<DashboardClientePage />} />
+            <Route path="/dashboard-intermediario" element={<DashboardIntermediarioPage />} />
+            <Route path="/hogar-individual" element={<HogarIndividualPage />} />
+            <Route path="/nueva-poliza" element={<NuevaPolizaPage />} />
+            <Route path="/nueva-cotizacion-empresa" element={<NuevaCotizacionEmpresaPage />} />
+            <Route path="/cotizar-vehiculo-mejorado" element={<CotizarVehiculoMejoradoPage />} />
+            <Route path="/activar-poliza-rcv" element={<ActivarPolizaRCVPage />} />
+            <Route path="/activar-poliza-natural" element={<ActivarPolizaNaturalPage />} />
+            <Route path="/activar-poliza-juridica" element={<ActivarPolizaJuridicaPage />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminLayout />
+                </ProtectedAdminRoute>
+              }
+            >
+              <Route index element={<AdminDashboardPage />} />
+              <Route path="polizas" element={<AdminPolizasPage />} />
+              <Route path="configuraciones" element={<AdminConfiguracionesPage />} />
+              <Route path="configuraciones/usuarios" element={<AdminUsuariosPage />} />
+              <Route path="configuraciones/:tabla" element={<AdminConfiguracionesPage />} />
+            </Route>
+            
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </AdminAuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

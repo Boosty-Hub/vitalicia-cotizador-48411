@@ -60,11 +60,16 @@ const otrosItems = [
   { title: "Versiones API", url: "/admin/configuraciones/versiones-api", icon: Wrench, table: "board_cod_version_api" },
 ];
 
+const sistemaItems = [
+  { title: "Usuarios", url: "/admin/configuraciones/usuarios", icon: Users, table: "user_roles" },
+];
+
 const menuGroups = [
   { label: "Ubicación", items: ubicacionItems },
   { label: "Vehículos", items: vehiculosItems },
   { label: "Personas", items: personasItems },
   { label: "Otros", items: otrosItems },
+  { label: "Sistema", items: sistemaItems },
 ];
 
 export function ConfigSidebar() {
@@ -120,4 +125,4 @@ export function ConfigSidebar() {
   );
 }
 
-export { menuGroups, ubicacionItems, vehiculosItems, personasItems, otrosItems };
+export { menuGroups, ubicacionItems, vehiculosItems, personasItems, otrosItems, sistemaItems };
