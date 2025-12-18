@@ -1,0 +1,496 @@
+import { useState, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import * as XLSX from "xlsx";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "@/hooks/use-toast";
+import { 
+  Upload, 
+  FileSpreadsheet, 
+  Loader2, 
+  CheckCircle2, 
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Trash2
+} from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+
+interface MotoEmpire {
+  fecha: string;
+  marca: string;
+  modelo: string;
+  version: string;
+  anio: number;
+  transmision: string;
+  placa: string;
+  serial_motor: string;
+  serial_carroceria: string;
+  color: string;
+}
+
+const COLUMN_MAPPING: Record<string, keyof MotoEmpire> = {
+  "Fecha": "fecha",
+  "FECHA": "fecha",
+  "MARCA": "marca",
+  "MODELO": "modelo",
+  "VERSION": "version",
+  "ANHO": "anio",
+  "AÑO": "anio",
+  "TRANSMISION": "transmision",
+  "PLACA": "placa",
+  "SERIAL MOTOR": "serial_motor",
+  "SERIAL CARROCERIA": "serial_carroceria",
+  "COLOR": "color",
+};
+
+export default function AdminCargaEmpirePage() {
+  const [file, setFile] = useState<File | null>(null);
+  const [data, setData] = useState<MotoEmpire[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const pageSize = 20;
+
+  const parseExcelDate = (value: any): string => {
+    if (!value) return "";
+    
+    if (typeof value === "string") {
+      const parts = value.split("/");
+      if (parts.length === 3) {
+        return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+      }
+      return value;
+    }
+    
+    if (typeof value === "number") {
+      const date = XLSX.SSF.parse_date_code(value);
+      if (date) {
+        return `${date.y}-${String(date.m).padStart(2, "0")}-${String(date.d).padStart(2, "0")}`;
+      }
+    }
+    
+    return String(value);
+  };
+
+  const processExcel = useCallback(async (selectedFile: File) => {
+    setLoading(true);
+    setFile(selectedFile);
+    
+    try {
+      const arrayBuffer = await selectedFile.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: "array" });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+      
+      if (jsonData.length < 2) {
+        toast({
+          title: "Error",
+          description: "El archivo no contiene datos",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      const headers = jsonData[0] as string[];
+      const rows = jsonData.slice(1);
+      
+      const processedData: MotoEmpire[] = rows
+        .filter(row => row.some(cell => cell !== null && cell !== undefined && cell !== ""))
+        .map((row) => {
+          const item: Partial<MotoEmpire> = {};
+          
+          headers.forEach((header, index) => {
+            const mappedKey = COLUMN_MAPPING[header?.trim()?.toUpperCase()] || COLUMN_MAPPING[header?.trim()];
+            if (mappedKey && row[index] !== undefined && row[index] !== null) {
+              const value = row[index];
+              
+              if (mappedKey === "fecha") {
+                (item as any)[mappedKey] = parseExcelDate(value);
+              } else if (mappedKey === "anio") {
+                (item as any)[mappedKey] = parseInt(String(value)) || 0;
+              } else {
+                (item as any)[mappedKey] = String(value).trim();
+              }
+            }
+          });
+          
+          return item as MotoEmpire;
+        })
+        .filter(item => item.placa || item.serial_carroceria);
+
+      setData(processedData);
+      setCurrentPage(1);
+      
+      toast({
+        title: "Archivo procesado",
+        description: `Se encontraron ${processedData.length} registros`,
+      });
+    } catch (error) {
+      console.error("Error processing Excel:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo procesar el archivo Excel",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      processExcel(selectedFile);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const droppedFile = e.dataTransfer.files[0];
+    if (droppedFile && (droppedFile.name.endsWith(".xlsx") || droppedFile.name.endsWith(".xls"))) {
+      processExcel(droppedFile);
+    } else {
+      toast({
+        title: "Formato no válido",
+        description: "Por favor sube un archivo Excel (.xlsx o .xls)",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpload = async () => {
+    if (data.length === 0) return;
+    
+    setUploading(true);
+    setUploadProgress(0);
+    
+    const lote_carga = crypto.randomUUID();
+    const batchSize = 100;
+    
+    try {
+      for (let i = 0; i < data.length; i += batchSize) {
+        const batch = data.slice(i, i + batchSize).map(item => ({
+          ...item,
+          lote_carga,
+        }));
+        
+        const { error } = await supabase.from("bd_empire").insert(batch);
+        
+        if (error) throw error;
+        
+        const progress = Math.round(((i + batch.length) / data.length) * 100);
+        setUploadProgress(progress);
+      }
+      
+      toast({
+        title: "Carga exitosa",
+        description: `Se cargaron ${data.length} registros correctamente`,
+      });
+      
+      setFile(null);
+      setData([]);
+      setShowConfirmDialog(false);
+    } catch (error) {
+      console.error("Error uploading:", error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los datos",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const handleClear = () => {
+    setFile(null);
+    setData([]);
+    setCurrentPage(1);
+  };
+
+  const downloadTemplate = () => {
+    const headers = ["Fecha", "MARCA", "MODELO", "VERSION", "ANHO", "TRANSMISION", "PLACA", "SERIAL MOTOR", "SERIAL CARROCERIA", "COLOR"];
+    const ws = XLSX.utils.aoa_to_sheet([headers]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Plantilla");
+    XLSX.writeFile(wb, "plantilla_carga_empire.xlsx");
+  };
+
+  const totalPages = Math.ceil(data.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginatedData = data.slice(startIndex, startIndex + pageSize);
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b border-border bg-card">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-orange-500 flex items-center justify-center">
+              <FileSpreadsheet className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h1 className="font-semibold text-foreground">Portal de Carga EMPIRE</h1>
+              <p className="text-xs text-muted-foreground">Sistema de registro de motos</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-6">
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold text-foreground">Carga de Motos EMPIRE</h2>
+              <p className="text-sm text-muted-foreground">
+                Sube el archivo Excel de la fábrica para cargar las motos a la base de datos
+              </p>
+            </div>
+            <Button variant="outline" onClick={downloadTemplate} className="gap-2">
+              <Download className="h-4 w-4" />
+              Descargar Plantilla
+            </Button>
+          </div>
+
+          {/* Upload Zone */}
+          {!file && (
+            <Card
+              className={`border-2 border-dashed transition-colors ${
+                isDragging ? "border-orange-500 bg-orange-500/5" : "border-muted-foreground/25"
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <CardContent className="py-12">
+                <div className="flex flex-col items-center justify-center text-center">
+                  <div className="rounded-full bg-orange-500/10 p-4 mb-4">
+                    <FileSpreadsheet className="h-10 w-10 text-orange-500" />
+                  </div>
+                  <h3 className="text-lg font-medium mb-2">
+                    Arrastra tu archivo Excel aquí
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    o haz clic para seleccionar un archivo (.xlsx, .xls)
+                  </p>
+                  <Input
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    id="file-upload-empire"
+                  />
+                  <label htmlFor="file-upload-empire">
+                    <Button variant="default" className="gap-2 bg-orange-500 hover:bg-orange-600" asChild>
+                      <span>
+                        <Upload className="h-4 w-4" />
+                        Seleccionar Archivo
+                      </span>
+                    </Button>
+                  </label>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Loading State */}
+          {loading && (
+            <Card>
+              <CardContent className="py-12">
+                <div className="flex flex-col items-center justify-center">
+                  <Loader2 className="h-10 w-10 animate-spin text-orange-500 mb-4" />
+                  <p className="text-muted-foreground">Procesando archivo...</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Preview Section */}
+          {!loading && data.length > 0 && (
+            <>
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                        Vista Previa
+                      </CardTitle>
+                      <CardDescription>
+                        Archivo: {file?.name}
+                      </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-lg px-3 py-1 bg-orange-500/10 text-orange-600">
+                        {data.length} registros
+                      </Badge>
+                      <Button variant="ghost" size="icon" onClick={handleClear}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-lg border border-border overflow-auto max-h-[500px]">
+                    <Table>
+                      <TableHeader className="sticky top-0 bg-card z-10">
+                        <TableRow>
+                          <TableHead className="whitespace-nowrap">Fecha</TableHead>
+                          <TableHead className="whitespace-nowrap">Marca</TableHead>
+                          <TableHead className="whitespace-nowrap">Modelo</TableHead>
+                          <TableHead className="whitespace-nowrap">Versión</TableHead>
+                          <TableHead className="whitespace-nowrap">Año</TableHead>
+                          <TableHead className="whitespace-nowrap">Transmisión</TableHead>
+                          <TableHead className="whitespace-nowrap">Placa</TableHead>
+                          <TableHead className="whitespace-nowrap">Serial Motor</TableHead>
+                          <TableHead className="whitespace-nowrap">Serial Carrocería</TableHead>
+                          <TableHead className="whitespace-nowrap">Color</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {paginatedData.map((item, index) => (
+                          <TableRow key={index}>
+                            <TableCell className="whitespace-nowrap">{item.fecha}</TableCell>
+                            <TableCell>{item.marca}</TableCell>
+                            <TableCell>{item.modelo}</TableCell>
+                            <TableCell>{item.version}</TableCell>
+                            <TableCell>{item.anio}</TableCell>
+                            <TableCell>{item.transmision}</TableCell>
+                            <TableCell className="font-mono">{item.placa}</TableCell>
+                            <TableCell className="font-mono text-xs">{item.serial_motor}</TableCell>
+                            <TableCell className="font-mono text-xs">{item.serial_carroceria}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{item.color}</Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between mt-4">
+                      <p className="text-sm text-muted-foreground">
+                        Mostrando {startIndex + 1} a {Math.min(startIndex + pageSize, data.length)} de{" "}
+                        {data.length} registros
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="text-sm text-muted-foreground">
+                          Página {currentPage} de {totalPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-4">
+                <Button variant="outline" onClick={handleClear}>
+                  Cancelar
+                </Button>
+                <Button onClick={() => setShowConfirmDialog(true)} className="gap-2 bg-orange-500 hover:bg-orange-600">
+                  <Upload className="h-4 w-4" />
+                  Cargar {data.length} Registros
+                </Button>
+              </div>
+            </>
+          )}
+
+          {/* Confirm Dialog */}
+          <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirmar Carga</AlertDialogTitle>
+                <AlertDialogDescription>
+                  ¿Estás seguro de que deseas cargar {data.length} registros a la base de datos BD_EMPIRE?
+                  Esta acción no se puede deshacer.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              
+              {uploading && (
+                <div className="py-4">
+                  <Progress value={uploadProgress} className="h-2" />
+                  <p className="text-sm text-muted-foreground text-center mt-2">
+                    Cargando... {uploadProgress}%
+                  </p>
+                </div>
+              )}
+              
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={uploading}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleUpload} disabled={uploading} className="bg-orange-500 hover:bg-orange-600">
+                  {uploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Cargando...
+                    </>
+                  ) : (
+                    "Confirmar Carga"
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </main>
+    </div>
+  );
+}

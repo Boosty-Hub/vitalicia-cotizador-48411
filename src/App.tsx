@@ -42,6 +42,7 @@ import AdminConfiguracionesPage from "./pages/admin/AdminConfiguracionesPage";
 import AdminUsuariosPage from "./pages/admin/AdminUsuariosPage";
 import AdminPreciosEmpirePage from "./pages/admin/AdminPreciosEmpirePage";
 import AdminCargaBeraPage from "./pages/admin/AdminCargaBeraPage";
+import AdminCargaEmpirePage from "./pages/admin/AdminCargaEmpirePage";
 
 const queryClient = new QueryClient();
 
@@ -79,8 +80,9 @@ const App = () => (
             <Route path="/activar-poliza-natural" element={<ActivarPolizaNaturalPage />} />
             <Route path="/activar-poliza-juridica" element={<ActivarPolizaJuridicaPage />} />
             
-            {/* Public Factory Upload Page */}
+            {/* Public Factory Upload Pages */}
             <Route path="/carga-bera" element={<AdminCargaBeraPage />} />
+            <Route path="/carga-empire" element={<AdminCargaEmpirePage />} />
             
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLoginPage />} />
