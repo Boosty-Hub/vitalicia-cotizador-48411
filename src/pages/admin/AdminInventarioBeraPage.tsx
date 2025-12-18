@@ -87,6 +87,7 @@ export default function AdminInventarioBeraPage() {
   const [data, setData] = useState<MotoBera[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [filterDuplicados, setFilterDuplicados] = useState<"todos" | "duplicados" | "unicos">("todos");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -107,6 +108,13 @@ export default function AdminInventarioBeraPage() {
         query = query.or(
           `placa.ilike.%${search}%,serial_chasis.ilike.%${search}%,serial_motor.ilike.%${search}%,modelo.ilike.%${search}%,marca.ilike.%${search}%`
         );
+      }
+
+      // Filtro por duplicados
+      if (filterDuplicados === "duplicados") {
+        query = query.eq("es_duplicado", true);
+      } else if (filterDuplicados === "unicos") {
+        query = query.or("es_duplicado.eq.false,es_duplicado.is.null");
       }
 
       const { data: result, error, count } = await query
@@ -131,7 +139,7 @@ export default function AdminInventarioBeraPage() {
 
   useEffect(() => {
     fetchData();
-  }, [currentPage, search]);
+  }, [currentPage, search, filterDuplicados]);
 
   const handleAdd = async () => {
     setSaving(true);
@@ -366,9 +374,9 @@ export default function AdminInventarioBeraPage() {
         </div>
       </div>
 
-      {/* Search */}
+      {/* Search and Filters */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="pt-6 space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -380,6 +388,40 @@ export default function AdminInventarioBeraPage() {
               }}
               className="pl-10"
             />
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant={filterDuplicados === "todos" ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                setFilterDuplicados("todos");
+                setCurrentPage(1);
+              }}
+            >
+              Todos
+            </Button>
+            <Button
+              variant={filterDuplicados === "duplicados" ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                setFilterDuplicados("duplicados");
+                setCurrentPage(1);
+              }}
+              className={filterDuplicados === "duplicados" ? "bg-yellow-500 hover:bg-yellow-600" : ""}
+            >
+              Duplicados
+            </Button>
+            <Button
+              variant={filterDuplicados === "unicos" ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                setFilterDuplicados("unicos");
+                setCurrentPage(1);
+              }}
+              className={filterDuplicados === "unicos" ? "bg-green-500 hover:bg-green-600" : ""}
+            >
+              Únicos
+            </Button>
           </div>
         </CardContent>
       </Card>
