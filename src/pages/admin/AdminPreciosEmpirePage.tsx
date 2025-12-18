@@ -24,13 +24,20 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { toast } from "@/hooks/use-toast";
-import { Search, Plus, Loader2, ChevronLeft, ChevronRight, History, DollarSign } from "lucide-react";
+import { Search, Plus, Loader2, ChevronLeft, ChevronRight, History, DollarSign, CalendarIcon } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface PrecioEmpire {
   id: string;
@@ -59,6 +66,7 @@ export default function AdminPreciosEmpirePage() {
   const [showNewPriceDialog, setShowNewPriceDialog] = useState(false);
   const [selectedModelo, setSelectedModelo] = useState<ModeloAgrupado | null>(null);
   const [newPrice, setNewPrice] = useState("");
+  const [newPriceDate, setNewPriceDate] = useState<Date>(new Date());
   const [showNewModelDialog, setShowNewModelDialog] = useState(false);
   const [newModelData, setNewModelData] = useState({
     marca: "EMPIRE",
@@ -66,6 +74,7 @@ export default function AdminPreciosEmpirePage() {
     precio_venta: "",
     estado: "Activo",
   });
+  const [newModelDate, setNewModelDate] = useState<Date>(new Date());
   const pageSize = 10;
 
   useEffect(() => {
@@ -131,6 +140,7 @@ export default function AdminPreciosEmpirePage() {
   const handleAddNewPrice = (modelo: ModeloAgrupado) => {
     setSelectedModelo(modelo);
     setNewPrice("");
+    setNewPriceDate(new Date());
     setShowNewPriceDialog(true);
   };
 
@@ -145,6 +155,7 @@ export default function AdminPreciosEmpirePage() {
           name: selectedModelo.modelo,
           precio_venta: newPrice,
           estado: "Activo",
+          created_at: newPriceDate.toISOString(),
         },
       ]);
 
@@ -184,6 +195,7 @@ export default function AdminPreciosEmpirePage() {
           name: newModelData.modelo,
           precio_venta: newModelData.precio_venta,
           estado: newModelData.estado,
+          created_at: newModelDate.toISOString(),
         },
       ]);
 
@@ -195,6 +207,7 @@ export default function AdminPreciosEmpirePage() {
       });
       setShowNewModelDialog(false);
       setNewModelData({ marca: "EMPIRE", modelo: "", precio_venta: "", estado: "Activo" });
+      setNewModelDate(new Date());
       fetchData();
     } catch (error) {
       console.error("Error saving model:", error);
@@ -400,7 +413,7 @@ export default function AdminPreciosEmpirePage() {
           <DialogHeader>
             <DialogTitle>Nuevo Precio para {selectedModelo?.modelo}</DialogTitle>
             <DialogDescription>
-              Ingrese el nuevo precio de venta. Este quedará registrado con la fecha actual.
+              Ingrese el nuevo precio de venta y la fecha de vigencia.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -419,6 +432,35 @@ export default function AdminPreciosEmpirePage() {
                 onChange={(e) => setNewPrice(e.target.value)}
                 placeholder="Ingrese el nuevo precio"
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Fecha de Vigencia</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !newPriceDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {newPriceDate ? format(newPriceDate, "PPP", { locale: es }) : <span>Seleccionar fecha</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={newPriceDate}
+                    onSelect={(date) => date && setNewPriceDate(date)}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground">
+                Seleccione la fecha desde la cual este precio entró en vigencia
+              </p>
             </div>
           </div>
           <DialogFooter>
@@ -469,6 +511,35 @@ export default function AdminPreciosEmpirePage() {
                 onChange={(e) => setNewModelData({ ...newModelData, precio_venta: e.target.value })}
                 placeholder="Ingrese el precio"
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Fecha de Vigencia</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !newModelDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {newModelDate ? format(newModelDate, "PPP", { locale: es }) : <span>Seleccionar fecha</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={newModelDate}
+                    onSelect={(date) => date && setNewModelDate(date)}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground">
+                Seleccione la fecha desde la cual este precio entró en vigencia
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="estado">Estado</Label>
