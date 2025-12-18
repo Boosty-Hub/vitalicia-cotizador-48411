@@ -40,6 +40,7 @@ import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminPolizasPage from "./pages/admin/AdminPolizasPage";
 import AdminConfiguracionesPage from "./pages/admin/AdminConfiguracionesPage";
 import AdminUsuariosPage from "./pages/admin/AdminUsuariosPage";
+import AdminPreciosEmpirePage from "./pages/admin/AdminPreciosEmpirePage";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +92,7 @@ const App = () => (
               <Route path="polizas" element={<AdminPolizasPage />} />
               <Route path="configuraciones" element={<AdminConfiguracionesPage />} />
               <Route path="configuraciones/usuarios" element={<AdminUsuariosPage />} />
+              <Route path="configuraciones/precios-empire" element={<AdminPreciosEmpirePage />} />
               <Route path="configuraciones/:tabla" element={<AdminConfiguracionesPage />} />
             </Route>
             
