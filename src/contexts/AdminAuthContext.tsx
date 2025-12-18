@@ -95,7 +95,17 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
       return { error: null };
     } catch (err) {
-      return { error: err as Error };
+      const rawMessage = err instanceof Error ? err.message : String(err);
+      const isNetworkError =
+        err instanceof TypeError && rawMessage.toLowerCase().includes("failed to fetch");
+
+      return {
+        error: new Error(
+          isNetworkError
+            ? "No se pudo conectar con Supabase. Revisa tu conexión/DNS/VPN y que *.supabase.co no esté bloqueado."
+            : rawMessage || "Error desconocido"
+        ),
+      };
     }
   };
 

@@ -14,6 +14,14 @@ const loginSchema = z.object({
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
 });
 
+const formatAuthError = (message?: string) => {
+  const msg = (message || "").toLowerCase();
+  if (msg.includes("failed to fetch")) {
+    return "No se pudo conectar con Supabase (ERR_NAME_NOT_RESOLVED). Revisa tu DNS/VPN o bloqueadores de red e intenta de nuevo.";
+  }
+  return message || "Credenciales inválidas";
+};
+
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -49,7 +57,7 @@ export default function AdminLoginPage() {
         toast({
           variant: "destructive",
           title: "Error de autenticación",
-          description: error.message || "Credenciales inválidas",
+          description: formatAuthError(error.message),
         });
       } else {
         toast({
