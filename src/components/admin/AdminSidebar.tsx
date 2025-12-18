@@ -85,9 +85,9 @@ export function AdminSidebar() {
                       end={item.url === "/admin"}
                       className={({ isActive }) =>
                         cn(
-                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground transition-all hover:bg-sidebar-accent",
+                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                           isActive &&
-                            "bg-primary/10 text-primary font-medium border-l-2 border-primary"
+                            "bg-sidebar-accent text-sidebar-accent-foreground font-medium border-l-2 border-primary"
                         )
                       }
                     >
