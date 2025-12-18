@@ -42,6 +42,7 @@ const ActivarPolizaJuridicaPage = () => {
     Carroceria: string | null;
     Suma: string;
     MondayId: string | null;
+    Source?: 'bd_bera' | 'bd_empire';
   } | null>(null);
   const [formData, setFormData] = useState({
     // Datos de la empresa
@@ -274,62 +275,158 @@ const ActivarPolizaJuridicaPage = () => {
   const validatePlaca = async () => {
     setIsValidating(true);
     try {
-      const response = await fetch(`https://hook.us2.make.com/bvauv3534xqm83vqccqwgev20t5h7jxe?placa=${encodeURIComponent(placa)}`);
+      const placaUpper = placa.toUpperCase().trim();
       
-      if (response.ok) {
-        const data = await response.json();
+      // 1. Buscar en bd_bera
+      const { data: beraData, error: beraError } = await supabase
+        .from('bd_bera')
+        .select('*')
+        .ilike('placa', placaUpper)
+        .maybeSingle();
 
-        // Verificar si la placa fue encontrada en el sistema
-        if (data.Encontrado === true) {
-          console.log('🔍 Respuesta completa del webhook de validación de placa:', data);
-          console.log('📋 MondayId recibido:', data["BERA-EMPIRE ID Monday"]);
-          
-          const vehicleInfo = {
-            Marca: data.Marca || null,
-            Modelo: data.Modelo || null,
-            Año: data.Año || null,
-            Color: data.Color || null,
-            Carroceria: data.Carroceria || null,
-            Suma: data["Precio Venta"] || "0",
-            MondayId: data["BERA-EMPIRE ID Monday"] ?? null
-          };
-          
-          console.log('💾 VehicleData guardado:', vehicleInfo);
-          setVehicleData(vehicleInfo);
-          
-          // Pre-llenar el campo de serial de carrocería en formData
-          if (data.Carroceria) {
-            setFormData(prev => ({
-              ...prev,
-              serialCarroceria: data.Carroceria
-            }));
+      if (beraError) {
+        console.error('Error buscando en bd_bera:', beraError);
+      }
+
+      if (beraData) {
+        console.log('✅ Vehículo encontrado en bd_bera:', beraData);
+        const vehicleInfo = {
+          Marca: beraData.marca || null,
+          Modelo: beraData.modelo || null,
+          Año: beraData.anio_modelo?.toString() || null,
+          Color: beraData.color || null,
+          Carroceria: beraData.serial_chasis || null,
+          Suma: beraData.precio_venta_tienda?.toString() || "0",
+          MondayId: null,
+          Source: 'bd_bera' as const
+        };
+        
+        setVehicleData(vehicleInfo);
+        
+        // Pre-llenar el campo de serial de carrocería
+        if (beraData.serial_chasis) {
+          setFormData(prev => ({
+            ...prev,
+            serialCarroceria: beraData.serial_chasis || ''
+          }));
+        }
+        
+        setPlacaValidada(true);
+        setShowError(false);
+        setCurrentStep(1.5);
+        toast({
+          title: "Vehículo BERA encontrado",
+          description: "Por favor, confirma los datos del vehículo"
+        });
+        return;
+      }
+
+      // 2. Buscar en bd_empire
+      const { data: empireData, error: empireError } = await supabase
+        .from('bd_empire')
+        .select('*')
+        .ilike('placa', placaUpper)
+        .maybeSingle();
+
+      if (empireError) {
+        console.error('Error buscando en bd_empire:', empireError);
+      }
+
+      if (empireData) {
+        console.log('✅ Vehículo encontrado en bd_empire:', empireData);
+        
+        // Buscar precio en precios_empire usando el modelo
+        let precioVenta = "0";
+        const modeloVehiculo = empireData.modelo || '';
+        
+        if (modeloVehiculo) {
+          const { data: precioData, error: precioError } = await supabase
+            .from('precios_empire')
+            .select('precio_venta, "precio venta", created_at, modelo, marca, name')
+            .or(`modelo.ilike.%${modeloVehiculo}%,name.ilike.%${modeloVehiculo}%,marca.ilike.%${modeloVehiculo}%`)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (precioError) {
+            console.error('Error buscando precio en precios_empire:', precioError);
           }
-          
-          setPlacaValidada(true);
-          setShowError(false);
-          setCurrentStep(1.5);
-          toast({
-            title: "Vehículo encontrado",
-            description: "Por favor, confirma los datos del vehículo"
-          });
-        } else {
-          setShowError(true);
-          setPlacaValidada(false);
-          toast({
-            title: "Placa no encontrada",
-            description: "La placa no se encuentra en el sistema",
-            variant: "destructive"
-          });
+
+          if (precioData) {
+            precioVenta = precioData.precio_venta || precioData["precio venta"] || "0";
+            console.log('💰 Precio encontrado en precios_empire:', precioVenta);
+          }
         }
-      } else {
-          setShowError(true);
-          setPlacaValidada(false);
-          toast({
-            title: "Placa no encontrada",
-            description: "La placa no se encuentra en el sistema",
-            variant: "destructive"
-          });
+
+        const vehicleInfo = {
+          Marca: empireData.marca || null,
+          Modelo: empireData.modelo || null,
+          Año: empireData.anio?.toString() || null,
+          Color: empireData.color || null,
+          Carroceria: empireData.serial_carroceria || null,
+          Suma: precioVenta,
+          MondayId: null,
+          Source: 'bd_empire' as const
+        };
+        
+        setVehicleData(vehicleInfo);
+        
+        // Pre-llenar el campo de serial de carrocería
+        if (empireData.serial_carroceria) {
+          setFormData(prev => ({
+            ...prev,
+            serialCarroceria: empireData.serial_carroceria || ''
+          }));
         }
+        
+        setPlacaValidada(true);
+        setShowError(false);
+        setCurrentStep(1.5);
+        toast({
+          title: "Vehículo EMPIRE encontrado",
+          description: "Por favor, confirma los datos del vehículo"
+        });
+        return;
+      }
+
+      // 3. Si no está en inventario, buscar en polizas_activas
+      const { data: polizaData, error: polizaError } = await supabase
+        .from('polizas_activas')
+        .select('numero_poliza_monday, placa_monday, estado_principal_monday, nombre_titular_monday, apellidos_titular_monday, fecha_de_vencimiento_monday')
+        .ilike('placa_monday', placaUpper)
+        .maybeSingle();
+
+      if (polizaError) {
+        console.error('Error buscando en polizas_activas:', polizaError);
+      }
+
+      if (polizaData) {
+        // La placa ya tiene una póliza registrada
+        const fechaVencimiento = polizaData.fecha_de_vencimiento_monday;
+        const esActiva = fechaVencimiento ? new Date(fechaVencimiento) > new Date() : false;
+        
+        console.log('⚠️ Placa encontrada en polizas_activas:', polizaData);
+        setShowError(true);
+        setPlacaValidada(false);
+        toast({
+          title: "Placa ya registrada",
+          description: esActiva 
+            ? `Esta placa ya tiene una póliza activa (${polizaData.numero_poliza_monday || 'Sin número'}). Vence: ${fechaVencimiento}`
+            : `Esta placa tiene una póliza vencida. Contacte soporte para renovar.`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // 4. No se encontró en ninguna base de datos
+      setShowError(true);
+      setPlacaValidada(false);
+      toast({
+        title: "Placa no encontrada",
+        description: "La placa no se encuentra en el inventario de vehículos",
+        variant: "destructive"
+      });
+
     } catch (error) {
       console.error('Error validating placa:', error);
       setShowError(true);
