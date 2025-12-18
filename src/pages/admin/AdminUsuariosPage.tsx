@@ -133,43 +133,27 @@ export default function AdminUsuariosPage() {
 
     setIsSubmitting(true);
     try {
-      // Create user via Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/admin`,
-          data: {
-            full_name: formData.full_name,
-          },
+      // Call edge function to create user (bypasses RLS and auto-confirms email)
+      const { data, error } = await supabase.functions.invoke("admin-create-user", {
+        body: {
+          email: formData.email,
+          password: formData.password,
+          full_name: formData.full_name,
+          role: formData.role,
         },
       });
 
-      if (authError) throw authError;
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
-      if (authData.user) {
-        // Create role
-        const { error: roleError } = await supabase.from("user_roles").insert({
-          user_id: authData.user.id,
-          role: formData.role,
-        });
+      toast({
+        title: "Usuario creado",
+        description: "El usuario ha sido creado exitosamente y puede iniciar sesión de inmediato",
+      });
 
-        if (roleError) throw roleError;
-
-        const userAny = authData.user as any;
-        const needsEmailConfirmation = !authData.session && !userAny?.email_confirmed_at;
-
-        toast({
-          title: "Usuario creado",
-          description: needsEmailConfirmation
-            ? "Se envió un correo de confirmación. El usuario no podrá iniciar sesión hasta confirmarlo."
-            : "El usuario ha sido creado exitosamente",
-        });
-
-        setIsCreateDialogOpen(false);
-        setFormData({ email: "", password: "", full_name: "", role: "user" });
-        fetchUsers();
-      }
+      setIsCreateDialogOpen(false);
+      setFormData({ email: "", password: "", full_name: "", role: "user" });
+      fetchUsers();
     } catch (error: any) {
       console.error("Error creating user:", error);
       toast({
