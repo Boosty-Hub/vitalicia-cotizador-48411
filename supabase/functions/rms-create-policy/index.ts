@@ -117,6 +117,54 @@ serve(async (req) => {
   }
 });
 
+/**
+ * Sanitiza el código de actividad económica para la API RMS.
+ * La API espera exactamente 4 dígitos numéricos.
+ * 
+ * Reglas:
+ * 1. Si está vacío, null, undefined, o "0" → retorna fallback ("0000")
+ * 2. Extrae solo los dígitos del valor
+ * 3. Si tiene más de 4 dígitos, toma los últimos 4
+ * 4. Si tiene menos de 4 dígitos, rellena con ceros a la izquierda
+ * 5. Si no tiene dígitos válidos → retorna fallback ("0000")
+ */
+function sanitizeActividadEconomica(value: string | number | null | undefined, fallback: string = "0000"): string {
+  // Si no hay valor o es "0" o está vacío
+  if (value === null || value === undefined || value === "" || value === "0" || value === 0) {
+    console.log(`🔧 c_cd_actividad: valor vacío/nulo, usando fallback: ${fallback}`);
+    return fallback;
+  }
+
+  const strValue = String(value).trim();
+  
+  // Extraer solo los dígitos
+  const digitsOnly = strValue.replace(/\D/g, '');
+  
+  // Si no hay dígitos válidos
+  if (digitsOnly.length === 0) {
+    console.log(`🔧 c_cd_actividad: sin dígitos válidos en "${strValue}", usando fallback: ${fallback}`);
+    return fallback;
+  }
+  
+  let result: string;
+  
+  if (digitsOnly.length > 4) {
+    // Tomar los últimos 4 dígitos
+    result = digitsOnly.slice(-4);
+    console.log(`🔧 c_cd_actividad: "${strValue}" tiene ${digitsOnly.length} dígitos, usando últimos 4: ${result}`);
+  } else if (digitsOnly.length < 4) {
+    // Rellenar con ceros a la izquierda
+    result = digitsOnly.padStart(4, '0');
+    console.log(`🔧 c_cd_actividad: "${strValue}" tiene ${digitsOnly.length} dígitos, rellenando: ${result}`);
+  } else {
+    // Exactamente 4 dígitos
+    result = digitsOnly;
+    console.log(`🔧 c_cd_actividad: usando valor válido: ${result}`);
+  }
+  
+  return result;
+}
+
 function buildRmsPayload(data: Record<string, any>, tipoFormulario: string): Record<string, any> {
   // Valores por defecto y fallbacks
   const defaultValues = {
@@ -172,8 +220,8 @@ function buildRmsPayload(data: Record<string, any>, tipoFormulario: string): Rec
     c_email1: data.c_email1 || "",
     c_email2: data.c_email2 || "",
     
-    // Actividad económica
-    c_cd_actividad: data.c_cd_actividad || defaultValues.c_cd_actividad,
+    // Actividad económica - La API RMS espera exactamente 4 dígitos numéricos
+    c_cd_actividad: sanitizeActividadEconomica(data.c_cd_actividad, defaultValues.c_cd_actividad),
     c_cd_ocupacion: parseInt(data.c_cd_ocupacion) || defaultValues.c_cd_ocupacion,
     n_ingresoanualnac: parseFloat(data.n_ingresoanualnac) || defaultValues.n_ingresoanualnac,
     
