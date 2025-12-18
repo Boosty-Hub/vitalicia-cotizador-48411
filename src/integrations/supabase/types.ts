@@ -83,6 +83,57 @@ export type Database = {
         }
         Relationships: []
       }
+      bd_empire: {
+        Row: {
+          anio: number | null
+          color: string | null
+          created_at: string
+          fecha: string | null
+          id: string
+          lote_carga: string | null
+          marca: string | null
+          modelo: string | null
+          placa: string | null
+          serial_carroceria: string | null
+          serial_motor: string | null
+          transmision: string | null
+          updated_at: string
+          version: string | null
+        }
+        Insert: {
+          anio?: number | null
+          color?: string | null
+          created_at?: string
+          fecha?: string | null
+          id?: string
+          lote_carga?: string | null
+          marca?: string | null
+          modelo?: string | null
+          placa?: string | null
+          serial_carroceria?: string | null
+          serial_motor?: string | null
+          transmision?: string | null
+          updated_at?: string
+          version?: string | null
+        }
+        Update: {
+          anio?: number | null
+          color?: string | null
+          created_at?: string
+          fecha?: string | null
+          id?: string
+          lote_carga?: string | null
+          marca?: string | null
+          modelo?: string | null
+          placa?: string | null
+          serial_carroceria?: string | null
+          serial_motor?: string | null
+          transmision?: string | null
+          updated_at?: string
+          version?: string | null
+        }
+        Relationships: []
+      }
       board_cod_ciudad: {
         Row: {
           cd_ciudad: string | null
