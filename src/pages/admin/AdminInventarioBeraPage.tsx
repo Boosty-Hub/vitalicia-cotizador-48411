@@ -39,10 +39,13 @@ import {
   ChevronRight,
   Trash2,
   RefreshCw,
-  Download
+  Download,
+  Eye
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PolicyStatusBadge } from "@/components/admin/PolicyStatusBadge";
+import { PolicyDetailsDialog } from "@/components/admin/PolicyDetailsDialog";
 
 interface MotoBera {
   id: string;
@@ -64,6 +67,12 @@ interface MotoBera {
   precio_base_venta_sugerido: number | null;
   es_duplicado: boolean | null;
   created_at: string;
+}
+
+interface PolicyInfo {
+  hasPolicy: boolean;
+  isActive: boolean;
+  policyData: any | null;
 }
 
 const initialFormData = {
@@ -89,6 +98,7 @@ export default function AdminInventarioBeraPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterDuplicados, setFilterDuplicados] = useState<"todos" | "duplicados" | "unicos">("todos");
+  const [filterPoliza, setFilterPoliza] = useState<"todos" | "con_poliza" | "sin_poliza">("todos");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -96,7 +106,49 @@ export default function AdminInventarioBeraPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [formData, setFormData] = useState(initialFormData);
   const [saving, setSaving] = useState(false);
+  const [policyMap, setPolicyMap] = useState<Record<string, PolicyInfo>>({});
+  const [selectedPolicy, setSelectedPolicy] = useState<any | null>(null);
+  const [isPolicyDialogOpen, setIsPolicyDialogOpen] = useState(false);
   const pageSize = 20;
+
+  const fetchPoliciesForPlates = async (plates: string[]) => {
+    const validPlates = plates.filter(p => p);
+    if (validPlates.length === 0) return {};
+
+    const { data: policies, error } = await supabase
+      .from("polizas_activas")
+      .select("*")
+      .in("placa_monday", validPlates.map(p => p.toUpperCase()));
+
+    if (error) {
+      console.error("Error fetching policies:", error);
+      return {};
+    }
+
+    const map: Record<string, PolicyInfo> = {};
+    for (const plate of validPlates) {
+      const policy = policies?.find(p => 
+        p.placa_monday?.toUpperCase() === plate.toUpperCase()
+      );
+      
+      if (policy) {
+        const isActive = policy.estado_principal_monday !== "Vencida" && 
+                        policy.estado_principal_monday !== "Cancelada";
+        map[plate.toUpperCase()] = {
+          hasPolicy: true,
+          isActive,
+          policyData: policy
+        };
+      } else {
+        map[plate.toUpperCase()] = {
+          hasPolicy: false,
+          isActive: false,
+          policyData: null
+        };
+      }
+    }
+    return map;
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -111,7 +163,6 @@ export default function AdminInventarioBeraPage() {
         );
       }
 
-      // Filtro por duplicados
       if (filterDuplicados === "duplicados") {
         query = query.eq("es_duplicado", true);
       } else if (filterDuplicados === "unicos") {
@@ -124,8 +175,27 @@ export default function AdminInventarioBeraPage() {
 
       if (error) throw error;
 
-      setData(result || []);
-      setTotalCount(count || 0);
+      // Fetch policy status for all plates
+      const plates = (result || []).map(item => item.placa).filter(Boolean) as string[];
+      const policies = await fetchPoliciesForPlates(plates);
+      setPolicyMap(policies);
+
+      // Filter by policy status if needed
+      let filteredData = result || [];
+      if (filterPoliza !== "todos") {
+        filteredData = filteredData.filter(item => {
+          if (!item.placa) return filterPoliza === "sin_poliza";
+          const policyInfo = policies[item.placa.toUpperCase()];
+          if (filterPoliza === "con_poliza") {
+            return policyInfo?.hasPolicy;
+          } else {
+            return !policyInfo?.hasPolicy;
+          }
+        });
+      }
+
+      setData(filteredData);
+      setTotalCount(filterPoliza === "todos" ? (count || 0) : filteredData.length);
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
@@ -140,7 +210,7 @@ export default function AdminInventarioBeraPage() {
 
   useEffect(() => {
     fetchData();
-  }, [currentPage, search, filterDuplicados]);
+  }, [currentPage, search, filterDuplicados, filterPoliza]);
 
   const handleAdd = async () => {
     setSaving(true);
@@ -219,6 +289,20 @@ export default function AdminInventarioBeraPage() {
   const formatPrice = (price: number | null) => {
     if (!price) return "-";
     return `$${price.toLocaleString("es-VE", { minimumFractionDigits: 2 })}`;
+  };
+
+  const getPolicyInfo = (placa: string | null): PolicyInfo => {
+    if (!placa) return { hasPolicy: false, isActive: false, policyData: null };
+    return policyMap[placa.toUpperCase()] || { hasPolicy: false, isActive: false, policyData: null };
+  };
+
+  const handleViewPolicy = (placa: string | null) => {
+    if (!placa) return;
+    const policyInfo = getPolicyInfo(placa);
+    if (policyInfo.policyData) {
+      setSelectedPolicy(policyInfo.policyData);
+      setIsPolicyDialogOpen(true);
+    }
   };
 
   const handleDownloadCSV = async () => {
@@ -445,39 +529,78 @@ export default function AdminInventarioBeraPage() {
               className="pl-10"
             />
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant={filterDuplicados === "todos" ? "default" : "outline"}
-              size="sm"
-              onClick={() => {
-                setFilterDuplicados("todos");
-                setCurrentPage(1);
-              }}
-            >
-              Todos
-            </Button>
-            <Button
-              variant={filterDuplicados === "duplicados" ? "default" : "outline"}
-              size="sm"
-              onClick={() => {
-                setFilterDuplicados("duplicados");
-                setCurrentPage(1);
-              }}
-              className={filterDuplicados === "duplicados" ? "bg-yellow-500 hover:bg-yellow-600" : ""}
-            >
-              Duplicados
-            </Button>
-            <Button
-              variant={filterDuplicados === "unicos" ? "default" : "outline"}
-              size="sm"
-              onClick={() => {
-                setFilterDuplicados("unicos");
-                setCurrentPage(1);
-              }}
-              className={filterDuplicados === "unicos" ? "bg-green-500 hover:bg-green-600" : ""}
-            >
-              Únicos
-            </Button>
+          <div className="flex flex-wrap gap-2">
+            <div className="flex gap-2 items-center">
+              <span className="text-sm text-muted-foreground">Duplicados:</span>
+              <Button
+                variant={filterDuplicados === "todos" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setFilterDuplicados("todos");
+                  setCurrentPage(1);
+                }}
+              >
+                Todos
+              </Button>
+              <Button
+                variant={filterDuplicados === "duplicados" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setFilterDuplicados("duplicados");
+                  setCurrentPage(1);
+                }}
+                className={filterDuplicados === "duplicados" ? "bg-yellow-500 hover:bg-yellow-600" : ""}
+              >
+                Duplicados
+              </Button>
+              <Button
+                variant={filterDuplicados === "unicos" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setFilterDuplicados("unicos");
+                  setCurrentPage(1);
+                }}
+                className={filterDuplicados === "unicos" ? "bg-green-500 hover:bg-green-600" : ""}
+              >
+                Únicos
+              </Button>
+            </div>
+            <div className="w-px bg-border h-8 mx-2" />
+            <div className="flex gap-2 items-center">
+              <span className="text-sm text-muted-foreground">Póliza:</span>
+              <Button
+                variant={filterPoliza === "todos" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setFilterPoliza("todos");
+                  setCurrentPage(1);
+                }}
+              >
+                Todos
+              </Button>
+              <Button
+                variant={filterPoliza === "con_poliza" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setFilterPoliza("con_poliza");
+                  setCurrentPage(1);
+                }}
+                className={filterPoliza === "con_poliza" ? "bg-emerald-500 hover:bg-emerald-600" : ""}
+              >
+                Con póliza
+              </Button>
+              <Button
+                variant={filterPoliza === "sin_poliza" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setFilterPoliza("sin_poliza");
+                  setCurrentPage(1);
+                }}
+                className={filterPoliza === "sin_poliza" ? "bg-slate-500 hover:bg-slate-600" : ""}
+              >
+                Sin póliza
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -502,15 +625,15 @@ export default function AdminInventarioBeraPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Estado</TableHead>
+                      <TableHead>Póliza</TableHead>
                       <TableHead>Fecha</TableHead>
                       <TableHead>Marca</TableHead>
                       <TableHead>Modelo</TableHead>
                       <TableHead>Año</TableHead>
                       <TableHead>Placa</TableHead>
-                      <TableHead>Serial Chasis</TableHead>
                       <TableHead>Serial Motor</TableHead>
                       <TableHead>Color</TableHead>
-                      <TableHead className="text-right">Precio Venta</TableHead>
+                      <TableHead>Precio Venta</TableHead>
                       <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -522,46 +645,76 @@ export default function AdminInventarioBeraPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      data.map((item) => (
-                        <TableRow key={item.id} className={item.es_duplicado ? "bg-yellow-50 dark:bg-yellow-950/20" : ""}>
-                          <TableCell>
-                            {item.es_duplicado ? (
-                              <Badge variant="destructive" className="bg-yellow-500 hover:bg-yellow-600">
-                                Duplicado
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                Único
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">{item.fecha || "-"}</TableCell>
-                          <TableCell>{item.marca || "-"}</TableCell>
-                          <TableCell>{item.modelo || "-"}</TableCell>
-                          <TableCell>{item.anio_modelo || "-"}</TableCell>
-                          <TableCell className="font-mono">{item.placa || "-"}</TableCell>
-                          <TableCell className="font-mono text-xs">{item.serial_chasis || "-"}</TableCell>
-                          <TableCell className="font-mono text-xs">{item.serial_motor || "-"}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{item.color || "-"}</Badge>
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {formatPrice(item.precio_venta_tienda)}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setSelectedId(item.id);
-                                setIsDeleteDialogOpen(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
+                      data.map((item) => {
+                        const policyInfo = getPolicyInfo(item.placa);
+                        return (
+                          <TableRow 
+                            key={item.id} 
+                            className={
+                              item.es_duplicado 
+                                ? "bg-yellow-50 dark:bg-yellow-950/20" 
+                                : policyInfo.hasPolicy 
+                                  ? "bg-emerald-50/50 dark:bg-emerald-950/20" 
+                                  : ""
+                            }
+                          >
+                            <TableCell>
+                              {item.es_duplicado ? (
+                                <Badge variant="destructive" className="bg-yellow-500 hover:bg-yellow-600">
+                                  Duplicado
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                  Único
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <PolicyStatusBadge
+                                hasPolicy={policyInfo.hasPolicy}
+                                isActive={policyInfo.isActive}
+                                onClick={() => handleViewPolicy(item.placa)}
+                              />
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap">{item.fecha || "-"}</TableCell>
+                            <TableCell>{item.marca || "-"}</TableCell>
+                            <TableCell>{item.modelo || "-"}</TableCell>
+                            <TableCell>{item.anio_modelo || "-"}</TableCell>
+                            <TableCell className="font-mono">{item.placa || "-"}</TableCell>
+                            <TableCell className="font-mono text-xs">{item.serial_motor || "-"}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{item.color || "-"}</Badge>
+                            </TableCell>
+                            <TableCell className="font-medium">{formatPrice(item.precio_venta_tienda)}</TableCell>
+                            <TableCell>
+                              <div className="flex gap-1">
+                                {policyInfo.hasPolicy && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-emerald-600 hover:text-emerald-700"
+                                    onClick={() => handleViewPolicy(item.placa)}
+                                    title="Ver póliza"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  onClick={() => {
+                                    setSelectedId(item.id);
+                                    setIsDeleteDialogOpen(true);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>
@@ -571,25 +724,21 @@ export default function AdminInventarioBeraPage() {
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <p className="text-sm text-muted-foreground">
-                    Mostrando {(currentPage - 1) * pageSize + 1} a{" "}
-                    {Math.min(currentPage * pageSize, totalCount)} de {totalCount}
+                    Página {currentPage} de {totalPages}
                   </p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    <span className="text-sm text-muted-foreground">
-                      Página {currentPage} de {totalPages}
-                    </span>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
                     >
                       <ChevronRight className="h-4 w-4" />
@@ -619,6 +768,13 @@ export default function AdminInventarioBeraPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Policy Details Dialog */}
+      <PolicyDetailsDialog
+        open={isPolicyDialogOpen}
+        onOpenChange={setIsPolicyDialogOpen}
+        policy={selectedPolicy}
+      />
     </div>
   );
 }
