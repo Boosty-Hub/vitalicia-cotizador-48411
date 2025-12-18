@@ -75,10 +75,27 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const withTimeout = <T,>(promise: Promise<T>, ms: number) =>
+        new Promise<T>((resolve, reject) => {
+          const id = window.setTimeout(() => reject(new Error("timeout")), ms);
+          promise
+            .then((value) => {
+              window.clearTimeout(id);
+              resolve(value);
+            })
+            .catch((error) => {
+              window.clearTimeout(id);
+              reject(error);
+            });
+        });
+
+      const { data, error } = await withTimeout(
+        supabase.auth.signInWithPassword({
+          email,
+          password,
+        }),
+        12000
+      );
 
       if (error) {
         return { error };

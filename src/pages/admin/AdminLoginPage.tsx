@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -16,8 +18,11 @@ const loginSchema = z.object({
 
 const formatAuthError = (message?: string) => {
   const msg = (message || "").toLowerCase();
-  if (msg.includes("failed to fetch")) {
+  if (msg.includes("failed to fetch") || msg.includes("name_not_resolved")) {
     return "No se pudo conectar con Supabase (ERR_NAME_NOT_RESOLVED). Revisa tu DNS/VPN o bloqueadores de red e intenta de nuevo.";
+  }
+  if (msg.includes("timeout") || msg.includes("aborted")) {
+    return "La conexión con Supabase está tardando demasiado. Verifica tu red/VPN e intenta nuevamente.";
   }
   return message || "Credenciales inválidas";
 };
@@ -28,10 +33,31 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [supabaseHealth, setSupabaseHealth] = useState<"checking" | "ok" | "error">("checking");
   
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signIn } = useAdminAuth();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const { error } = await supabase.from("board_cod_pais").select("id").limit(1);
+        if (cancelled) return;
+        setSupabaseHealth(error ? "error" : "ok");
+      } catch {
+        if (cancelled) return;
+        setSupabaseHealth("error");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,6 +116,16 @@ export default function AdminLoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {supabaseHealth === "error" && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTitle>Sin conexión con Supabase</AlertTitle>
+              <AlertDescription>
+                Tu red/DNS no está pudiendo resolver o alcanzar el servidor de Supabase.
+                Prueba desactivar VPN/AdBlock o usar otra red.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Correo Electrónico</Label>
