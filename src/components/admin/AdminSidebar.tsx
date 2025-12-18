@@ -13,7 +13,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import logoVitalicia from "@/assets/logo-vitalicia.png";
+import { useAdminAuth } from "@/contexts/AdminAuthContext";
 
 const menuItems = [
   {
@@ -35,9 +35,11 @@ const menuItems = [
 
 export function AdminSidebar() {
   const navigate = useNavigate();
+  const { signOut, user } = useAdminAuth();
 
-  const handleLogout = () => {
-    navigate("/");
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/admin/login");
   };
 
   return (
