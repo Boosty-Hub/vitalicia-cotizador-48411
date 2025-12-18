@@ -49,14 +49,26 @@ interface MotoEmpire {
   color: string;
 }
 
+// Columnas exactas requeridas en el orden de la plantilla
+const REQUIRED_COLUMNS = [
+  "FECHA",
+  "MARCA",
+  "MODELO",
+  "VERSION",
+  "ANHO",
+  "TRANSMISION",
+  "PLACA",
+  "SERIAL MOTOR",
+  "SERIAL CARROCERIA",
+  "COLOR",
+];
+
 const COLUMN_MAPPING: Record<string, keyof MotoEmpire> = {
-  "Fecha": "fecha",
   "FECHA": "fecha",
   "MARCA": "marca",
   "MODELO": "modelo",
   "VERSION": "version",
   "ANHO": "anio",
-  "AÑO": "anio",
   "TRANSMISION": "transmision",
   "PLACA": "placa",
   "SERIAL MOTOR": "serial_motor",
@@ -117,7 +129,31 @@ export default function AdminCargaEmpirePage() {
         return;
       }
 
-      const headers = jsonData[0] as string[];
+      const headers = (jsonData[0] as string[]).map(h => h?.trim()?.toUpperCase());
+      
+      // Validar que las columnas sean exactamente las requeridas
+      const normalizedHeaders = headers.filter(h => h); // Remove empty headers
+      const missingColumns = REQUIRED_COLUMNS.filter(col => !normalizedHeaders.includes(col));
+      const extraColumns = normalizedHeaders.filter(col => !REQUIRED_COLUMNS.includes(col));
+      
+      if (missingColumns.length > 0 || extraColumns.length > 0) {
+        let errorMsg = "El archivo no tiene el formato correcto de la plantilla EMPIRE.";
+        if (missingColumns.length > 0) {
+          errorMsg += ` Columnas faltantes: ${missingColumns.join(", ")}.`;
+        }
+        if (extraColumns.length > 0) {
+          errorMsg += ` Columnas no reconocidas: ${extraColumns.join(", ")}.`;
+        }
+        toast({
+          title: "Formato de plantilla incorrecto",
+          description: errorMsg,
+          variant: "destructive",
+        });
+        setFile(null);
+        setLoading(false);
+        return;
+      }
+      
       const rows = jsonData.slice(1);
       
       const processedData: MotoEmpire[] = rows
@@ -126,7 +162,7 @@ export default function AdminCargaEmpirePage() {
           const item: Partial<MotoEmpire> = {};
           
           headers.forEach((header, index) => {
-            const mappedKey = COLUMN_MAPPING[header?.trim()?.toUpperCase()] || COLUMN_MAPPING[header?.trim()];
+            const mappedKey = COLUMN_MAPPING[header];
             if (mappedKey && row[index] !== undefined && row[index] !== null) {
               const value = row[index];
               
@@ -248,8 +284,7 @@ export default function AdminCargaEmpirePage() {
   };
 
   const downloadTemplate = () => {
-    const headers = ["Fecha", "MARCA", "MODELO", "VERSION", "ANHO", "TRANSMISION", "PLACA", "SERIAL MOTOR", "SERIAL CARROCERIA", "COLOR"];
-    const ws = XLSX.utils.aoa_to_sheet([headers]);
+    const ws = XLSX.utils.aoa_to_sheet([REQUIRED_COLUMNS]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Plantilla");
     XLSX.writeFile(wb, "plantilla_carga_empire.xlsx");

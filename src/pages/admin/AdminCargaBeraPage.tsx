@@ -58,6 +58,26 @@ interface MotoBera {
   precio_base_venta_sugerido: number;
 }
 
+// Columnas exactas requeridas en el orden de la plantilla
+const REQUIRED_COLUMNS = [
+  "#",
+  "FECHA",
+  "MARCA",
+  "COD MODELO",
+  "MODELO",
+  "AÑO DEL MODELO",
+  "PLACA",
+  "TRANSMISION",
+  "SERIAL CHASIS",
+  "SERIAL MOTOR",
+  "COD COLOR",
+  "COLOR",
+  "PRECIO VENTA TIENDA",
+  "PRECIO BASE VENTA TIENDA",
+  "PRECIO VENTA SUGERIDO",
+  "PRECIO BASE VENTA SUGERIDO",
+];
+
 const COLUMN_MAPPING: Record<string, keyof MotoBera> = {
   "#": "numero_fila",
   "FECHA": "fecha",
@@ -143,7 +163,31 @@ export default function AdminCargaBeraPage() {
       }
 
       // First row is headers
-      const headers = jsonData[0] as string[];
+      const headers = (jsonData[0] as string[]).map(h => h?.trim());
+      
+      // Validar que las columnas sean exactamente las requeridas
+      const normalizedHeaders = headers.filter(h => h); // Remove empty headers
+      const missingColumns = REQUIRED_COLUMNS.filter(col => !normalizedHeaders.includes(col));
+      const extraColumns = normalizedHeaders.filter(col => !REQUIRED_COLUMNS.includes(col));
+      
+      if (missingColumns.length > 0 || extraColumns.length > 0) {
+        let errorMsg = "El archivo no tiene el formato correcto de la plantilla BERA.";
+        if (missingColumns.length > 0) {
+          errorMsg += ` Columnas faltantes: ${missingColumns.join(", ")}.`;
+        }
+        if (extraColumns.length > 0) {
+          errorMsg += ` Columnas no reconocidas: ${extraColumns.join(", ")}.`;
+        }
+        toast({
+          title: "Formato de plantilla incorrecto",
+          description: errorMsg,
+          variant: "destructive",
+        });
+        setFile(null);
+        setLoading(false);
+        return;
+      }
+      
       const rows = jsonData.slice(1);
       
       const processedData: MotoBera[] = rows
@@ -283,8 +327,7 @@ export default function AdminCargaBeraPage() {
   };
 
   const downloadTemplate = () => {
-    const headers = Object.keys(COLUMN_MAPPING);
-    const ws = XLSX.utils.aoa_to_sheet([headers]);
+    const ws = XLSX.utils.aoa_to_sheet([REQUIRED_COLUMNS]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Plantilla");
     XLSX.writeFile(wb, "plantilla_carga_bera.xlsx");
