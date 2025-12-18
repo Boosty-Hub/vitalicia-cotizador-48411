@@ -63,7 +63,10 @@ serve(async (req) => {
     const apiStatus = responseData.status || 'unknown';
     const apiMessage = responseData.message || '';
 
-    console.log(`✅ Póliza creada exitosamente: ${numeroPoliza}`);
+    // Determinar si fue exitoso (tiene número de póliza o status exitoso)
+    const isSuccess = numeroPoliza || apiStatus === 'success' || apiStatus === 'ok';
+
+    console.log(`${isSuccess ? '✅' : '⚠️'} Respuesta RMS - Status: ${apiStatus}, Póliza: ${numeroPoliza || 'N/A'}`);
 
     // Actualizar la póliza en la base de datos
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -80,7 +83,7 @@ serve(async (req) => {
         api_coberturas: coberturas,
         api_status: apiStatus,
         api_message: apiMessage,
-        estado_principal_monday: 'Activa',
+        estado_principal_monday: isSuccess ? 'Activa' : 'Error API',
       })
       .eq('id', polizaId);
 
@@ -89,7 +92,58 @@ serve(async (req) => {
       throw new Error(`Error actualizando póliza: ${updateError.message}`);
     }
 
-    console.log(`✅ Póliza ${polizaId} actualizada con número: ${numeroPoliza}`);
+    console.log(`✅ Póliza ${polizaId} actualizada en DB`);
+
+    // Si fue exitoso, enviar al webhook de Make.com
+    if (isSuccess) {
+      const MAKE_WEBHOOK_URL = 'https://hook.us2.make.com/rtk99dcvukc0bjz9psj26qbe5x19db8y';
+      
+      const webhookPayload = {
+        // Datos de la póliza (formData original)
+        poliza: {
+          id: polizaId,
+          ...formData,
+        },
+        // Respuesta completa de la API RMS
+        rmsResponse: rmsData,
+        // Datos extraídos para fácil acceso
+        extracted: {
+          numeroPoliza,
+          nSerialcontrato,
+          nSerialcertif,
+          recibos,
+          coberturas,
+          apiStatus,
+          apiMessage,
+        },
+        // Metadata
+        metadata: {
+          tipoFormulario,
+          processedAt: new Date().toISOString(),
+        }
+      };
+
+      console.log('📤 Enviando datos al webhook de Make.com...');
+      
+      try {
+        const webhookResponse = await fetch(MAKE_WEBHOOK_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(webhookPayload),
+        });
+
+        if (webhookResponse.ok) {
+          console.log('✅ Webhook enviado exitosamente a Make.com');
+        } else {
+          console.error('⚠️ Error enviando webhook:', webhookResponse.status, await webhookResponse.text());
+        }
+      } catch (webhookError) {
+        // No fallar el proceso principal si el webhook falla
+        console.error('⚠️ Error en webhook (no crítico):', webhookError);
+      }
+    }
 
     return new Response(JSON.stringify({
       success: true,
