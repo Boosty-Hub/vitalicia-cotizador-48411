@@ -38,7 +38,8 @@ import {
   ChevronLeft, 
   ChevronRight,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  Download
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -220,6 +221,58 @@ export default function AdminInventarioBeraPage() {
     return `$${price.toLocaleString("es-VE", { minimumFractionDigits: 2 })}`;
   };
 
+  const handleDownloadCSV = async () => {
+    try {
+      toast({ title: "Descargando...", description: "Preparando archivo CSV" });
+      
+      const { data: allData, error } = await supabase
+        .from("bd_bera")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      if (!allData || allData.length === 0) {
+        toast({ title: "Sin datos", description: "No hay registros para exportar", variant: "destructive" });
+        return;
+      }
+
+      const headers = ["Fecha", "Marca", "Cod Modelo", "Modelo", "Año", "Placa", "Transmisión", "Serial Chasis", "Serial Motor", "Cod Color", "Color", "Precio Venta Tienda", "Precio Base Venta Tienda", "Precio Venta Sugerido", "Precio Base Venta Sugerido", "Duplicado"];
+      const rows = allData.map(item => [
+        item.fecha || "",
+        item.marca || "",
+        item.cod_modelo || "",
+        item.modelo || "",
+        item.anio_modelo || "",
+        item.placa || "",
+        item.transmision || "",
+        item.serial_chasis || "",
+        item.serial_motor || "",
+        item.cod_color || "",
+        item.color || "",
+        item.precio_venta_tienda || "",
+        item.precio_base_venta_tienda || "",
+        item.precio_venta_sugerido || "",
+        item.precio_base_venta_sugerido || "",
+        item.es_duplicado ? "Sí" : "No"
+      ]);
+
+      const csvContent = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+      const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `inventario_bera_${new Date().toISOString().split("T")[0]}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      toast({ title: "Descarga completada", description: `${allData.length} registros exportados` });
+    } catch (error) {
+      console.error("Error downloading CSV:", error);
+      toast({ title: "Error", description: "No se pudo descargar el archivo", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -230,6 +283,9 @@ export default function AdminInventarioBeraPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="icon" onClick={handleDownloadCSV} title="Descargar CSV">
+            <Download className="h-4 w-4" />
+          </Button>
           <Button variant="outline" size="icon" onClick={fetchData} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
