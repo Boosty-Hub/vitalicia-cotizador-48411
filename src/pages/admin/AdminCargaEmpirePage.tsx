@@ -242,45 +242,47 @@ export default function AdminCargaEmpirePage() {
     const batchSize = 100;
     
     try {
-      // Obtener seriales y placas existentes para detectar duplicados
-      const { data: existingRecords } = await supabase
-        .from("bd_empire")
-        .select("serial_carroceria, serial_motor, placa");
+      // Obtener todas las placas del lote a cargar
+      const allPlacas = data
+        .map(item => item.placa)
+        .filter(Boolean) as string[];
       
-      const existingSerialCarroceria = new Set(existingRecords?.map(r => r.serial_carroceria?.toLowerCase()).filter(Boolean));
-      const existingSerialMotor = new Set(existingRecords?.map(r => r.serial_motor?.toLowerCase()).filter(Boolean));
-      const existingPlacas = new Set(existingRecords?.map(r => r.placa?.toLowerCase()).filter(Boolean));
+      // Verificar duplicados usando la función de base de datos (bypass RLS)
+      const { data: existingPlacas, error: checkError } = await supabase
+        .rpc('check_empire_duplicates', { placas: allPlacas });
+      
+      if (checkError) {
+        console.error("Error checking duplicates:", checkError);
+      }
+      
+      // Crear set de placas existentes
+      const existingPlacasSet = new Set(
+        (existingPlacas || []).map((r: { placa: string }) => r.placa?.toLowerCase())
+      );
       
       // También detectar duplicados dentro del mismo lote
-      const loteSerialCarroceria = new Set<string>();
-      const loteSerialMotor = new Set<string>();
       const lotePlacas = new Set<string>();
       
       let duplicateCount = 0;
       
       for (let i = 0; i < data.length; i += batchSize) {
         const batch = data.slice(i, i + batchSize).map(item => {
-          const serialCarroceriaLower = item.serial_carroceria?.toLowerCase();
-          const serialMotorLower = item.serial_motor?.toLowerCase();
           const placaLower = item.placa?.toLowerCase();
           
           // Verificar si es duplicado (en BD existente o en el mismo lote)
-          const esDuplicado = 
-            (serialCarroceriaLower && (existingSerialCarroceria.has(serialCarroceriaLower) || loteSerialCarroceria.has(serialCarroceriaLower))) ||
-            (serialMotorLower && (existingSerialMotor.has(serialMotorLower) || loteSerialMotor.has(serialMotorLower))) ||
-            (placaLower && (existingPlacas.has(placaLower) || lotePlacas.has(placaLower)));
+          const esDuplicado = placaLower && (
+            existingPlacasSet.has(placaLower) || lotePlacas.has(placaLower)
+          );
           
           if (esDuplicado) duplicateCount++;
           
           // Agregar al set del lote actual
-          if (serialCarroceriaLower) loteSerialCarroceria.add(serialCarroceriaLower);
-          if (serialMotorLower) loteSerialMotor.add(serialMotorLower);
           if (placaLower) lotePlacas.add(placaLower);
           
           return {
             ...item,
             lote_carga,
-            es_duplicado: esDuplicado,
+            es_duplicado: esDuplicado || false,
           };
         });
         
