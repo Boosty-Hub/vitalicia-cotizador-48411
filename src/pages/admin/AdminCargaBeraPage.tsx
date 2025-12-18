@@ -281,14 +281,49 @@ export default function AdminCargaBeraPage() {
     
     const lote_carga = crypto.randomUUID();
     const batchSize = 100;
-    const totalBatches = Math.ceil(data.length / batchSize);
     
     try {
+      // Obtener seriales y placas existentes para detectar duplicados
+      const { data: existingRecords } = await supabase
+        .from("bd_bera")
+        .select("serial_chasis, serial_motor, placa");
+      
+      const existingSerialChasis = new Set(existingRecords?.map(r => r.serial_chasis?.toLowerCase()).filter(Boolean));
+      const existingSerialMotor = new Set(existingRecords?.map(r => r.serial_motor?.toLowerCase()).filter(Boolean));
+      const existingPlacas = new Set(existingRecords?.map(r => r.placa?.toLowerCase()).filter(Boolean));
+      
+      // También detectar duplicados dentro del mismo lote
+      const loteSerialChasis = new Set<string>();
+      const loteSerialMotor = new Set<string>();
+      const lotePlacas = new Set<string>();
+      
+      let duplicateCount = 0;
+      
       for (let i = 0; i < data.length; i += batchSize) {
-        const batch = data.slice(i, i + batchSize).map(item => ({
-          ...item,
-          lote_carga,
-        }));
+        const batch = data.slice(i, i + batchSize).map(item => {
+          const serialChasisLower = item.serial_chasis?.toLowerCase();
+          const serialMotorLower = item.serial_motor?.toLowerCase();
+          const placaLower = item.placa?.toLowerCase();
+          
+          // Verificar si es duplicado (en BD existente o en el mismo lote)
+          const esDuplicado = 
+            (serialChasisLower && (existingSerialChasis.has(serialChasisLower) || loteSerialChasis.has(serialChasisLower))) ||
+            (serialMotorLower && (existingSerialMotor.has(serialMotorLower) || loteSerialMotor.has(serialMotorLower))) ||
+            (placaLower && (existingPlacas.has(placaLower) || lotePlacas.has(placaLower)));
+          
+          if (esDuplicado) duplicateCount++;
+          
+          // Agregar al set del lote actual
+          if (serialChasisLower) loteSerialChasis.add(serialChasisLower);
+          if (serialMotorLower) loteSerialMotor.add(serialMotorLower);
+          if (placaLower) lotePlacas.add(placaLower);
+          
+          return {
+            ...item,
+            lote_carga,
+            es_duplicado: esDuplicado,
+          };
+        });
         
         const { error } = await supabase.from("bd_bera").insert(batch);
         
@@ -300,7 +335,9 @@ export default function AdminCargaBeraPage() {
       
       toast({
         title: "Carga exitosa",
-        description: `Se cargaron ${data.length} registros correctamente`,
+        description: duplicateCount > 0 
+          ? `Se cargaron ${data.length} registros (${duplicateCount} marcados como duplicados)`
+          : `Se cargaron ${data.length} registros correctamente`,
       });
       
       // Reset state

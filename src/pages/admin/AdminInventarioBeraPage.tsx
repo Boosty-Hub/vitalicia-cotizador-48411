@@ -61,6 +61,7 @@ interface MotoBera {
   precio_base_venta_tienda: number | null;
   precio_venta_sugerido: number | null;
   precio_base_venta_sugerido: number | null;
+  es_duplicado: boolean | null;
   created_at: string;
 }
 
@@ -402,6 +403,7 @@ export default function AdminInventarioBeraPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Estado</TableHead>
                       <TableHead>Fecha</TableHead>
                       <TableHead>Marca</TableHead>
                       <TableHead>Modelo</TableHead>
@@ -417,13 +419,24 @@ export default function AdminInventarioBeraPage() {
                   <TableBody>
                     {data.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                           No se encontraron registros
                         </TableCell>
                       </TableRow>
                     ) : (
                       data.map((item) => (
-                        <TableRow key={item.id}>
+                        <TableRow key={item.id} className={item.es_duplicado ? "bg-yellow-50 dark:bg-yellow-950/20" : ""}>
+                          <TableCell>
+                            {item.es_duplicado ? (
+                              <Badge variant="destructive" className="bg-yellow-500 hover:bg-yellow-600">
+                                Duplicado
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                Único
+                              </Badge>
+                            )}
+                          </TableCell>
                           <TableCell className="whitespace-nowrap">{item.fecha || "-"}</TableCell>
                           <TableCell>{item.marca || "-"}</TableCell>
                           <TableCell>{item.modelo || "-"}</TableCell>

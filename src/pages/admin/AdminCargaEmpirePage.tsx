@@ -242,11 +242,47 @@ export default function AdminCargaEmpirePage() {
     const batchSize = 100;
     
     try {
+      // Obtener seriales y placas existentes para detectar duplicados
+      const { data: existingRecords } = await supabase
+        .from("bd_empire")
+        .select("serial_carroceria, serial_motor, placa");
+      
+      const existingSerialCarroceria = new Set(existingRecords?.map(r => r.serial_carroceria?.toLowerCase()).filter(Boolean));
+      const existingSerialMotor = new Set(existingRecords?.map(r => r.serial_motor?.toLowerCase()).filter(Boolean));
+      const existingPlacas = new Set(existingRecords?.map(r => r.placa?.toLowerCase()).filter(Boolean));
+      
+      // También detectar duplicados dentro del mismo lote
+      const loteSerialCarroceria = new Set<string>();
+      const loteSerialMotor = new Set<string>();
+      const lotePlacas = new Set<string>();
+      
+      let duplicateCount = 0;
+      
       for (let i = 0; i < data.length; i += batchSize) {
-        const batch = data.slice(i, i + batchSize).map(item => ({
-          ...item,
-          lote_carga,
-        }));
+        const batch = data.slice(i, i + batchSize).map(item => {
+          const serialCarroceriaLower = item.serial_carroceria?.toLowerCase();
+          const serialMotorLower = item.serial_motor?.toLowerCase();
+          const placaLower = item.placa?.toLowerCase();
+          
+          // Verificar si es duplicado (en BD existente o en el mismo lote)
+          const esDuplicado = 
+            (serialCarroceriaLower && (existingSerialCarroceria.has(serialCarroceriaLower) || loteSerialCarroceria.has(serialCarroceriaLower))) ||
+            (serialMotorLower && (existingSerialMotor.has(serialMotorLower) || loteSerialMotor.has(serialMotorLower))) ||
+            (placaLower && (existingPlacas.has(placaLower) || lotePlacas.has(placaLower)));
+          
+          if (esDuplicado) duplicateCount++;
+          
+          // Agregar al set del lote actual
+          if (serialCarroceriaLower) loteSerialCarroceria.add(serialCarroceriaLower);
+          if (serialMotorLower) loteSerialMotor.add(serialMotorLower);
+          if (placaLower) lotePlacas.add(placaLower);
+          
+          return {
+            ...item,
+            lote_carga,
+            es_duplicado: esDuplicado,
+          };
+        });
         
         const { error } = await supabase.from("bd_empire").insert(batch);
         
@@ -258,7 +294,9 @@ export default function AdminCargaEmpirePage() {
       
       toast({
         title: "Carga exitosa",
-        description: `Se cargaron ${data.length} registros correctamente`,
+        description: duplicateCount > 0 
+          ? `Se cargaron ${data.length} registros (${duplicateCount} marcados como duplicados)`
+          : `Se cargaron ${data.length} registros correctamente`,
       });
       
       setFile(null);
