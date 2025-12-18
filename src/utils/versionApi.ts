@@ -41,11 +41,14 @@ export const fetchVersionApi = async (
 
   try {
     // Query the table filtering by brand prefix and year (centuria)
+    // NOTE: We use order+limit to avoid PGRST116 when there are multiple rows for the same brand/year.
     let { data, error } = await supabase
       .from('board_cod_version_api')
       .select('cd_version_seguro, cd_subversion_seguro, n_centuria')
       .ilike('cd_version_seguro', `${prefijo}%`)
       .eq('n_centuria', año)
+      .order('created_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (error) {
@@ -63,6 +66,8 @@ export const fetchVersionApi = async (
         .select('cd_version_seguro, cd_subversion_seguro, n_centuria')
         .ilike('cd_version_seguro', `${prefijo}%`)
         .eq('n_centuria', añoAnterior)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
       
       if (fallbackResult.error) {
