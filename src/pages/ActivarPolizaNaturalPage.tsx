@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { FileUploader } from "@/components/ui/file-uploader";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { fetchVersionApi } from "@/utils/versionApi";
 const ActivarPolizaNaturalPage = () => {
   const navigate = useNavigate();
   const {
@@ -816,6 +817,7 @@ const ActivarPolizaNaturalPage = () => {
   // Map form data to webhook payload
   const mapFormDataToWebhook = async (documentUrls: Record<string, string>) => {
     const vehicleCodes = await fetchVehicleCodes();
+    const versionApiData = await fetchVersionApi(vehicleData?.Marca, vehicleData?.Año);
     const extractNumbers = (cedula: string) => cedula.replace(/[^0-9]/g, '');
 
     // Fetch descriptions for form data codes
@@ -952,12 +954,12 @@ const ActivarPolizaNaturalPage = () => {
       s_modelo: vehicleCodes.s_modelo,
       c_cd_version: vehicleCodes.c_cd_version,
       s_version: vehicleCodes.s_version,
-      n_nu_centuria: vehicleData?.Año || "2025",
+      n_nu_centuria: versionApiData?.n_centuria || vehicleData?.Año || new Date().getFullYear().toString(),
       c_motor: formData.serialCarroceria,
       c_cd_color: vehicleCodes.c_cd_color,
       s_color: vehicleCodes.s_color,
-      c_cd_versionseguro: "BERA2025",
-      c_cd_subversionseguro: "BERAWEB01",
+      c_cd_versionseguro: versionApiData?.cd_version_seguro || "",
+      c_cd_subversionseguro: versionApiData?.cd_subversion_seguro || "",
       n_suma: vehicleData?.Suma || "0",
       desde: "web",
       mondayid: vehicleData?.MondayId ?? "null",
