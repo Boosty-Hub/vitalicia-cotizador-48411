@@ -33,6 +33,7 @@ import ActivarPolizaJuridicaPage from "./pages/ActivarPolizaJuridicaPage";
 
 // Admin imports
 import AdminLayout from "./pages/admin/AdminLayout";
+import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminPolizasPage from "./pages/admin/AdminPolizasPage";
 import AdminConfiguracionesPage from "./pages/admin/AdminConfiguracionesPage";
 
@@ -73,7 +74,7 @@ const App = () => (
           
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminPolizasPage />} />
+            <Route index element={<AdminDashboardPage />} />
             <Route path="polizas" element={<AdminPolizasPage />} />
             <Route path="configuraciones" element={<AdminConfiguracionesPage />} />
             <Route path="configuraciones/:tabla" element={<AdminConfiguracionesPage />} />
