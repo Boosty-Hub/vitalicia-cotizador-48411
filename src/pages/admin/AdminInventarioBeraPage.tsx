@@ -44,7 +44,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { PolicyStatusBadge } from "@/components/admin/PolicyStatusBadge";
+import { InventoryPolicyBadge as PolicyStatusBadge } from "@/components/admin/InventoryPolicyBadge";
 import { PolicyDetailsDialog } from "@/components/admin/PolicyDetailsDialog";
 
 interface MotoBera {
