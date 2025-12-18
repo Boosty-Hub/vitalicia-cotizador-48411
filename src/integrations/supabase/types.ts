@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      bd_bera: {
+        Row: {
+          anio_modelo: number | null
+          cod_color: string | null
+          cod_modelo: string | null
+          color: string | null
+          created_at: string
+          fecha: string | null
+          id: string
+          lote_carga: string | null
+          marca: string | null
+          modelo: string | null
+          numero_fila: number | null
+          placa: string | null
+          precio_base_venta_sugerido: number | null
+          precio_base_venta_tienda: number | null
+          precio_venta_sugerido: number | null
+          precio_venta_tienda: number | null
+          serial_chasis: string | null
+          serial_motor: string | null
+          transmision: string | null
+          updated_at: string
+        }
+        Insert: {
+          anio_modelo?: number | null
+          cod_color?: string | null
+          cod_modelo?: string | null
+          color?: string | null
+          created_at?: string
+          fecha?: string | null
+          id?: string
+          lote_carga?: string | null
+          marca?: string | null
+          modelo?: string | null
+          numero_fila?: number | null
+          placa?: string | null
+          precio_base_venta_sugerido?: number | null
+          precio_base_venta_tienda?: number | null
+          precio_venta_sugerido?: number | null
+          precio_venta_tienda?: number | null
+          serial_chasis?: string | null
+          serial_motor?: string | null
+          transmision?: string | null
+          updated_at?: string
+        }
+        Update: {
+          anio_modelo?: number | null
+          cod_color?: string | null
+          cod_modelo?: string | null
+          color?: string | null
+          created_at?: string
+          fecha?: string | null
+          id?: string
+          lote_carga?: string | null
+          marca?: string | null
+          modelo?: string | null
+          numero_fila?: number | null
+          placa?: string | null
+          precio_base_venta_sugerido?: number | null
+          precio_base_venta_tienda?: number | null
+          precio_venta_sugerido?: number | null
+          precio_venta_tienda?: number | null
+          serial_chasis?: string | null
+          serial_motor?: string | null
+          transmision?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       board_cod_ciudad: {
         Row: {
           cd_ciudad: string | null
