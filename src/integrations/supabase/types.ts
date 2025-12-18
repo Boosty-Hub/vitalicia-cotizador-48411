@@ -21,6 +21,7 @@ export type Database = {
           cod_modelo: string | null
           color: string | null
           created_at: string
+          es_duplicado: boolean | null
           fecha: string | null
           id: string
           lote_carga: string | null
@@ -43,6 +44,7 @@ export type Database = {
           cod_modelo?: string | null
           color?: string | null
           created_at?: string
+          es_duplicado?: boolean | null
           fecha?: string | null
           id?: string
           lote_carga?: string | null
@@ -65,6 +67,7 @@ export type Database = {
           cod_modelo?: string | null
           color?: string | null
           created_at?: string
+          es_duplicado?: boolean | null
           fecha?: string | null
           id?: string
           lote_carga?: string | null
@@ -88,6 +91,7 @@ export type Database = {
           anio: number | null
           color: string | null
           created_at: string
+          es_duplicado: boolean | null
           fecha: string | null
           id: string
           lote_carga: string | null
@@ -104,6 +108,7 @@ export type Database = {
           anio?: number | null
           color?: string | null
           created_at?: string
+          es_duplicado?: boolean | null
           fecha?: string | null
           id?: string
           lote_carga?: string | null
@@ -120,6 +125,7 @@ export type Database = {
           anio?: number | null
           color?: string | null
           created_at?: string
+          es_duplicado?: boolean | null
           fecha?: string | null
           id?: string
           lote_carga?: string | null
