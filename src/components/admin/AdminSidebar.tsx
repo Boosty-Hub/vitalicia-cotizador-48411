@@ -1,4 +1,4 @@
-import { FileText, Settings, LogOut, Shield } from "lucide-react";
+import { FileText, Settings, LogOut, Shield, LayoutDashboard } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -16,6 +16,11 @@ import { cn } from "@/lib/utils";
 import logoVitalicia from "@/assets/logo-vitalicia.png";
 
 const menuItems = [
+  {
+    title: "Dashboard",
+    url: "/admin",
+    icon: LayoutDashboard,
+  },
   {
     title: "Pólizas",
     url: "/admin/polizas",

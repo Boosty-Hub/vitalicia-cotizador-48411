@@ -6,6 +6,13 @@ import { ConfigSidebar } from "@/components/admin/ConfigSidebar";
 export default function AdminLayout() {
   const location = useLocation();
   const isConfiguraciones = location.pathname.includes("/admin/configuraciones");
+  const isDashboard = location.pathname === "/admin";
+
+  const getTitle = () => {
+    if (isConfiguraciones) return "Configuraciones";
+    if (isDashboard) return "Dashboard";
+    return "Panel de Administración";
+  };
 
   return (
     <SidebarProvider>
@@ -16,7 +23,7 @@ export default function AdminLayout() {
           <header className="h-14 border-b border-border flex items-center px-4 bg-card">
             <SidebarTrigger className="mr-4" />
             <h1 className="text-lg font-semibold text-foreground">
-              {isConfiguraciones ? "Configuraciones" : "Panel de Administración"}
+              {getTitle()}
             </h1>
           </header>
           
