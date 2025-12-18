@@ -156,9 +156,14 @@ export default function AdminUsuariosPage() {
 
         if (roleError) throw roleError;
 
+        const userAny = authData.user as any;
+        const needsEmailConfirmation = !authData.session && !userAny?.email_confirmed_at;
+
         toast({
           title: "Usuario creado",
-          description: "El usuario ha sido creado exitosamente",
+          description: needsEmailConfirmation
+            ? "Se envió un correo de confirmación. El usuario no podrá iniciar sesión hasta confirmarlo."
+            : "El usuario ha sido creado exitosamente",
         });
 
         setIsCreateDialogOpen(false);
