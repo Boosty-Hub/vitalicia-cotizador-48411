@@ -219,6 +219,29 @@ function sanitizeActividadEconomica(value: string | number | null | undefined, f
   return result;
 }
 
+/**
+ * Sanitiza el email para la API RMS.
+ * La API espera máximo 70 caracteres, sin acentos ni caracteres especiales.
+ */
+function sanitizeEmail(value: string | null | undefined): string {
+  if (!value) return "";
+  
+  // Eliminar acentos y caracteres especiales
+  let email = value.trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[ñ]/g, "n")
+    .replace(/[Ñ]/g, "N");
+  
+  // Truncar a 70 caracteres si es necesario
+  if (email.length > 70) {
+    console.log(`⚠️ Email truncado de ${email.length} a 70 caracteres: ${email}`);
+    email = email.substring(0, 70);
+  }
+  
+  return email;
+}
+
 function buildRmsPayload(data: Record<string, any>, tipoFormulario: string): Record<string, any> {
   // Valores por defecto y fallbacks
   const defaultValues = {
@@ -232,6 +255,12 @@ function buildRmsPayload(data: Record<string, any>, tipoFormulario: string): Rec
 
   // Para jurídico, usar valores especiales en apoderado si no hay datos
   const isJuridico = tipoFormulario === 'juridico';
+
+  // Sanitizar emails
+  const email1 = sanitizeEmail(data.c_email1);
+  const email2 = sanitizeEmail(data.c_email2);
+  
+  console.log(`📧 Emails sanitizados: email1="${email1}" (${email1.length} chars), email2="${email2}" (${email2.length} chars)`);
 
   // Construir payload base
   const payload: Record<string, any> = {
@@ -271,8 +300,8 @@ function buildRmsPayload(data: Record<string, any>, tipoFormulario: string): Rec
     c_direccion: data.c_direccion || "",
     c_cd_telef1: data.c_cd_telef1 || "",
     c_numtelef1: data.c_numtelef1 || "",
-    c_email1: data.c_email1 || "",
-    c_email2: data.c_email2 || "",
+    c_email1: email1,
+    c_email2: email2,
     
     // Actividad económica - La API RMS espera exactamente 4 dígitos numéricos
     c_cd_actividad: sanitizeActividadEconomica(data.c_cd_actividad, defaultValues.c_cd_actividad),
