@@ -191,7 +191,13 @@ export default function AdminLoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-4 text-center">
+            <Button variant="link" onClick={() => navigate("/admin/forgot-password")}>
+              ¿Olvidaste tu contraseña?
+            </Button>
+          </div>
+
+          <div className="mt-2 text-center">
             <Button variant="link" onClick={() => navigate("/")}>
               Volver al inicio
             </Button>
