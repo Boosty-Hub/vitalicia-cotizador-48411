@@ -17,7 +17,7 @@ import {
   Wrench,
   ArrowLeft,
 } from "lucide-react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -74,6 +74,10 @@ const menuGroups = [
 
 export function ConfigSidebar() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const pathname = location.pathname;
+
+  const isItemActive = (url: string) => pathname === url || pathname.startsWith(`${url}/`);
 
   return (
     <Sidebar className="border-r border-sidebar-border">
@@ -97,25 +101,27 @@ export function ConfigSidebar() {
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {group.items.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to={item.url}
-                        className={({ isActive }) =>
-                          cn(
-                            "flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground transition-all hover:bg-sidebar-accent text-sm",
-                            isActive &&
-                              "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                          )
-                        }
+                {group.items.map((item) => {
+                  const active = isItemActive(item.url);
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={active}
+                        className={cn(
+                          "rounded-lg px-3 py-2 gap-3 text-sm transition-colors",
+                          "data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:shadow-soft",
+                          "data-[active=true]:border-l-2 data-[active=true]:border-primary"
+                        )}
                       >
-                        <item.icon className="h-4 w-4 flex-shrink-0" />
-                        <span className="truncate">{item.title}</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                        <Link to={item.url} aria-current={active ? "page" : undefined}>
+                          <item.icon className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate">{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
