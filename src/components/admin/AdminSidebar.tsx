@@ -82,11 +82,12 @@ export function AdminSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
+                      end={item.url === "/admin"}
                       className={({ isActive }) =>
                         cn(
                           "flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground transition-all hover:bg-sidebar-accent",
                           isActive &&
-                            "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                            "bg-primary/10 text-primary font-medium border-l-2 border-primary"
                         )
                       }
                     >
