@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { fixEncoding } from "@/lib/utils";
 import { FileUploader } from "@/components/ui/file-uploader";
+import { fetchVersionApi } from "@/utils/versionApi";
 
 const ActivarPolizaJuridicaPage = () => {
   const navigate = useNavigate();
@@ -840,12 +841,12 @@ const ActivarPolizaJuridicaPage = () => {
         s_modelo: vehicleData?.Modelo || "",
         c_cd_version: codigosData.versionCodigo,
         s_version: vehicleData?.Modelo || "",
-        n_nu_centuria: vehicleData?.Año || new Date().getFullYear().toString(),
+        n_nu_centuria: versionApiData?.n_centuria || vehicleData?.Año || new Date().getFullYear().toString(),
         c_motor: formData.serialCarroceria,
         c_cd_color: codigosData.colorCodigo,
         s_color: vehicleData?.Color || "",
-        c_cd_versionseguro: versionApiData?.cd_version_seguro || "BERA2025",
-        c_cd_subversionseguro: versionApiData?.cd_subversion_seguro || "BERAWEB01",
+        c_cd_versionseguro: versionApiData?.cd_version_seguro || "",
+        c_cd_subversionseguro: versionApiData?.cd_subversion_seguro || "",
         n_suma: precioVenta,
         desde: "web",
         mondayid: vehicleData?.MondayId || "",
@@ -948,13 +949,8 @@ const ActivarPolizaJuridicaPage = () => {
         .eq('descripcion', vehicleData?.Modelo || '')
         .maybeSingle();
 
-      // Buscar versión API basado en s_marca (Marca del vehículo)
-      const { data: versionApiData } = await supabase
-        .from('board_cod_version_api')
-        .select('cd_version_seguro, cd_subversion_seguro, n_centuria')
-        .ilike('cd_version_seguro', `%${vehicleData?.Marca || ''}%`)
-        .maybeSingle();
-
+      // Fetch version API dynamically using the utility function
+      const versionApiData = await fetchVersionApi(vehicleData?.Marca, vehicleData?.Año);
       console.log('🔍 Versión API encontrada:', versionApiData);
 
       const { data: versionData } = await supabase
