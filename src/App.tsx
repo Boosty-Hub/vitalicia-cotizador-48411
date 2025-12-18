@@ -31,6 +31,11 @@ import ActivarPolizaRCVPage from "./pages/ActivarPolizaRCVPage";
 import ActivarPolizaNaturalPage from "./pages/ActivarPolizaNaturalPage";
 import ActivarPolizaJuridicaPage from "./pages/ActivarPolizaJuridicaPage";
 
+// Admin imports
+import AdminLayout from "./pages/admin/AdminLayout";
+import AdminPolizasPage from "./pages/admin/AdminPolizasPage";
+import AdminConfiguracionesPage from "./pages/admin/AdminConfiguracionesPage";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -65,6 +70,15 @@ const App = () => (
           <Route path="/activar-poliza-rcv" element={<ActivarPolizaRCVPage />} />
           <Route path="/activar-poliza-natural" element={<ActivarPolizaNaturalPage />} />
           <Route path="/activar-poliza-juridica" element={<ActivarPolizaJuridicaPage />} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminPolizasPage />} />
+            <Route path="polizas" element={<AdminPolizasPage />} />
+            <Route path="configuraciones" element={<AdminConfiguracionesPage />} />
+            <Route path="configuraciones/:tabla" element={<AdminConfiguracionesPage />} />
+          </Route>
+          
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

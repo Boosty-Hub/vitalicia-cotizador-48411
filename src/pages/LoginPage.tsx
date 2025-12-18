@@ -13,7 +13,8 @@ import {
   ArrowRight,
   Shield,
   Eye,
-  EyeOff
+  EyeOff,
+  Settings
 } from "lucide-react";
 
 type UserType = 'cliente' | 'intermediario' | null;
@@ -188,6 +189,18 @@ const LoginPage = () => {
                   </div>
                 </CardContent>
               </Card>
+            </div>
+
+            {/* Admin Access Link */}
+            <div className="mt-8 text-center">
+              <Button
+                variant="ghost"
+                className="text-muted-foreground hover:text-foreground"
+                onClick={() => navigate('/admin')}
+              >
+                <Settings className="mr-2 w-4 h-4" />
+                Acceso Administrador
+              </Button>
             </div>
           </div>
         </div>
