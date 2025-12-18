@@ -293,16 +293,20 @@ const ActivarPolizaNaturalPage = () => {
     try {
       const placaUpper = placa.toUpperCase().trim();
       
-      // 1. Buscar en bd_bera
-      const { data: beraData, error: beraError } = await supabase
+      // 1. Buscar en bd_bera (priorizar no duplicados, tomar el primero)
+      const { data: beraResults, error: beraError } = await supabase
         .from('bd_bera')
         .select('*')
         .ilike('placa', placaUpper)
-        .maybeSingle();
+        .order('es_duplicado', { ascending: true }) // No duplicados primero
+        .order('created_at', { ascending: false }) // Más reciente
+        .limit(1);
 
       if (beraError) {
         console.error('Error buscando en bd_bera:', beraError);
       }
+      
+      const beraData = beraResults?.[0] || null;
 
       if (beraData) {
         console.log('✅ Vehículo encontrado en bd_bera:', beraData);
@@ -328,16 +332,20 @@ const ActivarPolizaNaturalPage = () => {
         return;
       }
 
-      // 2. Buscar en bd_empire
-      const { data: empireData, error: empireError } = await supabase
+      // 2. Buscar en bd_empire (priorizar no duplicados, tomar el primero)
+      const { data: empireResults, error: empireError } = await supabase
         .from('bd_empire')
         .select('*')
         .ilike('placa', placaUpper)
-        .maybeSingle();
+        .order('es_duplicado', { ascending: true }) // No duplicados primero
+        .order('created_at', { ascending: false }) // Más reciente
+        .limit(1);
 
       if (empireError) {
         console.error('Error buscando en bd_empire:', empireError);
       }
+      
+      const empireData = empireResults?.[0] || null;
 
       if (empireData) {
         console.log('✅ Vehículo encontrado en bd_empire:', empireData);
