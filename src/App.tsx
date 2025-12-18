@@ -79,6 +79,9 @@ const App = () => (
             <Route path="/activar-poliza-natural" element={<ActivarPolizaNaturalPage />} />
             <Route path="/activar-poliza-juridica" element={<ActivarPolizaJuridicaPage />} />
             
+            {/* Public Factory Upload Page */}
+            <Route path="/carga-bera" element={<AdminCargaBeraPage />} />
+            
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLoginPage />} />
             <Route
@@ -91,7 +94,6 @@ const App = () => (
             >
               <Route index element={<AdminDashboardPage />} />
               <Route path="polizas" element={<AdminPolizasPage />} />
-              <Route path="carga-bera" element={<AdminCargaBeraPage />} />
               <Route path="configuraciones" element={<AdminConfiguracionesPage />} />
               <Route path="configuraciones/usuarios" element={<AdminUsuariosPage />} />
               <Route path="configuraciones/precios-empire" element={<AdminPreciosEmpirePage />} />

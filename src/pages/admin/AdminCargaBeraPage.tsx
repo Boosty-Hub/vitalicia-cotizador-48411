@@ -300,19 +300,37 @@ export default function AdminCargaBeraPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold text-foreground">Carga de Motos BERA</h2>
-          <p className="text-sm text-muted-foreground">
-            Sube el archivo Excel de la fábrica para cargar las motos a la base de datos
-          </p>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b border-border bg-card">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
+              <FileSpreadsheet className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="font-semibold text-foreground">Portal de Carga BERA</h1>
+              <p className="text-xs text-muted-foreground">Sistema de registro de motos</p>
+            </div>
+          </div>
         </div>
-        <Button variant="outline" onClick={downloadTemplate} className="gap-2">
-          <Download className="h-4 w-4" />
-          Descargar Plantilla
-        </Button>
-      </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-6">
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold text-foreground">Carga de Motos BERA</h2>
+              <p className="text-sm text-muted-foreground">
+                Sube el archivo Excel de la fábrica para cargar las motos a la base de datos
+              </p>
+            </div>
+            <Button variant="outline" onClick={downloadTemplate} className="gap-2">
+              <Download className="h-4 w-4" />
+              Descargar Plantilla
+            </Button>
+          </div>
 
       {/* Upload Zone */}
       {!file && (
@@ -515,6 +533,8 @@ export default function AdminCargaBeraPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+        </div>
+      </main>
     </div>
   );
 }
