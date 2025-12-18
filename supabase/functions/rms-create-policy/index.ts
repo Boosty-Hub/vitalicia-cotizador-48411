@@ -98,12 +98,20 @@ serve(async (req) => {
     if (isSuccess) {
       const MAKE_WEBHOOK_URL = 'https://hook.us2.make.com/rtk99dcvukc0bjz9psj26qbe5x19db8y';
       
+      // Obtener la póliza completa de la base de datos para enviar todos los campos
+      const { data: polizaCompleta, error: fetchError } = await supabase
+        .from('polizas_activas')
+        .select('*')
+        .eq('id', polizaId)
+        .single();
+      
+      if (fetchError) {
+        console.error('⚠️ Error obteniendo póliza completa para webhook:', fetchError);
+      }
+
       const webhookPayload = {
-        // Datos de la póliza (formData original)
-        poliza: {
-          id: polizaId,
-          ...formData,
-        },
+        // Datos COMPLETOS de la póliza desde la base de datos
+        poliza: polizaCompleta || { id: polizaId, ...formData },
         // Respuesta completa de la API RMS
         rmsResponse: rmsData,
         // Datos extraídos para fácil acceso
