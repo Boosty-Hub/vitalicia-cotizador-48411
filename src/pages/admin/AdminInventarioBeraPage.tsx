@@ -153,6 +153,19 @@ export default function AdminInventarioBeraPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      // If filtering by policy status, we need to get all plates with policies first
+      let platesWithPolicy: string[] = [];
+      if (filterPoliza !== "todos") {
+        const { data: policies } = await supabase
+          .from("polizas_activas")
+          .select("placa_monday")
+          .not("placa_monday", "is", null);
+        
+        platesWithPolicy = (policies || [])
+          .map(p => p.placa_monday?.toUpperCase())
+          .filter(Boolean) as string[];
+      }
+
       let query = supabase
         .from("bd_bera")
         .select("*", { count: "exact" });
@@ -169,33 +182,29 @@ export default function AdminInventarioBeraPage() {
         query = query.or("es_duplicado.eq.false,es_duplicado.is.null");
       }
 
+      // Apply policy filter at database level
+      if (filterPoliza === "con_poliza" && platesWithPolicy.length > 0) {
+        query = query.in("placa", platesWithPolicy);
+      } else if (filterPoliza === "sin_poliza") {
+        if (platesWithPolicy.length > 0) {
+          // Get plates NOT in the policy list
+          query = query.or(`placa.is.null,placa.not.in.(${platesWithPolicy.join(",")})`);
+        }
+      }
+
       const { data: result, error, count } = await query
         .order("created_at", { ascending: false })
         .range((currentPage - 1) * pageSize, currentPage * pageSize - 1);
 
       if (error) throw error;
 
-      // Fetch policy status for all plates
+      // Fetch policy status for displayed plates
       const plates = (result || []).map(item => item.placa).filter(Boolean) as string[];
       const policies = await fetchPoliciesForPlates(plates);
       setPolicyMap(policies);
 
-      // Filter by policy status if needed
-      let filteredData = result || [];
-      if (filterPoliza !== "todos") {
-        filteredData = filteredData.filter(item => {
-          if (!item.placa) return filterPoliza === "sin_poliza";
-          const policyInfo = policies[item.placa.toUpperCase()];
-          if (filterPoliza === "con_poliza") {
-            return policyInfo?.hasPolicy;
-          } else {
-            return !policyInfo?.hasPolicy;
-          }
-        });
-      }
-
-      setData(filteredData);
-      setTotalCount(filterPoliza === "todos" ? (count || 0) : filteredData.length);
+      setData(result || []);
+      setTotalCount(count || 0);
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
