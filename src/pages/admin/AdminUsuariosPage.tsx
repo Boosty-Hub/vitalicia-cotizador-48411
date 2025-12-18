@@ -230,13 +230,13 @@ export default function AdminUsuariosPage() {
 
     setIsSubmitting(true);
     try {
-      // Delete from profiles (cascade will handle user_roles)
-      const { error } = await supabase
-        .from("profiles")
-        .delete()
-        .eq("id", selectedUser.id);
+      // Call edge function to properly delete user from auth.users
+      const { data, error } = await supabase.functions.invoke("admin-delete-user", {
+        body: { userId: selectedUser.id },
+      });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast({
         title: "Usuario eliminado",
