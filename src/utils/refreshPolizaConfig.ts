@@ -140,12 +140,22 @@ export async function refreshPolizaConfig(poliza: PolizaConfigData): Promise<Ref
     }
 
     // 5. Fetch version API data (n_centuria, cd_version_seguro, cd_subversion_seguro)
+    console.log('🔄 Buscando versión API para marca:', poliza.s_marca, 'año:', poliza.año_monday);
     const versionApiData = await fetchVersionApi(poliza.s_marca, poliza.año_monday);
+    console.log('📦 Resultado versión API:', versionApiData);
+    
     if (versionApiData) {
       updatedFields.n_nu_centuria = versionApiData.n_centuria;
       updatedFields.c_cd_versionseguro = versionApiData.cd_version_seguro;
       updatedFields.c_cd_subversionseguro = versionApiData.cd_subversion_seguro;
       updatedFields.version_api_monday = versionApiData.cd_version_seguro;
+      console.log('✅ Campos de versión API actualizados:', {
+        n_nu_centuria: versionApiData.n_centuria,
+        c_cd_versionseguro: versionApiData.cd_version_seguro,
+        c_cd_subversionseguro: versionApiData.cd_subversion_seguro
+      });
+    } else {
+      console.warn('⚠️ No se encontró versión API para la marca/año especificados');
     }
 
     // 6. Fetch precio from precios_empire if it's an Empire vehicle
