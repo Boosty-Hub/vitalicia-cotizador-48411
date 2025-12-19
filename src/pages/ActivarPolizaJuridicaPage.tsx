@@ -278,16 +278,52 @@ const ActivarPolizaJuridicaPage = () => {
     try {
       const placaUpper = placa.toUpperCase().trim();
       
-      // 1. Buscar en bd_bera
-      const { data: beraData, error: beraError } = await supabase
+      // PRIMERO: Verificar si la placa ya tiene una póliza activa
+      const { data: polizaResults, error: polizaError } = await supabase
+        .from('polizas_activas')
+        .select('numero_poliza_monday, placa_monday, estado_principal_monday, nombre_titular_monday, apellidos_titular_monday, fecha_de_vencimiento_monday')
+        .ilike('placa_monday', placaUpper)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (polizaError) {
+        console.error('Error buscando en polizas_activas:', polizaError);
+      }
+
+      const polizaData = polizaResults?.[0] || null;
+
+      if (polizaData) {
+        // La placa ya tiene una póliza registrada
+        const fechaVencimiento = polizaData.fecha_de_vencimiento_monday;
+        const esActiva = fechaVencimiento ? new Date(fechaVencimiento) > new Date() : false;
+        
+        console.log('⚠️ Placa encontrada en polizas_activas:', polizaData, 'Activa:', esActiva);
+        setShowError(true);
+        setPlacaValidada(false);
+        toast({
+          title: esActiva ? "Póliza Activa" : "Placa ya registrada",
+          description: esActiva 
+            ? `Esta placa ya tiene una póliza ACTIVA (${polizaData.numero_poliza_monday || 'Sin número'}). Fecha de vencimiento: ${fechaVencimiento}`
+            : `Esta placa tiene una póliza vencida. Contacte soporte para renovar.`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // 1. Buscar en bd_bera (priorizar no duplicados, tomar el primero)
+      const { data: beraResults, error: beraError } = await supabase
         .from('bd_bera')
         .select('*')
         .ilike('placa', placaUpper)
-        .maybeSingle();
+        .order('es_duplicado', { ascending: true })
+        .order('created_at', { ascending: false })
+        .limit(1);
 
       if (beraError) {
         console.error('Error buscando en bd_bera:', beraError);
       }
+      
+      const beraData = beraResults?.[0] || null;
 
       if (beraData) {
         console.log('✅ Vehículo encontrado en bd_bera:', beraData);
@@ -322,16 +358,20 @@ const ActivarPolizaJuridicaPage = () => {
         return;
       }
 
-      // 2. Buscar en bd_empire
-      const { data: empireData, error: empireError } = await supabase
+      // 2. Buscar en bd_empire (priorizar no duplicados, tomar el primero)
+      const { data: empireResults, error: empireError } = await supabase
         .from('bd_empire')
         .select('*')
         .ilike('placa', placaUpper)
-        .maybeSingle();
+        .order('es_duplicado', { ascending: true })
+        .order('created_at', { ascending: false })
+        .limit(1);
 
       if (empireError) {
         console.error('Error buscando en bd_empire:', empireError);
       }
+      
+      const empireData = empireResults?.[0] || null;
 
       if (empireData) {
         console.log('✅ Vehículo encontrado en bd_empire:', empireData);
@@ -390,36 +430,7 @@ const ActivarPolizaJuridicaPage = () => {
         return;
       }
 
-      // 3. Si no está en inventario, buscar en polizas_activas
-      const { data: polizaData, error: polizaError } = await supabase
-        .from('polizas_activas')
-        .select('numero_poliza_monday, placa_monday, estado_principal_monday, nombre_titular_monday, apellidos_titular_monday, fecha_de_vencimiento_monday')
-        .ilike('placa_monday', placaUpper)
-        .maybeSingle();
-
-      if (polizaError) {
-        console.error('Error buscando en polizas_activas:', polizaError);
-      }
-
-      if (polizaData) {
-        // La placa ya tiene una póliza registrada
-        const fechaVencimiento = polizaData.fecha_de_vencimiento_monday;
-        const esActiva = fechaVencimiento ? new Date(fechaVencimiento) > new Date() : false;
-        
-        console.log('⚠️ Placa encontrada en polizas_activas:', polizaData);
-        setShowError(true);
-        setPlacaValidada(false);
-        toast({
-          title: "Placa ya registrada",
-          description: esActiva 
-            ? `Esta placa ya tiene una póliza activa (${polizaData.numero_poliza_monday || 'Sin número'}). Vence: ${fechaVencimiento}`
-            : `Esta placa tiene una póliza vencida. Contacte soporte para renovar.`,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // 4. No se encontró en ninguna base de datos
+      // 3. No se encontró en ninguna base de datos
       setShowError(true);
       setPlacaValidada(false);
       toast({
