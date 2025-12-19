@@ -727,11 +727,14 @@ const ActivarPolizaJuridicaPage = () => {
       recordatorio.setMonth(recordatorio.getMonth() - 1);
       const fechaRecordatorio = recordatorio.toISOString().split('T')[0];
 
+      // Si hay sesión autenticada, guardar el owner para cumplir RLS (en anónimo queda null)
+      const { data: { user } } = await supabase.auth.getUser();
+
       const polizaData = {
         // Campos Monday
         estado_principal_monday: "Nuevo registro",
         api_monday: versionApiData?.cd_version_seguro || "BERA2025",
-        user_id: null, // Anonymous user
+        user_id: user?.id || null,
         fecha_de_vencimiento_monday: fechaVencimiento,
         recordatorio_de_vencimiento_monday: fechaRecordatorio,
         placa_monday: placa,
