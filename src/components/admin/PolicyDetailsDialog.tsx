@@ -356,6 +356,36 @@ export function PolicyDetailsDialog({
   const isProcessing = processingPolizaId === selectedPoliza.id;
   const showReprocess = allowEdit && (status === 'error' || status === 'pending');
 
+  // Status badge styling based on policy status
+  const statusStyles = {
+    active: {
+      bg: 'bg-gradient-to-r from-emerald-500 to-emerald-600',
+      border: 'border-emerald-400',
+      text: 'text-white',
+      glow: 'shadow-lg shadow-emerald-500/30',
+    },
+    error: {
+      bg: 'bg-gradient-to-r from-red-500 to-red-600',
+      border: 'border-red-400',
+      text: 'text-white',
+      glow: 'shadow-lg shadow-red-500/30',
+    },
+    pending: {
+      bg: 'bg-gradient-to-r from-amber-500 to-amber-600',
+      border: 'border-amber-400',
+      text: 'text-white',
+      glow: 'shadow-lg shadow-amber-500/30',
+    },
+    processing: {
+      bg: 'bg-gradient-to-r from-blue-500 to-blue-600',
+      border: 'border-blue-400',
+      text: 'text-white',
+      glow: 'shadow-lg shadow-blue-500/30',
+    },
+  };
+
+  const currentStatusStyle = statusStyles[status];
+
   return (
     <Dialog open={open} onOpenChange={(openState) => {
       if (!openState) {
@@ -364,6 +394,38 @@ export function PolicyDetailsDialog({
       onOpenChange(openState);
     }}>
       <DialogContent className="max-w-4xl max-h-[90vh]">
+        {/* Status Banner */}
+        <div className={`-mx-6 -mt-6 mb-4 px-6 py-3 rounded-t-lg ${currentStatusStyle.bg} ${currentStatusStyle.glow}`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <PolicyStatusBadge 
+                status={status} 
+                message={message}
+                showTooltip={false}
+              />
+              <span className={`text-sm font-medium ${currentStatusStyle.text}`}>
+                {message}
+              </span>
+            </div>
+            {showReprocess && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleReprocess}
+                disabled={isProcessing}
+                className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+              >
+                {isProcessing ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                Reprocesar
+              </Button>
+            )}
+          </div>
+        </div>
+
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>

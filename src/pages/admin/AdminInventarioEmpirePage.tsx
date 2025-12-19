@@ -645,17 +645,20 @@ export default function AdminInventarioEmpirePage() {
                                     <Eye className="h-4 w-4" />
                                   </Button>
                                 )}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-destructive hover:text-destructive"
-                                  onClick={() => {
-                                    setSelectedId(item.id);
-                                    setIsDeleteDialogOpen(true);
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                {!policyInfo.hasPolicy && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-destructive hover:text-destructive"
+                                    onClick={() => {
+                                      setSelectedId(item.id);
+                                      setIsDeleteDialogOpen(true);
+                                    }}
+                                    title="Eliminar registro"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>
