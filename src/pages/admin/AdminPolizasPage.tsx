@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
@@ -39,7 +39,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Search, Eye, Trash2, ChevronLeft, ChevronRight, FileDown, Loader2, Pencil, Save, X, ExternalLink, RefreshCw } from "lucide-react";
+import { Search, Eye, Trash2, ChevronLeft, ChevronRight, FileDown, Loader2, Pencil, Save, X, ExternalLink, RefreshCw, Download } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -69,6 +69,40 @@ export default function AdminPolizasPage() {
   useEffect(() => {
     fetchPolizas();
   }, [currentPage, searchTerm, filterFormulario]);
+
+  // Suscripción en tiempo real para actualizar detalles de la póliza seleccionada
+  useEffect(() => {
+    if (!selectedPoliza?.id || !showDetailDialog) return;
+
+    const channel = supabase
+      .channel(`poliza-details-${selectedPoliza.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'polizas_activas',
+          filter: `id=eq.${selectedPoliza.id}`
+        },
+        (payload) => {
+          console.log('📡 Póliza actualizada en tiempo real:', payload.new);
+          const updatedPoliza = payload.new as Poliza;
+          setSelectedPoliza(updatedPoliza);
+          if (!isEditing) {
+            setEditedPoliza(updatedPoliza);
+          }
+          toast({
+            title: "Datos actualizados",
+            description: "Los detalles de la póliza se han actualizado automáticamente",
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedPoliza?.id, showDetailDialog, isEditing]);
 
   const fetchPolizas = async () => {
     setLoading(true);
@@ -364,6 +398,26 @@ export default function AdminPolizasPage() {
     );
   };
 
+  // Función para descargar archivo evitando bloqueo de ad blockers
+  const handleDownloadDocument = async (url: string, filename: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Error descargando documento:', error);
+      // Si falla la descarga, abrir en nueva pestaña como fallback
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const renderDocumentLink = (label: string, url: string | null) => {
     if (!url) {
       return (
@@ -374,17 +428,28 @@ export default function AdminPolizasPage() {
       );
     }
 
+    const filename = url.split('/').pop() || 'documento';
+
     return (
       <div className="space-y-1">
         <p className="text-xs text-muted-foreground">{label}</p>
-        <a 
-          href={url} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="text-sm text-primary hover:underline flex items-center gap-1"
-        >
-          Ver documento <ExternalLink className="h-3 w-3" />
-        </a>
+        <div className="flex items-center gap-2">
+          <a 
+            href={url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-sm text-primary hover:underline flex items-center gap-1"
+          >
+            Ver <ExternalLink className="h-3 w-3" />
+          </a>
+          <button
+            onClick={() => handleDownloadDocument(url, filename)}
+            className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1"
+            title="Descargar (evita bloqueo de ad blocker)"
+          >
+            <Download className="h-3 w-3" />
+          </button>
+        </div>
       </div>
     );
   };
