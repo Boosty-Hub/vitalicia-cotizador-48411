@@ -39,7 +39,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Search, Eye, Trash2, ChevronLeft, ChevronRight, FileDown, Loader2, Pencil, Save, X, ExternalLink, RefreshCw, Download } from "lucide-react";
+import { Search, Eye, Trash2, ChevronLeft, ChevronRight, FileDown, Loader2, Pencil, Save, X, ExternalLink, RefreshCw, Download, FileText, FileCheck, FileX, Image } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -419,35 +419,55 @@ export default function AdminPolizasPage() {
   };
 
   const renderDocumentLink = (label: string, url: string | null) => {
+    const filename = url?.split('/').pop() || 'documento';
+    const isPDF = filename.toLowerCase().endsWith('.pdf');
+    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
+    
+    const getFileIcon = () => {
+      if (isPDF) return <FileText className="h-5 w-5" />;
+      if (isImage) return <Image className="h-5 w-5" />;
+      return <FileText className="h-5 w-5" />;
+    };
+
     if (!url) {
       return (
-        <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="text-sm text-muted-foreground italic">No cargado</p>
+        <div className="group relative flex items-center gap-3 p-3 rounded-xl border border-dashed border-muted-foreground/30 bg-muted/30 transition-all duration-200">
+          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-muted">
+            <FileX className="h-5 w-5 text-muted-foreground/50" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-muted-foreground">{label}</p>
+            <p className="text-xs text-muted-foreground/60 italic">No cargado</p>
+          </div>
         </div>
       );
     }
 
-    const filename = url.split('/').pop() || 'documento';
-
     return (
-      <div className="space-y-1">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <div className="flex items-center gap-2">
+      <div className="group relative flex items-center gap-3 p-3 rounded-xl border border-border bg-gradient-to-br from-background to-muted/20 hover:border-primary/40 hover:shadow-md hover:shadow-primary/5 transition-all duration-300">
+        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+          {getFileIcon()}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{label}</p>
+          <p className="text-xs text-muted-foreground truncate">{filename}</p>
+        </div>
+        <div className="flex items-center gap-1">
           <a 
             href={url} 
             target="_blank" 
             rel="noopener noreferrer"
-            className="text-sm text-primary hover:underline flex items-center gap-1"
+            className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+            title="Ver documento"
           >
-            Ver <ExternalLink className="h-3 w-3" />
+            <ExternalLink className="h-4 w-4" />
           </a>
           <button
             onClick={() => handleDownloadDocument(url, filename)}
-            className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1"
-            title="Descargar (evita bloqueo de ad blocker)"
+            className="flex items-center justify-center w-9 h-9 rounded-lg bg-muted hover:bg-emerald-500 hover:text-white transition-all duration-200"
+            title="Descargar documento"
           >
-            <Download className="h-3 w-3" />
+            <Download className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -890,35 +910,61 @@ export default function AdminPolizasPage() {
                 </TabsContent>
 
                 {/* Documentos */}
-                <TabsContent value="documentos" className="space-y-4 mt-4">
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Documentos Cargados</CardTitle>
+                <TabsContent value="documentos" className="space-y-6 mt-4">
+                  <Card className="overflow-hidden">
+                    <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-transparent border-b">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <FileCheck className="h-5 w-5 text-primary" />
+                        Documentos del Titular
+                      </CardTitle>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-2 gap-4">
-                      {renderDocumentLink("Cédula de Identidad", selectedPoliza.cedula_identidad_url)}
-                      {renderDocumentLink("Licencia de Conducir", selectedPoliza.licencia_conducir_url)}
-                      {renderDocumentLink("Certificado Médico", selectedPoliza.certificado_medico_url)}
-                      {renderDocumentLink("Certificado Origen Vehículo", selectedPoliza.certificado_origen_vehiculo_url)}
-                      {renderDocumentLink("Factura Compra Vehículo", selectedPoliza.factura_compra_vehiculo_url)}
-                      {renderDocumentLink("RIF", selectedPoliza.rif_url)}
+                    <CardContent className="p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {renderDocumentLink("Cédula de Identidad", selectedPoliza.cedula_identidad_url)}
+                        {renderDocumentLink("Licencia de Conducir", selectedPoliza.licencia_conducir_url)}
+                        {renderDocumentLink("Certificado Médico", selectedPoliza.certificado_medico_url)}
+                        {renderDocumentLink("RIF", selectedPoliza.rif_url)}
+                      </div>
                     </CardContent>
                   </Card>
 
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Documentos de Póliza</CardTitle>
+                  <Card className="overflow-hidden">
+                    <CardHeader className="pb-4 bg-gradient-to-r from-emerald-500/5 to-transparent border-b">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <FileText className="h-5 w-5 text-emerald-600" />
+                        Documentos del Vehículo
+                      </CardTitle>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-2 gap-4">
-                      {renderDocumentLink("URL Póliza", selectedPoliza.url_poliza_monday)}
-                      {renderDocumentLink("URL Carnet", selectedPoliza.url_carnet_monday)}
+                    <CardContent className="p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {renderDocumentLink("Certificado Origen Vehículo", selectedPoliza.certificado_origen_vehiculo_url)}
+                        {renderDocumentLink("Factura Compra Vehículo", selectedPoliza.factura_compra_vehiculo_url)}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="overflow-hidden">
+                    <CardHeader className="pb-4 bg-gradient-to-r from-blue-500/5 to-transparent border-b">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <FileText className="h-5 w-5 text-blue-600" />
+                        Documentos de Póliza
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {renderDocumentLink("Póliza Emitida", selectedPoliza.url_poliza_monday)}
+                        {renderDocumentLink("Carnet de Asegurado", selectedPoliza.url_carnet_monday)}
+                      </div>
                     </CardContent>
                   </Card>
 
                   {isEditing && (
-                    <Card>
+                    <Card className="border-dashed">
                       <CardHeader className="pb-3">
-                        <CardTitle className="text-base">Editar URLs de Documentos</CardTitle>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Pencil className="h-4 w-4" />
+                          Editar URLs de Documentos
+                        </CardTitle>
                       </CardHeader>
                       <CardContent className="grid grid-cols-2 gap-4">
                         {renderField("URL Cédula Identidad", "cedula_identidad_url")}
