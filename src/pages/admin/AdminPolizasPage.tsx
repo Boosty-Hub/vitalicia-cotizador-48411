@@ -11,8 +11,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -20,14 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,12 +29,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Search, Eye, Trash2, ChevronLeft, ChevronRight, FileDown, Loader2, Pencil, Save, X, ExternalLink, RefreshCw, Download, FileText, FileCheck, FileX, Image } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Search, Eye, Trash2, ChevronLeft, ChevronRight, FileDown, Loader2, RefreshCw } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
-import { PolicyStatusBadge, getPolizaStatus, PolicyStatus } from "@/components/admin/PolicyStatusBadge";
+import { PolicyStatusBadge, getPolizaStatus } from "@/components/admin/PolicyStatusBadge";
+import { PolicyDetailsDialog } from "@/components/admin/PolicyDetailsDialog";
 import { refreshPolizaConfig } from "@/utils/refreshPolizaConfig";
 
 type Poliza = Database["public"]["Tables"]["polizas_activas"]["Row"];
@@ -57,52 +45,15 @@ export default function AdminPolizasPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [selectedPoliza, setSelectedPoliza] = useState<Poliza | null>(null);
-  const [editedPoliza, setEditedPoliza] = useState<Poliza | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [polizaToDelete, setPolizaToDelete] = useState<string | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [processingPolizaId, setProcessingPolizaId] = useState<string | null>(null);
   const pageSize = 10;
 
   useEffect(() => {
     fetchPolizas();
   }, [currentPage, searchTerm, filterFormulario]);
-
-  // Suscripción en tiempo real para actualizar detalles de la póliza seleccionada
-  useEffect(() => {
-    if (!selectedPoliza?.id || !showDetailDialog) return;
-
-    const channel = supabase
-      .channel(`poliza-details-${selectedPoliza.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'polizas_activas',
-          filter: `id=eq.${selectedPoliza.id}`
-        },
-        (payload) => {
-          console.log('📡 Póliza actualizada en tiempo real:', payload.new);
-          const updatedPoliza = payload.new as Poliza;
-          setSelectedPoliza(updatedPoliza);
-          if (!isEditing) {
-            setEditedPoliza(updatedPoliza);
-          }
-          toast({
-            title: "Datos actualizados",
-            description: "Los detalles de la póliza se han actualizado automáticamente",
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [selectedPoliza?.id, showDetailDialog, isEditing]);
 
   const fetchPolizas = async () => {
     setLoading(true);
@@ -173,38 +124,6 @@ export default function AdminPolizasPage() {
     }
   };
 
-  const handleSave = async () => {
-    if (!editedPoliza) return;
-    setIsSaving(true);
-
-    try {
-      const { error } = await supabase
-        .from("polizas_activas")
-        .update(editedPoliza)
-        .eq("id", editedPoliza.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Éxito",
-        description: "Póliza actualizada correctamente",
-      });
-      
-      setSelectedPoliza(editedPoliza);
-      setIsEditing(false);
-      fetchPolizas();
-    } catch (error) {
-      console.error("Error updating poliza:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar la póliza",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   // Reprocesar póliza: actualiza configuración y llama a RMS API
   const handleReprocess = async (poliza: Poliza) => {
     if (processingPolizaId) return;
@@ -212,7 +131,6 @@ export default function AdminPolizasPage() {
     setProcessingPolizaId(poliza.id);
     
     try {
-      // 1. Refrescar datos de configuración
       toast({
         title: "Actualizando configuración...",
         description: "Obteniendo datos actualizados de las tablas de configuración",
@@ -244,7 +162,6 @@ export default function AdminPolizasPage() {
         });
       }
 
-      // 2. Obtener la póliza actualizada
       const { data: updatedPoliza, error: fetchError } = await supabase
         .from('polizas_activas')
         .select('*')
@@ -255,7 +172,6 @@ export default function AdminPolizasPage() {
         throw new Error('No se pudo obtener la póliza actualizada');
       }
 
-      // 3. Llamar al API de RMS
       toast({
         title: "Procesando con RMS...",
         description: "Enviando datos para obtener número de póliza",
@@ -282,7 +198,6 @@ export default function AdminPolizasPage() {
       if (rmsError) {
         console.error('Error llamando a RMS:', rmsError);
         
-        // Guardar el error en la póliza
         await supabase
           .from('polizas_activas')
           .update({
@@ -313,7 +228,6 @@ export default function AdminPolizasPage() {
         description: `Número de póliza: ${rmsResult.numeroPoliza}`,
       });
 
-      // Refrescar la lista
       fetchPolizas();
       
     } catch (error) {
@@ -326,11 +240,6 @@ export default function AdminPolizasPage() {
     } finally {
       setProcessingPolizaId(null);
     }
-  };
-
-  const handleFieldChange = (field: keyof Poliza, value: string | null) => {
-    if (!editedPoliza) return;
-    setEditedPoliza({ ...editedPoliza, [field]: value });
   };
 
   const exportToCSV = () => {
@@ -365,114 +274,10 @@ export default function AdminPolizasPage() {
 
   const openDetailDialog = (poliza: Poliza) => {
     setSelectedPoliza(poliza);
-    setEditedPoliza(poliza);
-    setIsEditing(false);
     setShowDetailDialog(true);
   };
 
   const totalPages = Math.ceil(totalCount / pageSize);
-
-  const renderField = (label: string, field: keyof Poliza, type: "text" | "date" = "text") => {
-    const value = isEditing ? editedPoliza?.[field] : selectedPoliza?.[field];
-    
-    if (isEditing) {
-      return (
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">{label}</Label>
-          <Input
-            type={type}
-            value={value?.toString() || ""}
-            onChange={(e) => handleFieldChange(field, e.target.value || null)}
-            className="h-8 text-sm"
-          />
-        </div>
-      );
-    }
-
-    const displayValue = typeof value === 'object' ? JSON.stringify(value) : value;
-    return (
-      <div className="space-y-1">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-sm font-medium">{displayValue || "-"}</p>
-      </div>
-    );
-  };
-
-  // Función para descargar archivo evitando bloqueo de ad blockers
-  const handleDownloadDocument = async (url: string, filename: string) => {
-    try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(downloadUrl);
-    } catch (error) {
-      console.error('Error descargando documento:', error);
-      // Si falla la descarga, abrir en nueva pestaña como fallback
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
-  };
-
-  const renderDocumentLink = (label: string, url: string | null) => {
-    const filename = url?.split('/').pop() || 'documento';
-    const isPDF = filename.toLowerCase().endsWith('.pdf');
-    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
-    
-    const getFileIcon = () => {
-      if (isPDF) return <FileText className="h-5 w-5" />;
-      if (isImage) return <Image className="h-5 w-5" />;
-      return <FileText className="h-5 w-5" />;
-    };
-
-    if (!url) {
-      return (
-        <div className="group relative flex items-center gap-3 p-3 rounded-xl border border-dashed border-muted-foreground/30 bg-muted/30 transition-all duration-200">
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-muted">
-            <FileX className="h-5 w-5 text-muted-foreground/50" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-muted-foreground">{label}</p>
-            <p className="text-xs text-muted-foreground/60 italic">No cargado</p>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="group relative flex items-center gap-3 p-3 rounded-xl border border-border bg-gradient-to-br from-background to-muted/20 hover:border-primary/40 hover:shadow-md hover:shadow-primary/5 transition-all duration-300">
-        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
-          {getFileIcon()}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">{label}</p>
-          <p className="text-xs text-muted-foreground truncate">{filename}</p>
-        </div>
-        <div className="flex items-center gap-1">
-          <a 
-            href={url} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200"
-            title="Ver documento"
-          >
-            <ExternalLink className="h-4 w-4" />
-          </a>
-          <button
-            onClick={() => handleDownloadDocument(url, filename)}
-            className="flex items-center justify-center w-9 h-9 rounded-lg bg-muted hover:bg-emerald-500 hover:text-white transition-all duration-200"
-            title="Descargar documento"
-          >
-            <Download className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="space-y-6">
@@ -640,458 +445,14 @@ export default function AdminPolizasPage() {
         </div>
       </div>
 
-      {/* Detail/Edit Dialog */}
-      <Dialog open={showDetailDialog} onOpenChange={(open) => {
-        if (!open) {
-          setIsEditing(false);
-        }
-        setShowDetailDialog(open);
-      }}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <DialogTitle>
-                  {isEditing ? "Editar Póliza" : "Detalle de Póliza"}
-                </DialogTitle>
-                <DialogDescription>
-                  {selectedPoliza?.numero_poliza_monday || "Sin número de póliza"}
-                </DialogDescription>
-              </div>
-              <div className="flex gap-2">
-                {!isEditing ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsEditing(true)}
-                    className="gap-2"
-                  >
-                    <Pencil className="h-4 w-4" />
-                    Editar
-                  </Button>
-                ) : (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setEditedPoliza(selectedPoliza);
-                        setIsEditing(false);
-                      }}
-                      className="gap-2"
-                    >
-                      <X className="h-4 w-4" />
-                      Cancelar
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={handleSave}
-                      disabled={isSaving}
-                      className="gap-2"
-                    >
-                      {isSaving ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Save className="h-4 w-4" />
-                      )}
-                      Guardar
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
-          </DialogHeader>
-          
-          {selectedPoliza && (
-            <ScrollArea className="h-[70vh] pr-4">
-              <Tabs defaultValue="titular" className="w-full">
-                <TabsList className="grid w-full grid-cols-6">
-                  <TabsTrigger value="titular">Titular</TabsTrigger>
-                  <TabsTrigger value="beneficiario">Beneficiario</TabsTrigger>
-                  <TabsTrigger value="vehiculo">Vehículo</TabsTrigger>
-                  <TabsTrigger value="ubicacion">Ubicación</TabsTrigger>
-                  <TabsTrigger value="documentos">Documentos</TabsTrigger>
-                  <TabsTrigger value="tecnico">Técnico</TabsTrigger>
-                </TabsList>
-
-                {/* Datos del Titular */}
-                <TabsContent value="titular" className="space-y-4 mt-4">
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Información Personal</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-3 gap-4">
-                      {renderField("Nombre", "nombre_titular_monday")}
-                      {renderField("Apellidos", "apellidos_titular_monday")}
-                      {renderField("Tipo Identificación", "tipo_id_titular_monday")}
-                      {renderField("Nro. Documento (Natural)", "nro_documento_natural_monday")}
-                      {renderField("Nro. Documento (Jurídico)", "nro_documento_juridico_monday")}
-                      {renderField("Razón Social", "razon_social_juridico_monday")}
-                      {renderField("Sexo", "cd_sexo")}
-                      {renderField("Sexo (Descripción)", "s_sexo")}
-                      {renderField("Fecha Nacimiento", "fecha_nacimiento_titular_monday", "date")}
-                      {renderField("Estado Civil", "cd_edocivil")}
-                      {renderField("Estado Civil (Descripción)", "s_edocivil")}
-                      {renderField("Nacionalidad", "c_cd_nacionalidad")}
-                      {renderField("Nacionalidad (Descripción)", "s_nacionalidad")}
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Información de Contacto</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-3 gap-4">
-                      {renderField("Código Telefónico", "codigo_telefonico_titular_monday")}
-                      {renderField("Número Telefónico", "numero_telefonico_titular_monday")}
-                      {renderField("Email Principal", "email_monday")}
-                      {renderField("Email Alternativo", "email_alternativo_monday")}
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Datos API</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-3 gap-4">
-                      {renderField("c_nombre", "c_nombre")}
-                      {renderField("c_apellido", "c_apellido")}
-                      {renderField("n_cedrif", "n_cedrif")}
-                      {renderField("f_fecnac", "f_fecnac", "date")}
-                      {renderField("c_razonsocial", "c_razonsocial")}
-                      {renderField("n_correlativo", "n_correlativo")}
-                      {renderField("n_ingresoanualnac", "n_ingresoanualnac")}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                {/* Datos del Beneficiario/Apoderado */}
-                <TabsContent value="beneficiario" className="space-y-4 mt-4">
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Datos del Apoderado</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-3 gap-4">
-                      {renderField("Nombre", "nombre_apoderado_monday")}
-                      {renderField("Apellido", "apellido_apoderado_monday")}
-                      {renderField("Nro. Documento", "numero_documento_apoderado_monday")}
-                      {renderField("Fecha Nacimiento", "fecha_nacimiento_apoderado_monday", "date")}
-                      {renderField("Estado Civil", "estado_civil_apoderado_monday")}
-                      {renderField("Sexo", "sexo_apoderado_monday")}
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Datos API - Apoderado (AP)</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-3 gap-4">
-                      {renderField("c_nombreap", "c_nombreap")}
-                      {renderField("c_apellidoap", "c_apellidoap")}
-                      {renderField("n_cedrifap", "n_cedrifap")}
-                      {renderField("f_fecnacap", "f_fecnacap", "date")}
-                      {renderField("cd_sexoap", "cd_sexoap")}
-                      {renderField("s_sexoap", "s_sexoap")}
-                      {renderField("cd_edocivilap", "cd_edocivilap")}
-                      {renderField("s_edocivilap", "s_edocivilap")}
-                      {renderField("c_cd_nacionalidadap", "c_cd_nacionalidadap")}
-                      {renderField("s_nacionalidadap", "s_nacionalidadap")}
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Datos API - Chofer (CH)</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-3 gap-4">
-                      {renderField("c_nombrech", "c_nombrech")}
-                      {renderField("c_apellidoch", "c_apellidoch")}
-                      {renderField("n_cedrifch", "n_cedrifch")}
-                      {renderField("f_fecnacch", "f_fecnacch", "date")}
-                      {renderField("cd_sexoch", "cd_sexoch")}
-                      {renderField("s_sexoch", "s_sexoch")}
-                      {renderField("cd_edocivilch", "cd_edocivilch")}
-                      {renderField("s_edocivilch", "s_edocivilch")}
-                      {renderField("c_cd_nacionalidadch", "c_cd_nacionalidadch")}
-                      {renderField("s_nacionalidadch", "s_nacionalidadch")}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                {/* Datos del Vehículo */}
-                <TabsContent value="vehiculo" className="space-y-4 mt-4">
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Información del Vehículo</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-3 gap-4">
-                      {renderField("Placa", "placa_monday")}
-                      {renderField("Marca", "s_marca")}
-                      {renderField("Código Marca", "c_cd_marca")}
-                      {renderField("Modelo", "s_modelo")}
-                      {renderField("Código Modelo", "c_cd_modelo")}
-                      {renderField("Versión", "s_version")}
-                      {renderField("Código Versión", "c_cd_version")}
-                      {renderField("Año", "año_monday")}
-                      {renderField("n_anio", "n_anio")}
-                      {renderField("Color", "s_color")}
-                      {renderField("Código Color", "c_cd_color")}
-                      {renderField("Color BERA", "color_bera_monday")}
-                      {renderField("Código Color Empire", "cod_color_empire_monday")}
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Datos Técnicos del Vehículo</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-3 gap-4">
-                      {renderField("Serial Carrocería", "serial_carroceria_monday")}
-                      {renderField("c_carroceria", "c_carroceria")}
-                      {renderField("c_placa", "c_placa")}
-                      {renderField("Serial Motor", "serial_motor_monday")}
-                      {renderField("c_motor", "c_motor")}
-                      {renderField("Transmisión Empire", "transmision_empire_monday")}
-                      {renderField("Versión Modelo", "version_modelo_monday")}
-                      {renderField("Código Modelo Monday", "cod_modelo_monday")}
-                      {renderField("n_nu_centuria", "n_nu_centuria")}
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Datos de Compra</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-3 gap-4">
-                      {renderField("Fecha Compra", "fecha_compra_monday", "date")}
-                      {renderField("f_fechacompra", "f_fechacompra", "date")}
-                      {renderField("Precio Venta Tienda", "precio_venta_tienda_monday")}
-                      {renderField("n_suma", "n_suma")}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                {/* Datos de Ubicación */}
-                <TabsContent value="ubicacion" className="space-y-4 mt-4">
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Dirección</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-3 gap-4">
-                      {renderField("País", "pais_monday")}
-                      {renderField("Código País", "c_cd_pais")}
-                      {renderField("s_pais", "s_pais")}
-                      {renderField("Estado", "c_cd_estado")}
-                      {renderField("s_estado", "s_estado")}
-                      {renderField("Ciudad", "ciudad_monday")}
-                      {renderField("Código Ciudad", "c_cd_ciudad")}
-                      {renderField("s_ciudad", "s_ciudad")}
-                      {renderField("Municipio", "municipio_monday")}
-                      {renderField("Código Municipio", "c_cd_municipio")}
-                      {renderField("s_municipio", "s_municipio")}
-                      {renderField("Dirección", "direccion_monday")}
-                      {renderField("c_direccion", "c_direccion")}
-                      {renderField("Código Postal", "codigo_postal_monday")}
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Datos de Contacto API</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-3 gap-4">
-                      {renderField("c_cd_telef1", "c_cd_telef1")}
-                      {renderField("s_telef1", "s_telef1")}
-                      {renderField("c_numtelef1", "c_numtelef1")}
-                      {renderField("c_email1", "c_email1")}
-                      {renderField("c_email2", "c_email2")}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                {/* Documentos */}
-                <TabsContent value="documentos" className="space-y-6 mt-4">
-                  <Card className="overflow-hidden">
-                    <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-transparent border-b">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <FileCheck className="h-5 w-5 text-primary" />
-                        Documentos del Titular
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {renderDocumentLink("Cédula de Identidad", selectedPoliza.cedula_identidad_url)}
-                        {renderDocumentLink("Licencia de Conducir", selectedPoliza.licencia_conducir_url)}
-                        {renderDocumentLink("Certificado Médico", selectedPoliza.certificado_medico_url)}
-                        {renderDocumentLink("RIF", selectedPoliza.rif_url)}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="overflow-hidden">
-                    <CardHeader className="pb-4 bg-gradient-to-r from-emerald-500/5 to-transparent border-b">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-emerald-600" />
-                        Documentos del Vehículo
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {renderDocumentLink("Certificado Origen Vehículo", selectedPoliza.certificado_origen_vehiculo_url)}
-                        {renderDocumentLink("Factura Compra Vehículo", selectedPoliza.factura_compra_vehiculo_url)}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="overflow-hidden">
-                    <CardHeader className="pb-4 bg-gradient-to-r from-blue-500/5 to-transparent border-b">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-blue-600" />
-                        Documentos de Póliza
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {renderDocumentLink("Póliza Emitida", selectedPoliza.url_poliza_monday)}
-                        {renderDocumentLink("Carnet de Asegurado", selectedPoliza.url_carnet_monday)}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {isEditing && (
-                    <Card className="border-dashed">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <Pencil className="h-4 w-4" />
-                          Editar URLs de Documentos
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="grid grid-cols-2 gap-4">
-                        {renderField("URL Cédula Identidad", "cedula_identidad_url")}
-                        {renderField("URL Licencia Conducir", "licencia_conducir_url")}
-                        {renderField("URL Certificado Médico", "certificado_medico_url")}
-                        {renderField("URL Cert. Origen Vehículo", "certificado_origen_vehiculo_url")}
-                        {renderField("URL Factura Compra", "factura_compra_vehiculo_url")}
-                        {renderField("URL RIF", "rif_url")}
-                        {renderField("URL Póliza", "url_poliza_monday")}
-                        {renderField("URL Carnet", "url_carnet_monday")}
-                      </CardContent>
-                    </Card>
-                  )}
-                </TabsContent>
-
-                {/* Datos Técnicos */}
-                <TabsContent value="tecnico" className="space-y-4 mt-4">
-                  {/* Estado API y Reprocesar */}
-                  {selectedPoliza && (() => {
-                    const { status, message } = getPolizaStatus(selectedPoliza);
-                    const isProcessing = processingPolizaId === selectedPoliza.id;
-                    const showReprocess = status === 'error' || status === 'pending';
-                    
-                    return (
-                      <Card className={status === 'error' ? 'border-red-300 bg-red-50/50' : status === 'pending' ? 'border-amber-300 bg-amber-50/50' : ''}>
-                        <CardHeader className="pb-3">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-base">Estado de Procesamiento</CardTitle>
-                            <PolicyStatusBadge status={isProcessing ? 'processing' : status} message={message} />
-                          </div>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div className="grid grid-cols-3 gap-4">
-                            {renderField("API Status", "api_status")}
-                            {renderField("API Message", "api_message")}
-                            {renderField("n_serialcontrato", "n_serialcontrato")}
-                            {renderField("n_serialcertif", "n_serialcertif")}
-                          </div>
-                          
-                          {showReprocess && (
-                            <div className="pt-2 border-t">
-                              <Button
-                                onClick={() => handleReprocess(selectedPoliza)}
-                                disabled={isProcessing}
-                                className="gap-2"
-                              >
-                                <RefreshCw className={`h-4 w-4 ${isProcessing ? 'animate-spin' : ''}`} />
-                                {isProcessing ? 'Procesando...' : 'Reprocesar Póliza'}
-                              </Button>
-                              <p className="text-xs text-muted-foreground mt-2">
-                                Esto actualizará los datos de configuración (precio, códigos de marca/modelo/versión) y volverá a enviar a RMS.
-                              </p>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    );
-                  })()}
-                  
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Información de Póliza</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-3 gap-4">
-                      {renderField("Número de Póliza", "numero_poliza_monday")}
-                      {renderField("Póliza Monday", "poliza_monday")}
-                      {renderField("Fecha Inicio", "f_fchdesde", "date")}
-                      {renderField("Fecha Vencimiento", "fecha_de_vencimiento_monday", "date")}
-                      {renderField("Recordatorio Vencimiento", "recordatorio_de_vencimiento_monday")}
-                      {renderField("Estado Principal", "estado_principal_monday")}
-                      {renderField("Formulario", "formulario")}
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Configuración API</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-3 gap-4">
-                      {renderField("API Monday", "api_monday")}
-                      {renderField("Version API Monday", "version_api_monday")}
-                      {renderField("Monday ID", "mondayid")}
-                      {renderField("c_cd_versionseguro", "c_cd_versionseguro")}
-                      {renderField("c_cd_subversionseguro", "c_cd_subversionseguro")}
-                      {renderField("c_cd_actividad", "c_cd_actividad")}
-                      {renderField("c_cd_ocupacion", "c_cd_ocupacion")}
-                      {renderField("cd_moneda", "cd_moneda")}
-                      {renderField("s_moneda", "s_moneda")}
-                      {renderField("desde", "desde")}
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Metadatos</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-3 gap-4">
-                      <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">ID</p>
-                        <p className="text-sm font-mono">{selectedPoliza.id}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">Creado</p>
-                        <p className="text-sm">{new Date(selectedPoliza.created_at).toLocaleString("es-VE")}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">Actualizado</p>
-                        <p className="text-sm">{new Date(selectedPoliza.updated_at).toLocaleString("es-VE")}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">User ID</p>
-                        <p className="text-sm font-mono">{selectedPoliza.user_id || "-"}</p>
-                      </div>
-                      <div className="col-span-2 space-y-1">
-                        <p className="text-xs text-muted-foreground">Lista Columnas</p>
-                        <p className="text-sm font-mono text-xs break-all">
-                          {selectedPoliza.listacolumnas ? selectedPoliza.listacolumnas.substring(0, 200) + "..." : "-"}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
-            </ScrollArea>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Policy Details Dialog */}
+      <PolicyDetailsDialog
+        open={showDetailDialog}
+        onOpenChange={setShowDetailDialog}
+        policy={selectedPoliza}
+        allowEdit={true}
+        onPolicyUpdated={fetchPolizas}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
