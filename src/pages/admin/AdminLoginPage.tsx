@@ -1,136 +1,122 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, Eye, EyeOff, Loader2, RefreshCw, Wifi, WifiOff } from "lucide-react";
+import { Shield, Eye, EyeOff, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { useAdminAuth } from "@/contexts/AdminAuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { z } from "zod";
-
-const loginSchema = z.object({
-  email: z.string().email("Email inválido"),
-  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
-});
-
-const formatAuthError = (message?: string) => {
-  const msg = (message || "").toLowerCase();
-
-  if (msg.includes("failed to fetch") || msg.includes("name_not_resolved") || msg.includes("networkerror")) {
-    return "No se pudo conectar con Supabase. Revisa tu conexión a internet, DNS/VPN o bloqueadores de red e intenta de nuevo.";
-  }
-  if (msg.includes("timeout") || msg.includes("aborted")) {
-    return "La conexión con Supabase está tardando demasiado. Verifica tu red/VPN e intenta nuevamente.";
-  }
-
-  if (msg.includes("email_not_confirmed") || (msg.includes("email") && msg.includes("not confirmed"))) {
-    return "Tu correo aún no está confirmado. Revisa tu bandeja de entrada o pídele a un administrador que lo confirme en Supabase.";
-  }
-
-  if (msg.includes("invalid login credentials") || msg.includes("invalid_credentials")) {
-    return "Credenciales inválidas. Verifica el correo/contraseña.";
-  }
-
-  return message || "Credenciales inválidas";
-};
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-  const [supabaseHealth, setSupabaseHealth] = useState<"checking" | "ok" | "error">("checking");
-  const [retryCount, setRetryCount] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn } = useAdminAuth();
 
-  const checkSupabaseConnection = useCallback(async () => {
-    setSupabaseHealth("checking");
-    
-    try {
-      // Intentar conexión simple con timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
-      
-      const { error } = await supabase
-        .from("board_cod_pais")
-        .select("id")
-        .limit(1)
-        .abortSignal(controller.signal);
-      
-      clearTimeout(timeoutId);
-      setSupabaseHealth(error ? "error" : "ok");
-      
-      if (!error) {
-        toast({
-          title: "Conexión establecida",
-          description: "Supabase está disponible",
-        });
+  // Limpiar toda la sesión local para romper loops de refresh
+  const handleClearSession = () => {
+    // Limpiar localStorage de Supabase
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.includes('supabase') || key.includes('sb-'))) {
+        keysToRemove.push(key);
       }
-    } catch (err) {
-      console.log("Error checking Supabase:", err);
-      setSupabaseHealth("error");
     }
-  }, [toast]);
-
-  useEffect(() => {
-    checkSupabaseConnection();
-  }, [checkSupabaseConnection, retryCount]);
-
-  const handleRetryConnection = () => {
-    setRetryCount(prev => prev + 1);
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    toast({
+      title: "Sesión limpiada",
+      description: "Se eliminaron los datos de sesión local. Intenta iniciar sesión nuevamente.",
+    });
+    
+    // Recargar la página para reiniciar todo
+    window.location.reload();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrors({});
+    setError(null);
 
-    const validation = loginSchema.safeParse({ email, password });
-    if (!validation.success) {
-      const fieldErrors: { email?: string; password?: string } = {};
-      validation.error.errors.forEach((err) => {
-        if (err.path[0] === "email") fieldErrors.email = err.message;
-        if (err.path[0] === "password") fieldErrors.password = err.message;
-      });
-      setErrors(fieldErrors);
+    if (!email || !password) {
+      setError("Por favor ingresa email y contraseña");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const { error } = await signIn(email, password);
-
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Error de autenticación",
-          description: formatAuthError(error.message),
-        });
-        // Si falla por red, actualizar el estado de salud
-        if (error.message?.toLowerCase().includes("failed to fetch")) {
-          setSupabaseHealth("error");
-        }
-      } else {
-        toast({
-          title: "Bienvenido",
-          description: "Has iniciado sesión correctamente",
-        });
-        navigate("/admin");
-      }
-    } catch (err) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Ocurrió un error al iniciar sesión",
+      // Login directo sin timeout wrapper - más simple
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
-    } finally {
+
+      if (authError) {
+        console.log("Auth error:", authError);
+        
+        // Mensajes de error amigables
+        let errorMsg = authError.message;
+        if (authError.message?.toLowerCase().includes("invalid login credentials")) {
+          errorMsg = "Credenciales inválidas. Verifica tu correo y contraseña.";
+        } else if (authError.message?.toLowerCase().includes("failed to fetch")) {
+          errorMsg = "Error de conexión. Intenta limpiar la sesión con el botón de abajo.";
+        } else if (authError.message?.toLowerCase().includes("email not confirmed")) {
+          errorMsg = "Tu correo no está confirmado. Contacta al administrador.";
+        }
+        
+        setError(errorMsg);
+        setIsLoading(false);
+        return;
+      }
+
+      if (!data.user) {
+        setError("No se pudo obtener información del usuario");
+        setIsLoading(false);
+        return;
+      }
+
+      // Verificar rol de admin
+      const { data: hasAdminRole, error: roleError } = await supabase.rpc('has_role', {
+        _user_id: data.user.id,
+        _role: 'admin'
+      });
+
+      if (roleError) {
+        console.log("Role check error:", roleError);
+        setError("Error verificando permisos. Intenta de nuevo.");
+        await supabase.auth.signOut();
+        setIsLoading(false);
+        return;
+      }
+
+      if (!hasAdminRole) {
+        setError("No tienes permisos de administrador.");
+        await supabase.auth.signOut();
+        setIsLoading(false);
+        return;
+      }
+
+      // ¡Éxito!
+      toast({
+        title: "Bienvenido",
+        description: "Has iniciado sesión correctamente",
+      });
+      navigate("/admin");
+
+    } catch (err) {
+      console.log("Unexpected error:", err);
+      setError("Error inesperado. Intenta limpiar la sesión.");
       setIsLoading(false);
     }
   };
@@ -146,56 +132,12 @@ export default function AdminLoginPage() {
           <CardDescription>
             Ingresa tus credenciales para acceder al sistema
           </CardDescription>
-          
-          {/* Indicador de conexión */}
-          <div className="flex items-center justify-center gap-2 mt-2">
-            {supabaseHealth === "checking" && (
-              <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Verificando conexión...
-              </span>
-            )}
-            {supabaseHealth === "ok" && (
-              <span className="flex items-center gap-1.5 text-sm text-green-600">
-                <Wifi className="h-3.5 w-3.5" />
-                Conectado a Supabase
-              </span>
-            )}
-            {supabaseHealth === "error" && (
-              <span className="flex items-center gap-1.5 text-sm text-destructive">
-                <WifiOff className="h-3.5 w-3.5" />
-                Sin conexión
-              </span>
-            )}
-          </div>
         </CardHeader>
         <CardContent>
-          {supabaseHealth === "error" && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertTitle className="flex items-center gap-2">
-                <WifiOff className="h-4 w-4" />
-                Sin conexión con Supabase
-              </AlertTitle>
-              <AlertDescription className="mt-2 space-y-3">
-                <p>
-                  Tu red no está pudiendo alcanzar el servidor. Prueba:
-                </p>
-                <ul className="list-disc list-inside text-sm space-y-1">
-                  <li>Verificar tu conexión a internet</li>
-                  <li>Desactivar VPN/AdBlock</li>
-                  <li>Usar otra red (móvil vs WiFi)</li>
-                </ul>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleRetryConnection}
-                  className="w-full mt-2"
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Reintentar conexión
-                </Button>
-              </AlertDescription>
-            </Alert>
+          {error && (
+            <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+              {error}
+            </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -208,11 +150,8 @@ export default function AdminLoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
-                className={errors.email ? "border-destructive" : ""}
+                autoComplete="email"
               />
-              {errors.email && (
-                <p className="text-sm text-destructive">{errors.email}</p>
-              )}
             </div>
             
             <div className="space-y-2">
@@ -225,7 +164,8 @@ export default function AdminLoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
-                  className={errors.password ? "border-destructive pr-10" : "pr-10"}
+                  autoComplete="current-password"
+                  className="pr-10"
                 />
                 <button
                   type="button"
@@ -235,9 +175,6 @@ export default function AdminLoginPage() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              {errors.password && (
-                <p className="text-sm text-destructive">{errors.password}</p>
-              )}
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>
@@ -251,6 +188,21 @@ export default function AdminLoginPage() {
               )}
             </Button>
           </form>
+
+          <div className="mt-6 pt-4 border-t border-border">
+            <p className="text-xs text-muted-foreground text-center mb-3">
+              ¿Problemas para entrar? Limpia la sesión local:
+            </p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleClearSession}
+              className="w-full text-muted-foreground"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Limpiar sesión y reintentar
+            </Button>
+          </div>
 
           <div className="mt-4 text-center">
             <Button variant="link" onClick={() => navigate("/admin/forgot-password")}>

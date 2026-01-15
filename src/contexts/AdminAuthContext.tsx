@@ -19,7 +19,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const checkAdminRole = async (userId: string) => {
+  const checkAdminRole = async (userId: string): Promise<boolean> => {
     try {
       const { data, error } = await supabase.rpc('has_role', {
         _user_id: userId,
@@ -38,16 +38,27 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    let mounted = true;
+
+    // Listener de cambios de auth - simple y directo
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+      async (event, currentSession) => {
+        if (!mounted) return;
         
-        if (session?.user) {
+        console.log("Auth state change:", event);
+        
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        
+        if (currentSession?.user) {
+          // Usar setTimeout para evitar bloqueos de Supabase
           setTimeout(async () => {
-            const adminStatus = await checkAdminRole(session.user.id);
-            setIsAdmin(adminStatus);
-            setIsLoading(false);
+            if (!mounted) return;
+            const adminStatus = await checkAdminRole(currentSession.user.id);
+            if (mounted) {
+              setIsAdmin(adminStatus);
+              setIsLoading(false);
+            }
           }, 0);
         } else {
           setIsAdmin(false);
@@ -56,46 +67,54 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        checkAdminRole(session.user.id).then(adminStatus => {
-          setIsAdmin(adminStatus);
+    // Obtener sesión inicial - con timeout para no bloquear
+    const initSession = async () => {
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+        
+        setSession(initialSession);
+        setUser(initialSession?.user ?? null);
+        
+        if (initialSession?.user) {
+          const adminStatus = await checkAdminRole(initialSession.user.id);
+          if (mounted) {
+            setIsAdmin(adminStatus);
+          }
+        }
+      } catch (err) {
+        console.error("Error getting session:", err);
+      } finally {
+        if (mounted) {
           setIsLoading(false);
-        });
-      } else {
+        }
+      }
+    };
+
+    // Timeout de 5 segundos máximo para la carga inicial
+    const loadingTimeout = setTimeout(() => {
+      if (mounted && isLoading) {
+        console.log("Loading timeout - setting isLoading to false");
         setIsLoading(false);
       }
-    });
+    }, 5000);
 
-    return () => subscription.unsubscribe();
+    initSession();
+
+    return () => {
+      mounted = false;
+      clearTimeout(loadingTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
-      const withTimeout = <T,>(promise: Promise<T>, ms: number) =>
-        new Promise<T>((resolve, reject) => {
-          const id = window.setTimeout(() => reject(new Error("timeout")), ms);
-          promise
-            .then((value) => {
-              window.clearTimeout(id);
-              resolve(value);
-            })
-            .catch((error) => {
-              window.clearTimeout(id);
-              reject(error);
-            });
-        });
-
-      const { data, error } = await withTimeout(
-        supabase.auth.signInWithPassword({
-          email,
-          password,
-        }),
-        12000
-      );
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
       if (error) {
         return { error };
@@ -112,17 +131,8 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
       return { error: null };
     } catch (err) {
-      const rawMessage = err instanceof Error ? err.message : String(err);
-      const isNetworkError =
-        err instanceof TypeError && rawMessage.toLowerCase().includes("failed to fetch");
-
-      return {
-        error: new Error(
-          isNetworkError
-            ? "No se pudo conectar con Supabase. Revisa tu conexión/DNS/VPN y que *.supabase.co no esté bloqueado."
-            : rawMessage || "Error desconocido"
-        ),
-      };
+      const message = err instanceof Error ? err.message : "Error desconocido";
+      return { error: new Error(message) };
     }
   };
 
