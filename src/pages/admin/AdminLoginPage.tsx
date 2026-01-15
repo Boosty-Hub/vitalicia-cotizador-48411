@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Shield, Eye, EyeOff, Loader2, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,20 +19,19 @@ const loginSchema = z.object({
 const formatAuthError = (message?: string) => {
   const msg = (message || "").toLowerCase();
 
-  if (msg.includes("failed to fetch") || msg.includes("name_not_resolved")) {
-    return "No se pudo conectar con Supabase (ERR_NAME_NOT_RESOLVED). Revisa tu DNS/VPN o bloqueadores de red e intenta de nuevo.";
+  if (msg.includes("failed to fetch") || msg.includes("name_not_resolved") || msg.includes("networkerror")) {
+    return "No se pudo conectar con Supabase. Revisa tu conexión a internet, DNS/VPN o bloqueadores de red e intenta de nuevo.";
   }
   if (msg.includes("timeout") || msg.includes("aborted")) {
     return "La conexión con Supabase está tardando demasiado. Verifica tu red/VPN e intenta nuevamente.";
   }
 
-  // Supabase suele responder 400 en /token con códigos como email_not_confirmed
   if (msg.includes("email_not_confirmed") || (msg.includes("email") && msg.includes("not confirmed"))) {
     return "Tu correo aún no está confirmado. Revisa tu bandeja de entrada o pídele a un administrador que lo confirme en Supabase.";
   }
 
   if (msg.includes("invalid login credentials") || msg.includes("invalid_credentials")) {
-    return "Credenciales inválidas. Verifica el correo/contraseña. Si el usuario es nuevo, primero debe confirmar el correo.";
+    return "Credenciales inválidas. Verifica el correo/contraseña.";
   }
 
   return message || "Credenciales inválidas";
@@ -45,30 +44,48 @@ export default function AdminLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [supabaseHealth, setSupabaseHealth] = useState<"checking" | "ok" | "error">("checking");
+  const [retryCount, setRetryCount] = useState(0);
   
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signIn } = useAdminAuth();
 
-  useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const { error } = await supabase.from("board_cod_pais").select("id").limit(1);
-        if (cancelled) return;
-        setSupabaseHealth(error ? "error" : "ok");
-      } catch {
-        if (cancelled) return;
-        setSupabaseHealth("error");
+  const checkSupabaseConnection = useCallback(async () => {
+    setSupabaseHealth("checking");
+    
+    try {
+      // Intentar conexión simple con timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      
+      const { error } = await supabase
+        .from("board_cod_pais")
+        .select("id")
+        .limit(1)
+        .abortSignal(controller.signal);
+      
+      clearTimeout(timeoutId);
+      setSupabaseHealth(error ? "error" : "ok");
+      
+      if (!error) {
+        toast({
+          title: "Conexión establecida",
+          description: "Supabase está disponible",
+        });
       }
-    })();
+    } catch (err) {
+      console.log("Error checking Supabase:", err);
+      setSupabaseHealth("error");
+    }
+  }, [toast]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  useEffect(() => {
+    checkSupabaseConnection();
+  }, [checkSupabaseConnection, retryCount]);
 
+  const handleRetryConnection = () => {
+    setRetryCount(prev => prev + 1);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,6 +113,10 @@ export default function AdminLoginPage() {
           title: "Error de autenticación",
           description: formatAuthError(error.message),
         });
+        // Si falla por red, actualizar el estado de salud
+        if (error.message?.toLowerCase().includes("failed to fetch")) {
+          setSupabaseHealth("error");
+        }
       } else {
         toast({
           title: "Bienvenido",
@@ -125,14 +146,54 @@ export default function AdminLoginPage() {
           <CardDescription>
             Ingresa tus credenciales para acceder al sistema
           </CardDescription>
+          
+          {/* Indicador de conexión */}
+          <div className="flex items-center justify-center gap-2 mt-2">
+            {supabaseHealth === "checking" && (
+              <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Verificando conexión...
+              </span>
+            )}
+            {supabaseHealth === "ok" && (
+              <span className="flex items-center gap-1.5 text-sm text-green-600">
+                <Wifi className="h-3.5 w-3.5" />
+                Conectado a Supabase
+              </span>
+            )}
+            {supabaseHealth === "error" && (
+              <span className="flex items-center gap-1.5 text-sm text-destructive">
+                <WifiOff className="h-3.5 w-3.5" />
+                Sin conexión
+              </span>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {supabaseHealth === "error" && (
             <Alert variant="destructive" className="mb-4">
-              <AlertTitle>Sin conexión con Supabase</AlertTitle>
-              <AlertDescription>
-                Tu red/DNS no está pudiendo resolver o alcanzar el servidor de Supabase.
-                Prueba desactivar VPN/AdBlock o usar otra red.
+              <AlertTitle className="flex items-center gap-2">
+                <WifiOff className="h-4 w-4" />
+                Sin conexión con Supabase
+              </AlertTitle>
+              <AlertDescription className="mt-2 space-y-3">
+                <p>
+                  Tu red no está pudiendo alcanzar el servidor. Prueba:
+                </p>
+                <ul className="list-disc list-inside text-sm space-y-1">
+                  <li>Verificar tu conexión a internet</li>
+                  <li>Desactivar VPN/AdBlock</li>
+                  <li>Usar otra red (móvil vs WiFi)</li>
+                </ul>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleRetryConnection}
+                  className="w-full mt-2"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Reintentar conexión
+                </Button>
               </AlertDescription>
             </Alert>
           )}
