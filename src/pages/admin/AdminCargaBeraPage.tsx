@@ -133,12 +133,20 @@ export default function AdminCargaBeraPage() {
 
   const parsePrice = (value: any): number => {
     if (!value) return 0;
-    if (typeof value === "number") return value;
     
-    // Remove $ and commas, then parse
-    const cleaned = String(value).replace(/[$,]/g, "").trim();
-    const num = parseFloat(cleaned);
-    return isNaN(num) ? 0 : num;
+    let num: number;
+    if (typeof value === "number") {
+      num = value;
+    } else {
+      // Remove $ and commas, then parse
+      const cleaned = String(value).replace(/[$,]/g, "").trim();
+      num = parseFloat(cleaned);
+    }
+    
+    if (isNaN(num)) return 0;
+    
+    // Round to 2 decimal places to prevent excessive decimals
+    return Math.round(num * 100) / 100;
   };
 
   const processExcel = useCallback(async (selectedFile: File) => {

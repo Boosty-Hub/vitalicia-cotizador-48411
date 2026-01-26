@@ -14,6 +14,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { FileUploader } from "@/components/ui/file-uploader";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { fetchVersionApi } from "@/utils/versionApi";
+import { formatPriceToTwoDecimals } from "@/lib/priceUtils";
+
 const ActivarPolizaNaturalPage = () => {
   const navigate = useNavigate();
   const {
@@ -668,7 +670,7 @@ const ActivarPolizaNaturalPage = () => {
     
     // Solo procesar para vehículos EMPIRE/EK
     if (!marcaUpper || (!marcaUpper.includes('EMPIRE') && !marcaUpper.includes('EK'))) {
-      return vehicleData?.Suma || "0";
+      return formatPriceToTwoDecimals(vehicleData?.Suma);
     }
 
     try {
@@ -698,7 +700,7 @@ const ActivarPolizaNaturalPage = () => {
 
       if (error) {
         console.error('❌ Error fetching precio_venta:', error);
-        return vehicleData?.Suma || "0";
+        return formatPriceToTwoDecimals(vehicleData?.Suma);
       }
 
       // Enhanced logging for debugging
@@ -713,7 +715,7 @@ const ActivarPolizaNaturalPage = () => {
           fecha_compra: formData.fechaCompra,
           fecha_comparacion: fechaComparison
         });
-        return precioFinal || vehicleData?.Suma || "0";
+        return formatPriceToTwoDecimals(precioFinal || vehicleData?.Suma);
       } else {
         console.log('⚠️ No se encontró precio en precios_empire, usando Suma:', {
           modelo: vehicleData?.Modelo,
@@ -721,11 +723,11 @@ const ActivarPolizaNaturalPage = () => {
           fecha_compra: formData.fechaCompra,
           suma_fallback: vehicleData?.Suma || "0"
         });
-        return vehicleData?.Suma || "0";
+        return formatPriceToTwoDecimals(vehicleData?.Suma);
       }
     } catch (error) {
       console.error('❌ Error in fetchPrecioVentaEmpire:', error);
-      return vehicleData?.Suma || "0";
+      return formatPriceToTwoDecimals(vehicleData?.Suma);
     }
   };
 
