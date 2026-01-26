@@ -182,10 +182,22 @@ export default function AdminPreciosEmpirePage() {
   };
 
   const handleSaveNewModel = async () => {
-    if (!newModelData.modelo || !newModelData.precio_venta) {
+    const modeloTrimmed = newModelData.modelo?.trim();
+    const precioTrimmed = newModelData.precio_venta?.trim();
+    
+    if (!modeloTrimmed) {
       toast({
         title: "Error",
-        description: "Complete todos los campos requeridos",
+        description: "El nombre del modelo no puede estar vacío",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!precioTrimmed) {
+      toast({
+        title: "Error",
+        description: "El precio no puede estar vacío",
         variant: "destructive",
       });
       return;
@@ -193,34 +205,57 @@ export default function AdminPreciosEmpirePage() {
 
     try {
       // Format price to 2 decimals
-      const formattedPrice = formatPriceToTwoDecimals(newModelData.precio_venta);
+      const formattedPrice = formatPriceToTwoDecimals(precioTrimmed);
       
       const { error } = await supabase.from("precios_empire").insert([
         {
-          marca: newModelData.marca,
-          modelo: newModelData.modelo.trim(),
-          name: newModelData.modelo.trim(),
+          marca: newModelData.marca?.trim() || "EMPIRE",
+          modelo: modeloTrimmed,
+          name: modeloTrimmed,
           precio_venta: formattedPrice,
-          estado: newModelData.estado,
+          estado: newModelData.estado || "Activo",
           created_at: newModelDate.toISOString(),
         },
       ]);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error saving model:", error);
+        // Mostrar mensaje de error más específico
+        if (error.code === "42501") {
+          toast({
+            title: "Error de permisos",
+            description: "No tiene permisos para crear modelos. Verifique su sesión.",
+            variant: "destructive",
+          });
+        } else if (error.code === "23505") {
+          toast({
+            title: "Modelo duplicado",
+            description: "Ya existe un registro con estos datos.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: `No se pudo crear el modelo: ${error.message}`,
+            variant: "destructive",
+          });
+        }
+        return;
+      }
 
       toast({
         title: "Éxito",
-        description: `Modelo ${newModelData.modelo} creado con precio inicial`,
+        description: `Modelo ${modeloTrimmed} creado con precio inicial`,
       });
       setShowNewModelDialog(false);
       setNewModelData({ marca: "EMPIRE", modelo: "", precio_venta: "", estado: "Activo" });
       setNewModelDate(new Date());
       fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving model:", error);
       toast({
         title: "Error",
-        description: "No se pudo crear el modelo",
+        description: error?.message || "No se pudo crear el modelo",
         variant: "destructive",
       });
     }

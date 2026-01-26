@@ -156,7 +156,7 @@ export default function AdminCargaEmpirePage() {
       
       const rows = jsonData.slice(1);
       
-      const processedData: MotoEmpire[] = rows
+      const allProcessedData: MotoEmpire[] = rows
         .filter(row => row.some(cell => cell !== null && cell !== undefined && cell !== ""))
         .map((row) => {
           const item: Partial<MotoEmpire> = {};
@@ -180,13 +180,33 @@ export default function AdminCargaEmpirePage() {
         })
         .filter(item => item.placa || item.serial_carroceria);
 
-      setData(processedData);
+      // Separar registros válidos de los que no tienen modelo
+      const validData = allProcessedData.filter(item => item.modelo && item.modelo.trim() !== "");
+      const invalidData = allProcessedData.filter(item => !item.modelo || item.modelo.trim() === "");
+
+      setData(validData);
       setCurrentPage(1);
       
-      toast({
-        title: "Archivo procesado",
-        description: `Se encontraron ${processedData.length} registros`,
-      });
+      if (invalidData.length > 0) {
+        toast({
+          title: "Advertencia: Registros sin modelo",
+          description: `${invalidData.length} registro(s) no tienen modelo y NO se cargarán. Agregue el modelo en Precios EMPIRE y vuelva a cargar el archivo.`,
+          variant: "destructive",
+        });
+      }
+      
+      if (validData.length > 0) {
+        toast({
+          title: "Archivo procesado",
+          description: `Se encontraron ${validData.length} registros válidos para cargar${invalidData.length > 0 ? ` (${invalidData.length} omitidos sin modelo)` : ""}`,
+        });
+      } else if (invalidData.length > 0) {
+        toast({
+          title: "No hay registros válidos",
+          description: "Todos los registros carecen de modelo. Agregue los modelos en Precios EMPIRE y reintente.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error("Error processing Excel:", error);
       toast({
