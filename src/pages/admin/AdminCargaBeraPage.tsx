@@ -31,13 +31,15 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
-  Trash2
+  Trash2,
+  AlertTriangle
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { format, parse } from "date-fns";
 import { es } from "date-fns/locale";
+import { DuplicatePlatesHandler, DuplicatePlate } from "@/components/admin/DuplicatePlatesHandler";
 
 interface MotoBera {
   numero_fila: number;
@@ -100,12 +102,20 @@ const COLUMN_MAPPING: Record<string, keyof MotoBera> = {
 export default function AdminCargaBeraPage() {
   const [file, setFile] = useState<File | null>(null);
   const [data, setData] = useState<MotoBera[]>([]);
+  const [allProcessedData, setAllProcessedData] = useState<MotoBera[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [showDuplicatesDialog, setShowDuplicatesDialog] = useState(false);
+  const [duplicatePlates, setDuplicatePlates] = useState<DuplicatePlate[]>([]);
+  const [duplicatesAction, setDuplicatesAction] = useState<{
+    platesToAdd: Set<string>;
+    platesToReplace: Set<string>;
+  }>({ platesToAdd: new Set(), platesToReplace: new Set() });
+  const [invalidCount, setInvalidCount] = useState(0);
   const pageSize = 20;
 
   const parseExcelDate = (value: any): string => {
@@ -152,6 +162,8 @@ export default function AdminCargaBeraPage() {
   const processExcel = useCallback(async (selectedFile: File) => {
     setLoading(true);
     setFile(selectedFile);
+    setDuplicatePlates([]);
+    setDuplicatesAction({ platesToAdd: new Set(), platesToReplace: new Set() });
     
     try {
       const arrayBuffer = await selectedFile.arrayBuffer();
@@ -170,11 +182,9 @@ export default function AdminCargaBeraPage() {
         return;
       }
 
-      // First row is headers
       const headers = (jsonData[0] as string[]).map(h => h?.trim());
       
-      // Validar que las columnas sean exactamente las requeridas
-      const normalizedHeaders = headers.filter(h => h); // Remove empty headers
+      const normalizedHeaders = headers.filter(h => h);
       const missingColumns = REQUIRED_COLUMNS.filter(col => !normalizedHeaders.includes(col));
       const extraColumns = normalizedHeaders.filter(col => !REQUIRED_COLUMNS.includes(col));
       
@@ -198,7 +208,7 @@ export default function AdminCargaBeraPage() {
       
       const rows = jsonData.slice(1);
       
-      const allProcessedData: MotoBera[] = rows
+      const processedData: MotoBera[] = rows
         .filter(row => row.some(cell => cell !== null && cell !== undefined && cell !== ""))
         .map((row) => {
           const item: Partial<MotoBera> = {};
@@ -230,29 +240,96 @@ export default function AdminCargaBeraPage() {
         .filter(item => item.placa || item.serial_chasis);
 
       // Separar registros válidos de los que no tienen modelo
-      const validData = allProcessedData.filter(item => item.modelo && item.modelo.trim() !== "");
-      const invalidData = allProcessedData.filter(item => !item.modelo || item.modelo.trim() === "");
+      const validModelData = processedData.filter(item => item.modelo && item.modelo.trim() !== "");
+      const invalidModelData = processedData.filter(item => !item.modelo || item.modelo.trim() === "");
+      setInvalidCount(invalidModelData.length);
+      setAllProcessedData(validModelData);
 
-      setData(validData);
-      setCurrentPage(1);
+      // Detectar duplicados dentro del lote
+      const seenPlacas = new Map<string, MotoBera>();
+      const batchDuplicates: DuplicatePlate[] = [];
+      const uniqueInBatch: MotoBera[] = [];
+
+      for (const item of validModelData) {
+        const placaLower = item.placa?.toLowerCase();
+        if (placaLower && seenPlacas.has(placaLower)) {
+          batchDuplicates.push({
+            placa: item.placa,
+            modelo: item.modelo,
+            marca: item.marca,
+            existsInDb: false,
+          });
+        } else {
+          if (placaLower) seenPlacas.set(placaLower, item);
+          uniqueInBatch.push(item);
+        }
+      }
+
+      // Verificar duplicados en la base de datos
+      const allPlacas = uniqueInBatch
+        .map(item => item.placa)
+        .filter(Boolean) as string[];
+
+      let dbDuplicates: DuplicatePlate[] = [];
       
-      if (invalidData.length > 0) {
+      if (allPlacas.length > 0) {
+        const { data: existingPlacas, error: checkError } = await supabase
+          .rpc('check_bera_duplicates', { placas: allPlacas });
+        
+        if (!checkError && existingPlacas) {
+          const existingPlacasSet = new Set(
+            existingPlacas.map((r: { placa: string }) => r.placa?.toLowerCase())
+          );
+          
+          dbDuplicates = uniqueInBatch
+            .filter(item => existingPlacasSet.has(item.placa?.toLowerCase()))
+            .map(item => ({
+              placa: item.placa,
+              modelo: item.modelo,
+              marca: item.marca,
+              existsInDb: true,
+            }));
+        }
+      }
+
+      const allDuplicates = [...dbDuplicates, ...batchDuplicates];
+      const dbDuplicatePlacas = new Set(dbDuplicates.map(d => d.placa.toLowerCase()));
+      
+      // Filtrar los únicos (no duplicados en BD ni en lote)
+      const uniqueData = uniqueInBatch.filter(
+        item => !dbDuplicatePlacas.has(item.placa?.toLowerCase())
+      );
+
+      setData(uniqueData);
+      setCurrentPage(1);
+
+      // Si hay duplicados, mostrar el diálogo
+      if (allDuplicates.length > 0) {
+        setDuplicatePlates(allDuplicates);
+        setShowDuplicatesDialog(true);
+      }
+      
+      // Mensajes informativos
+      if (invalidModelData.length > 0) {
         toast({
           title: "Advertencia: Registros sin modelo",
-          description: `${invalidData.length} registro(s) no tienen modelo y NO se cargarán. Agregue el modelo y vuelva a cargar el archivo.`,
+          description: `${invalidModelData.length} registro(s) no tienen modelo y NO se cargarán.`,
           variant: "destructive",
         });
       }
       
-      if (validData.length > 0) {
+      const totalValid = uniqueData.length;
+      const totalDups = allDuplicates.length;
+      
+      if (totalValid > 0 || totalDups > 0) {
         toast({
           title: "Archivo procesado",
-          description: `Se encontraron ${validData.length} registros válidos para cargar${invalidData.length > 0 ? ` (${invalidData.length} omitidos sin modelo)` : ""}`,
+          description: `${totalValid} registros únicos${totalDups > 0 ? `, ${totalDups} duplicados detectados` : ""}${invalidModelData.length > 0 ? `, ${invalidModelData.length} sin modelo` : ""}`,
         });
-      } else if (invalidData.length > 0) {
+      } else if (invalidModelData.length > 0) {
         toast({
           title: "No hay registros válidos",
-          description: "Todos los registros carecen de modelo. Agregue los modelos y reintente.",
+          description: "Todos los registros carecen de modelo.",
           variant: "destructive",
         });
       }
@@ -302,7 +379,7 @@ export default function AdminCargaBeraPage() {
   };
 
   const handleUpload = async () => {
-    if (data.length === 0) return;
+    if (data.length === 0 && duplicatesAction.platesToAdd.size === 0) return;
     
     setUploading(true);
     setUploadProgress(0);
@@ -311,47 +388,58 @@ export default function AdminCargaBeraPage() {
     const batchSize = 100;
     
     try {
-      // Obtener todas las placas del lote a cargar
-      const allPlacas = data
-        .map(item => item.placa)
-        .filter(Boolean) as string[];
+      // Combinar datos únicos + duplicados que el usuario eligió agregar
+      const dataToUpload: MotoBera[] = [...data];
       
-      // Verificar duplicados usando la función de base de datos (bypass RLS)
-      const { data: existingPlacas, error: checkError } = await supabase
-        .rpc('check_bera_duplicates', { placas: allPlacas });
-      
-      if (checkError) {
-        console.error("Error checking duplicates:", checkError);
+      // Agregar los duplicados seleccionados del allProcessedData
+      if (duplicatesAction.platesToAdd.size > 0) {
+        const dupsToAdd = allProcessedData.filter(
+          item => duplicatesAction.platesToAdd.has(item.placa?.toLowerCase())
+        );
+        dataToUpload.push(...dupsToAdd);
       }
+
+      // Eliminar registros a reemplazar de la BD
+      if (duplicatesAction.platesToReplace.size > 0) {
+        const placasToDelete = Array.from(duplicatesAction.platesToReplace);
+        const { error: deleteError } = await supabase
+          .from("bd_bera")
+          .delete()
+          .in("placa", placasToDelete.map(p => p.toUpperCase()));
+        
+        if (deleteError) {
+          console.error("Error deleting records to replace:", deleteError);
+        }
+        
+        // Agregar los nuevos registros de reemplazo
+        const replacements = allProcessedData.filter(
+          item => duplicatesAction.platesToReplace.has(item.placa?.toLowerCase())
+        );
+        dataToUpload.push(...replacements);
+      }
+
+      if (dataToUpload.length === 0) {
+        toast({
+          title: "Sin registros",
+          description: "No hay registros para cargar",
+          variant: "destructive",
+        });
+        setUploading(false);
+        return;
+      }
+
+      let uploadedCount = 0;
+      let markedDuplicates = 0;
       
-      // Crear set de placas existentes
-      const existingPlacasSet = new Set(
-        (existingPlacas || []).map((r: { placa: string }) => r.placa?.toLowerCase())
-      );
-      
-      // También detectar duplicados dentro del mismo lote
-      const lotePlacas = new Set<string>();
-      
-      let duplicateCount = 0;
-      
-      for (let i = 0; i < data.length; i += batchSize) {
-        const batch = data.slice(i, i + batchSize).map(item => {
-          const placaLower = item.placa?.toLowerCase();
-          
-          // Verificar si es duplicado (en BD existente o en el mismo lote)
-          const esDuplicado = placaLower && (
-            existingPlacasSet.has(placaLower) || lotePlacas.has(placaLower)
-          );
-          
-          if (esDuplicado) duplicateCount++;
-          
-          // Agregar al set del lote actual
-          if (placaLower) lotePlacas.add(placaLower);
+      for (let i = 0; i < dataToUpload.length; i += batchSize) {
+        const batch = dataToUpload.slice(i, i + batchSize).map(item => {
+          const isMarkedDuplicate = duplicatesAction.platesToAdd.has(item.placa?.toLowerCase());
+          if (isMarkedDuplicate) markedDuplicates++;
           
           return {
             ...item,
             lote_carga,
-            es_duplicado: esDuplicado || false,
+            es_duplicado: isMarkedDuplicate,
           };
         });
         
@@ -359,20 +447,29 @@ export default function AdminCargaBeraPage() {
         
         if (error) throw error;
         
-        const progress = Math.round(((i + batch.length) / data.length) * 100);
+        uploadedCount += batch.length;
+        const progress = Math.round((uploadedCount / dataToUpload.length) * 100);
         setUploadProgress(progress);
+      }
+      
+      let description = `Se cargaron ${uploadedCount} registros correctamente`;
+      if (markedDuplicates > 0) {
+        description += ` (${markedDuplicates} marcados como duplicados)`;
+      }
+      if (duplicatesAction.platesToReplace.size > 0) {
+        description += `, ${duplicatesAction.platesToReplace.size} reemplazados`;
       }
       
       toast({
         title: "Carga exitosa",
-        description: duplicateCount > 0 
-          ? `Se cargaron ${data.length} registros (${duplicateCount} marcados como duplicados)`
-          : `Se cargaron ${data.length} registros correctamente`,
+        description,
       });
       
-      // Reset state
       setFile(null);
       setData([]);
+      setAllProcessedData([]);
+      setDuplicatePlates([]);
+      setDuplicatesAction({ platesToAdd: new Set(), platesToReplace: new Set() });
       setShowConfirmDialog(false);
     } catch (error) {
       console.error("Error uploading:", error);
@@ -390,7 +487,38 @@ export default function AdminCargaBeraPage() {
   const handleClear = () => {
     setFile(null);
     setData([]);
+    setAllProcessedData([]);
+    setDuplicatePlates([]);
+    setDuplicatesAction({ platesToAdd: new Set(), platesToReplace: new Set() });
     setCurrentPage(1);
+  };
+
+  // Handlers para el diálogo de duplicados
+  const handleOmitAllDuplicates = () => {
+    toast({
+      title: "Duplicados omitidos",
+      description: `${duplicatePlates.length} placas duplicadas no se cargarán`,
+    });
+  };
+
+  const handleAddDuplicatesAsMarked = (selectedPlates: string[]) => {
+    const platesToAdd = new Set(selectedPlates.map(p => p.toLowerCase()));
+    setDuplicatesAction(prev => ({ ...prev, platesToAdd }));
+    
+    toast({
+      title: "Duplicados incluidos",
+      description: `${selectedPlates.length} placas se agregarán marcadas como duplicados`,
+    });
+  };
+
+  const handleReplaceDuplicates = async (selectedPlates: string[]) => {
+    const platesToReplace = new Set(selectedPlates.map(p => p.toLowerCase()));
+    setDuplicatesAction(prev => ({ ...prev, platesToReplace }));
+    
+    toast({
+      title: "Registros a reemplazar",
+      description: `${selectedPlates.length} registros serán reemplazados al cargar`,
+    });
   };
 
   const downloadTemplate = () => {
@@ -495,6 +623,48 @@ export default function AdminCargaBeraPage() {
         </Card>
       )}
 
+      {/* Duplicates Summary Card */}
+      {!loading && (duplicatePlates.length > 0 || invalidCount > 0) && (
+        <Card className="border-amber-200 bg-amber-500/5">
+          <CardContent className="py-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5" />
+              <div className="flex-1 space-y-2">
+                {duplicatePlates.length > 0 && (
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm">
+                      <span className="font-medium">{duplicatePlates.length}</span> placas duplicadas detectadas
+                      {duplicatesAction.platesToAdd.size > 0 && (
+                        <Badge variant="outline" className="ml-2 text-xs">
+                          {duplicatesAction.platesToAdd.size} se agregarán
+                        </Badge>
+                      )}
+                      {duplicatesAction.platesToReplace.size > 0 && (
+                        <Badge variant="outline" className="ml-2 text-xs">
+                          {duplicatesAction.platesToReplace.size} se reemplazarán
+                        </Badge>
+                      )}
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setShowDuplicatesDialog(true)}
+                    >
+                      Gestionar duplicados
+                    </Button>
+                  </div>
+                )}
+                {invalidCount > 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-medium">{invalidCount}</span> registros sin modelo (no se cargarán)
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Preview Section */}
       {!loading && data.length > 0 && (
         <>
@@ -512,8 +682,13 @@ export default function AdminCargaBeraPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary" className="text-lg px-3 py-1">
-                    {data.length} registros
+                    {data.length} únicos
                   </Badge>
+                  {(duplicatesAction.platesToAdd.size > 0 || duplicatesAction.platesToReplace.size > 0) && (
+                    <Badge variant="secondary" className="text-lg px-3 py-1 bg-amber-500/10 text-amber-600">
+                      +{duplicatesAction.platesToAdd.size + duplicatesAction.platesToReplace.size} duplicados
+                    </Badge>
+                  )}
                   <Button variant="ghost" size="icon" onClick={handleClear}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
@@ -600,9 +775,13 @@ export default function AdminCargaBeraPage() {
             <Button variant="outline" onClick={handleClear}>
               Cancelar
             </Button>
-            <Button onClick={() => setShowConfirmDialog(true)} className="gap-2">
+            <Button 
+              onClick={() => setShowConfirmDialog(true)} 
+              className="gap-2"
+              disabled={data.length === 0 && duplicatesAction.platesToAdd.size === 0 && duplicatesAction.platesToReplace.size === 0}
+            >
               <Upload className="h-4 w-4" />
-              Cargar {data.length} Registros
+              Cargar {data.length + duplicatesAction.platesToAdd.size + duplicatesAction.platesToReplace.size} Registros
             </Button>
           </div>
         </>
@@ -614,8 +793,14 @@ export default function AdminCargaBeraPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Carga</AlertDialogTitle>
             <AlertDialogDescription>
-              ¿Estás seguro de que deseas cargar {data.length} registros a la base de datos BD_BERA?
-              Esta acción no se puede deshacer.
+              ¿Estás seguro de que deseas cargar {data.length + duplicatesAction.platesToAdd.size + duplicatesAction.platesToReplace.size} registros a la base de datos BD_BERA?
+              {duplicatesAction.platesToAdd.size > 0 && (
+                <span className="block mt-1">• {duplicatesAction.platesToAdd.size} se marcarán como duplicados</span>
+              )}
+              {duplicatesAction.platesToReplace.size > 0 && (
+                <span className="block mt-1">• {duplicatesAction.platesToReplace.size} reemplazarán registros existentes</span>
+              )}
+              <span className="block mt-2 font-medium">Esta acción no se puede deshacer.</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           
@@ -643,6 +828,17 @@ export default function AdminCargaBeraPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Duplicates Handler Dialog */}
+      <DuplicatePlatesHandler
+        open={showDuplicatesDialog}
+        onOpenChange={setShowDuplicatesDialog}
+        duplicates={duplicatePlates}
+        onOmitAll={handleOmitAllDuplicates}
+        onAddAsMarked={handleAddDuplicatesAsMarked}
+        onReplace={handleReplaceDuplicates}
+        brandName="BERA"
+      />
         </div>
       </main>
     </div>
