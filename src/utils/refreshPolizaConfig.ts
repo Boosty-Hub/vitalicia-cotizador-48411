@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { fetchVersionApi } from "@/utils/versionApi";
+import { formatPriceToTwoDecimals } from "@/lib/priceUtils";
 
 interface PolizaConfigData {
   id: string;
@@ -171,8 +172,8 @@ export async function refreshPolizaConfig(poliza: PolizaConfigData): Promise<Ref
       if (precioData) {
         const precio = precioData.precio_venta || precioData["precio venta"];
         if (precio) {
-          updatedFields.n_suma = precio;
-          updatedFields.precio_venta_tienda_monday = precio;
+          updatedFields.n_suma = formatPriceToTwoDecimals(precio);
+          updatedFields.precio_venta_tienda_monday = formatPriceToTwoDecimals(precio);
         }
       }
     }
@@ -186,8 +187,8 @@ export async function refreshPolizaConfig(poliza: PolizaConfigData): Promise<Ref
         .maybeSingle();
 
       if (beraData?.precio_venta_tienda) {
-        updatedFields.n_suma = beraData.precio_venta_tienda.toString();
-        updatedFields.precio_venta_tienda_monday = beraData.precio_venta_tienda.toString();
+        updatedFields.n_suma = formatPriceToTwoDecimals(beraData.precio_venta_tienda);
+        updatedFields.precio_venta_tienda_monday = formatPriceToTwoDecimals(beraData.precio_venta_tienda);
       }
     }
 

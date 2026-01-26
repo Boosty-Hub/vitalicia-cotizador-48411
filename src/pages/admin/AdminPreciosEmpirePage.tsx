@@ -38,6 +38,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { formatPriceToTwoDecimals } from "@/lib/priceUtils";
 
 interface PrecioEmpire {
   id: string;
@@ -148,12 +149,15 @@ export default function AdminPreciosEmpirePage() {
     if (!selectedModelo || !newPrice) return;
 
     try {
+      // Format price to 2 decimals
+      const formattedPrice = formatPriceToTwoDecimals(newPrice);
+      
       const { error } = await supabase.from("precios_empire").insert([
         {
           marca: selectedModelo.marca,
           modelo: selectedModelo.modelo,
           name: selectedModelo.modelo,
-          precio_venta: newPrice,
+          precio_venta: formattedPrice,
           estado: "Activo",
           created_at: newPriceDate.toISOString(),
         },
@@ -188,12 +192,15 @@ export default function AdminPreciosEmpirePage() {
     }
 
     try {
+      // Format price to 2 decimals
+      const formattedPrice = formatPriceToTwoDecimals(newModelData.precio_venta);
+      
       const { error } = await supabase.from("precios_empire").insert([
         {
           marca: newModelData.marca,
-          modelo: newModelData.modelo,
-          name: newModelData.modelo,
-          precio_venta: newModelData.precio_venta,
+          modelo: newModelData.modelo.trim(),
+          name: newModelData.modelo.trim(),
+          precio_venta: formattedPrice,
           estado: newModelData.estado,
           created_at: newModelDate.toISOString(),
         },

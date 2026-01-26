@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
+import { formatPriceToTwoDecimals } from "@/lib/priceUtils";
 import { 
   ExternalLink, 
   Download, 
@@ -108,10 +109,19 @@ export function PolicyDetailsDialog({
     setIsSaving(true);
 
     try {
+      // Format price fields to 2 decimals before saving
+      const polizaToSave = {
+        ...editedPoliza,
+        n_suma: editedPoliza.n_suma ? formatPriceToTwoDecimals(editedPoliza.n_suma) : editedPoliza.n_suma,
+        precio_venta_tienda_monday: editedPoliza.precio_venta_tienda_monday 
+          ? formatPriceToTwoDecimals(editedPoliza.precio_venta_tienda_monday) 
+          : editedPoliza.precio_venta_tienda_monday,
+      };
+
       const { error } = await supabase
         .from("polizas_activas")
-        .update(editedPoliza)
-        .eq("id", editedPoliza.id);
+        .update(polizaToSave)
+        .eq("id", polizaToSave.id);
 
       if (error) throw error;
 
@@ -120,7 +130,7 @@ export function PolicyDetailsDialog({
         description: "Póliza actualizada correctamente",
       });
       
-      setSelectedPoliza(editedPoliza);
+      setSelectedPoliza(polizaToSave);
       setIsEditing(false);
       onPolicyUpdated?.();
     } catch (error) {
