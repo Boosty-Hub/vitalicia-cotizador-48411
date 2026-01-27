@@ -40,6 +40,7 @@ import { Progress } from "@/components/ui/progress";
 import { format, parse } from "date-fns";
 import { es } from "date-fns/locale";
 import { DuplicatePlatesHandler, DuplicatePlate } from "@/components/admin/DuplicatePlatesHandler";
+import { UnknownModelsHandler, UnknownModel } from "@/components/admin/UnknownModelsHandler";
 
 interface MotoBera {
   numero_fila: number;
@@ -116,6 +117,9 @@ export default function AdminCargaBeraPage() {
     platesToReplace: Set<string>;
   }>({ platesToAdd: new Set(), platesToReplace: new Set() });
   const [invalidCount, setInvalidCount] = useState(0);
+  const [showUnknownModelsDialog, setShowUnknownModelsDialog] = useState(false);
+  const [unknownModels, setUnknownModels] = useState<UnknownModel[]>([]);
+  const [unknownModelsData, setUnknownModelsData] = useState<MotoBera[]>([]);
   const pageSize = 20;
 
   const parseExcelDate = (value: any): string => {
@@ -164,6 +168,8 @@ export default function AdminCargaBeraPage() {
     setFile(selectedFile);
     setDuplicatePlates([]);
     setDuplicatesAction({ platesToAdd: new Set(), platesToReplace: new Set() });
+    setUnknownModels([]);
+    setUnknownModelsData([]);
     
     try {
       const arrayBuffer = await selectedFile.arrayBuffer();
@@ -240,10 +246,49 @@ export default function AdminCargaBeraPage() {
         .filter(item => item.placa || item.serial_chasis);
 
       // Separar registros válidos de los que no tienen modelo
-      const validModelData = processedData.filter(item => item.modelo && item.modelo.trim() !== "");
+      const withModelData = processedData.filter(item => item.modelo && item.modelo.trim() !== "");
       const invalidModelData = processedData.filter(item => !item.modelo || item.modelo.trim() === "");
       setInvalidCount(invalidModelData.length);
-      setAllProcessedData(validModelData);
+
+      // Verificar qué modelos existen en board_cod_modelo
+      const uniqueModelsInFile = [...new Set(withModelData.map(item => item.modelo.trim().toUpperCase()))];
+      
+      const { data: existingModelsLower } = await supabase
+        .from("board_cod_modelo")
+        .select("descripcion");
+      
+      const existingModelNamesLower = new Set(
+        (existingModelsLower || []).map((m: { descripcion: string }) => m.descripcion?.toUpperCase())
+      );
+
+      // Separar registros con modelos conocidos vs desconocidos
+      const knownModelData = withModelData.filter(
+        item => existingModelNamesLower.has(item.modelo.trim().toUpperCase())
+      );
+      const unknownModelData = withModelData.filter(
+        item => !existingModelNamesLower.has(item.modelo.trim().toUpperCase())
+      );
+
+      // Agrupar modelos desconocidos por nombre
+      const unknownModelsMap = new Map<string, UnknownModel>();
+      for (const item of unknownModelData) {
+        const key = item.modelo.trim().toUpperCase();
+        if (unknownModelsMap.has(key)) {
+          unknownModelsMap.get(key)!.count++;
+        } else {
+          unknownModelsMap.set(key, {
+            modelo: item.modelo.trim(),
+            marca: item.marca?.trim() || "BERA",
+            count: 1,
+          });
+        }
+      }
+
+      setUnknownModels(Array.from(unknownModelsMap.values()));
+      setUnknownModelsData(unknownModelData);
+      
+      const validModelData = knownModelData;
+      setAllProcessedData(withModelData);
 
       // Detectar duplicados dentro del lote
       const seenPlacas = new Map<string, MotoBera>();
@@ -303,8 +348,12 @@ export default function AdminCargaBeraPage() {
       setData(uniqueData);
       setCurrentPage(1);
 
-      // Si hay duplicados, mostrar el diálogo
-      if (allDuplicates.length > 0) {
+      // Primero mostrar diálogo de modelos desconocidos si hay
+      if (unknownModelsMap.size > 0) {
+        setShowUnknownModelsDialog(true);
+      }
+      // Luego si hay duplicados, mostrar el diálogo
+      else if (allDuplicates.length > 0) {
         setDuplicatePlates(allDuplicates);
         setShowDuplicatesDialog(true);
       }
@@ -320,11 +369,12 @@ export default function AdminCargaBeraPage() {
       
       const totalValid = uniqueData.length;
       const totalDups = allDuplicates.length;
+      const totalUnknown = unknownModelsMap.size;
       
-      if (totalValid > 0 || totalDups > 0) {
+      if (totalValid > 0 || totalDups > 0 || totalUnknown > 0) {
         toast({
           title: "Archivo procesado",
-          description: `${totalValid} registros únicos${totalDups > 0 ? `, ${totalDups} duplicados detectados` : ""}${invalidModelData.length > 0 ? `, ${invalidModelData.length} sin modelo` : ""}`,
+          description: `${totalValid} registros únicos${totalDups > 0 ? `, ${totalDups} duplicados` : ""}${totalUnknown > 0 ? `, ${totalUnknown} modelos desconocidos` : ""}${invalidModelData.length > 0 ? `, ${invalidModelData.length} sin modelo` : ""}`,
         });
       } else if (invalidModelData.length > 0) {
         toast({
@@ -490,7 +540,42 @@ export default function AdminCargaBeraPage() {
     setAllProcessedData([]);
     setDuplicatePlates([]);
     setDuplicatesAction({ platesToAdd: new Set(), platesToReplace: new Set() });
+    setUnknownModels([]);
+    setUnknownModelsData([]);
     setCurrentPage(1);
+  };
+
+  // Handlers para modelos desconocidos
+  const handleOmitUnknownModels = () => {
+    toast({
+      title: "Modelos omitidos",
+      description: `${unknownModelsData.length} registros con modelos desconocidos no se cargarán`,
+    });
+    // Después de omitir, mostrar duplicados si hay
+    if (duplicatePlates.length > 0) {
+      setShowDuplicatesDialog(true);
+    }
+  };
+
+  const handleModelsCreated = (createdModels: string[]) => {
+    // Agregar los registros de modelos creados a los datos a cargar
+    const createdModelsSet = new Set(createdModels.map(m => m.toUpperCase()));
+    const newValidData = unknownModelsData.filter(
+      item => createdModelsSet.has(item.modelo.trim().toUpperCase())
+    );
+    
+    if (newValidData.length > 0) {
+      setData(prev => [...prev, ...newValidData]);
+      toast({
+        title: "Registros agregados",
+        description: `${newValidData.length} registros ahora se pueden cargar`,
+      });
+    }
+    
+    // Después de manejar modelos, mostrar duplicados si hay
+    if (duplicatePlates.length > 0) {
+      setShowDuplicatesDialog(true);
+    }
   };
 
   // Handlers para el diálogo de duplicados
@@ -618,6 +703,34 @@ export default function AdminCargaBeraPage() {
             <div className="flex flex-col items-center justify-center">
               <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
               <p className="text-muted-foreground">Procesando archivo...</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Unknown Models Summary Card */}
+      {!loading && unknownModels.length > 0 && (
+        <Card className="border-blue-200 bg-blue-500/5">
+          <CardContent className="py-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-blue-500 mt-0.5" />
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm">
+                    <span className="font-medium">{unknownModels.length}</span> modelo(s) no registrados 
+                    <span className="text-muted-foreground ml-1">
+                      ({unknownModelsData.length} registros afectados)
+                    </span>
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setShowUnknownModelsDialog(true)}
+                  >
+                    Gestionar modelos
+                  </Button>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -837,6 +950,16 @@ export default function AdminCargaBeraPage() {
         onOmitAll={handleOmitAllDuplicates}
         onAddAsMarked={handleAddDuplicatesAsMarked}
         onReplace={handleReplaceDuplicates}
+        brandName="BERA"
+      />
+
+      {/* Unknown Models Handler Dialog */}
+      <UnknownModelsHandler
+        open={showUnknownModelsDialog}
+        onOpenChange={setShowUnknownModelsDialog}
+        unknownModels={unknownModels}
+        onOmitAll={handleOmitUnknownModels}
+        onModelsCreated={handleModelsCreated}
         brandName="BERA"
       />
         </div>
