@@ -848,7 +848,7 @@ export default function AdminCargaBeraPage() {
       )}
 
       {/* Preview Section */}
-      {!loading && data.length > 0 && (
+      {!loading && (data.length > 0 || duplicatesAction.platesToAdd.size > 0 || duplicatesAction.platesToReplace.size > 0) && (
         <>
           <Card>
             <CardHeader className="pb-3">
