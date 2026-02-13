@@ -545,9 +545,13 @@ export default function AdminCargaEmpirePage() {
       title: "Modelos omitidos",
       description: `${unknownModelsData.length} registros con modelos desconocidos no se cargarán`,
     });
+    setUnknownModels([]);
+    setUnknownModelsData([]);
     // Después de omitir, mostrar duplicados si hay
     if (duplicatePlates.length > 0) {
       setShowDuplicatesDialog(true);
+    } else if (data.length === 0) {
+      handleClear();
     }
   };
 
@@ -557,6 +561,14 @@ export default function AdminCargaEmpirePage() {
     const newValidData = unknownModelsData.filter(
       item => createdModelsSet.has(item.modelo.trim().toUpperCase())
     );
+    
+    const remainingUnknown = unknownModels.filter(
+      m => !createdModelsSet.has(m.modelo.trim().toUpperCase())
+    );
+    setUnknownModels(remainingUnknown);
+    setUnknownModelsData(unknownModelsData.filter(
+      item => !createdModelsSet.has(item.modelo.trim().toUpperCase())
+    ));
     
     if (newValidData.length > 0) {
       setData(prev => [...prev, ...newValidData]);
@@ -569,6 +581,8 @@ export default function AdminCargaEmpirePage() {
     // Después de manejar modelos, mostrar duplicados si hay
     if (duplicatePlates.length > 0) {
       setShowDuplicatesDialog(true);
+    } else if (data.length === 0 && newValidData.length === 0) {
+      handleClear();
     }
   };
 

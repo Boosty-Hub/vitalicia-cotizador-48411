@@ -588,9 +588,14 @@ export default function AdminCargaBeraPage() {
       title: "Modelos omitidos",
       description: `${unknownModelsData.length} registros con modelos desconocidos no se cargarán`,
     });
+    setUnknownModels([]);
+    setUnknownModelsData([]);
     // Después de omitir, mostrar duplicados si hay
     if (duplicatePlates.length > 0) {
       setShowDuplicatesDialog(true);
+    } else if (data.length === 0) {
+      // No data left to upload, reset file so uploader reappears
+      handleClear();
     }
   };
 
@@ -600,6 +605,15 @@ export default function AdminCargaBeraPage() {
     const newValidData = unknownModelsData.filter(
       item => createdModelsSet.has(item.modelo.trim().toUpperCase())
     );
+    
+    // Clear unknown models that were handled
+    const remainingUnknown = unknownModels.filter(
+      m => !createdModelsSet.has(m.modelo.trim().toUpperCase())
+    );
+    setUnknownModels(remainingUnknown);
+    setUnknownModelsData(unknownModelsData.filter(
+      item => !createdModelsSet.has(item.modelo.trim().toUpperCase())
+    ));
     
     if (newValidData.length > 0) {
       setData(prev => [...prev, ...newValidData]);
@@ -612,6 +626,8 @@ export default function AdminCargaBeraPage() {
     // Después de manejar modelos, mostrar duplicados si hay
     if (duplicatePlates.length > 0) {
       setShowDuplicatesDialog(true);
+    } else if (data.length === 0 && newValidData.length === 0) {
+      handleClear();
     }
   };
 
