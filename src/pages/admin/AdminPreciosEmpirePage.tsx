@@ -31,7 +31,17 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { toast } from "@/hooks/use-toast";
-import { Search, Plus, Loader2, ChevronLeft, ChevronRight, History, DollarSign, CalendarIcon } from "lucide-react";
+import { Search, Plus, Loader2, ChevronLeft, ChevronRight, History, DollarSign, CalendarIcon, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -76,6 +86,9 @@ export default function AdminPreciosEmpirePage() {
     estado: "Activo",
   });
   const [newModelDate, setNewModelDate] = useState<Date>(new Date());
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [modelToDelete, setModelToDelete] = useState<ModeloAgrupado | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const pageSize = 10;
 
   useEffect(() => {
@@ -261,6 +274,63 @@ export default function AdminPreciosEmpirePage() {
     }
   };
 
+  const handleDeleteModel = async () => {
+    if (!modelToDelete) return;
+    setDeleteLoading(true);
+    try {
+      // Verificar si tiene motos en bd_empire
+      const { count: empireCount } = await supabase
+        .from("bd_empire")
+        .select("id", { count: "exact", head: true })
+        .ilike("modelo", modelToDelete.modelo);
+
+      // Verificar si tiene motos en bd_bera
+      const { count: beraCount } = await supabase
+        .from("bd_bera")
+        .select("id", { count: "exact", head: true })
+        .ilike("modelo", modelToDelete.modelo);
+
+      const totalAssociated = (empireCount || 0) + (beraCount || 0);
+
+      if (totalAssociated > 0) {
+        toast({
+          title: "No se puede eliminar",
+          description: `Este modelo tiene ${totalAssociated} moto(s) asociada(s) en inventario. Elimine las motos primero.`,
+          variant: "destructive",
+        });
+        setShowDeleteDialog(false);
+        setDeleteLoading(false);
+        return;
+      }
+
+      // Eliminar todos los registros de precio de ese modelo
+      const ids = modelToDelete.historial.map(h => h.id);
+      const { error } = await supabase
+        .from("precios_empire")
+        .delete()
+        .in("id", ids);
+
+      if (error) throw error;
+
+      toast({
+        title: "Modelo eliminado",
+        description: `Se eliminaron ${ids.length} registro(s) de precio del modelo ${modelToDelete.modelo}`,
+      });
+      setShowDeleteDialog(false);
+      setModelToDelete(null);
+      fetchData();
+    } catch (error) {
+      console.error("Error deleting model:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el modelo",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   // Filtrar modelos por búsqueda
   const modelosFiltrados = modelosAgrupados.filter(
     (m) =>
@@ -371,18 +441,32 @@ export default function AdminPreciosEmpirePage() {
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="pt-4 space-y-4">
-                      <div className="flex justify-between items-center">
+                       <div className="flex justify-between items-center">
                         <h4 className="font-medium text-sm text-muted-foreground">
                           Historial de Precios
                         </h4>
-                        <Button
-                          size="sm"
-                          onClick={() => handleAddNewPrice(modelo)}
-                          className="gap-1"
-                        >
-                          <DollarSign className="h-4 w-4" />
-                          Agregar Nuevo Precio
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => {
+                              setModelToDelete(modelo);
+                              setShowDeleteDialog(true);
+                            }}
+                            className="gap-1"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Eliminar Modelo
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleAddNewPrice(modelo)}
+                            className="gap-1"
+                          >
+                            <DollarSign className="h-4 w-4" />
+                            Agregar Nuevo Precio
+                          </Button>
+                        </div>
                       </div>
                       <Table>
                         <TableHeader>
@@ -515,6 +599,36 @@ export default function AdminPreciosEmpirePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog para confirmar eliminación */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar modelo {modelToDelete?.modelo}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminarán todos los registros de precio ({modelToDelete?.historial.length || 0}) de este modelo.
+              Solo se permite si no tiene motos asociadas en inventario. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteModel}
+              disabled={deleteLoading}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleteLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verificando...
+                </>
+              ) : (
+                "Eliminar"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Dialog para nuevo modelo */}
       <Dialog open={showNewModelDialog} onOpenChange={setShowNewModelDialog}>
