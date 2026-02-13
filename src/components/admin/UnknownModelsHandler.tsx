@@ -146,14 +146,26 @@ export function UnknownModelsHandler({
         title: "Modelos creados",
         description: `Se crearon ${createdModels.length} modelo(s) correctamente`,
       });
-      onModelsCreated(createdModels);
     }
 
-    onOpenChange(false);
-    setSelectedModels(new Set());
+    // If some models were created, notify parent with created ones
+    // If ALL failed, don't close - let user switch to "omit" instead
+    if (createdModels.length > 0) {
+      onModelsCreated(createdModels);
+      onOpenChange(false);
+      setSelectedModels(new Set());
+    } else if (errors.length > 0) {
+      // All failed - stay open so user can switch to "omit"
+      toast({
+        title: "No se pudo crear ningún modelo",
+        description: "Puede intentar de nuevo o elegir 'Omitir todos' para continuar sin estos registros.",
+      });
+    }
   };
 
   const handleClose = () => {
+    // When closing/canceling, treat as omit so flow can continue
+    onOmitAll();
     onOpenChange(false);
     setSelectedModels(new Set());
     setAction("omit");
