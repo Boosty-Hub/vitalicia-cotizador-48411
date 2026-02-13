@@ -1439,13 +1439,19 @@ const ActivarPolizaNaturalPage = () => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="nombre">Nombre *</Label>
+                       <div className="space-y-2">
+                        <Label htmlFor="nombre">Nombre * (mín. 2 caracteres)</Label>
                         <Input id="nombre" value={formData.nombre} onChange={e => handleInputChange("nombre", e.target.value)} />
+                        {formData.nombre && formData.nombre.trim().length < 2 && (
+                          <p className="text-sm text-destructive">Mínimo 2 caracteres</p>
+                        )}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="apellidos">Apellidos *</Label>
+                        <Label htmlFor="apellidos">Apellidos * (mín. 2 caracteres)</Label>
                         <Input id="apellidos" value={formData.apellidos} onChange={e => handleInputChange("apellidos", e.target.value)} />
+                        {formData.apellidos && formData.apellidos.trim().length < 2 && (
+                          <p className="text-sm text-destructive">Mínimo 2 caracteres</p>
+                        )}
                       </div>
                     </div>
 
@@ -1466,6 +1472,9 @@ const ActivarPolizaNaturalPage = () => {
                       <div className="space-y-2">
                         <Label htmlFor="numeroCedula">Número de Cédula o RIF *</Label>
                         <Input id="numeroCedula" value={formData.numeroCedula} onChange={e => handleCedulaChange(e.target.value)} placeholder={formData.tipoIdentificacion ? `Ej: ${formData.tipoIdentificacion}-12345678` : "Seleccione tipo primero"} disabled={!formData.tipoIdentificacion} />
+                        {formData.numeroCedula && formData.numeroCedula.replace(/[^0-9]/g, '').length < 7 && formData.numeroCedula.replace(/[^0-9]/g, '').length > 0 && (
+                          <p className="text-sm text-destructive">La cédula debe tener al menos 7 dígitos</p>
+                        )}
                       </div>
                     </div>
 
@@ -1504,8 +1513,11 @@ const ActivarPolizaNaturalPage = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="direccion">Dirección *</Label>
+                      <Label htmlFor="direccion">Dirección * (mín. 5 caracteres)</Label>
                       <Input id="direccion" value={formData.direccion} onChange={e => handleInputChange("direccion", e.target.value)} />
+                      {formData.direccion && formData.direccion.trim().length < 5 && (
+                        <p className="text-sm text-destructive">Mínimo 5 caracteres</p>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1601,8 +1613,14 @@ const ActivarPolizaNaturalPage = () => {
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="numeroTelefonico">Número Telefónico *</Label>
-                        <Input id="numeroTelefonico" type="tel" value={formData.numeroTelefonico} onChange={e => handleInputChange("numeroTelefonico", e.target.value)} placeholder="1234567" />
+                        <Label htmlFor="numeroTelefonico">Número Telefónico * (7 dígitos)</Label>
+                        <Input id="numeroTelefonico" type="tel" value={formData.numeroTelefonico} onChange={e => {
+                          const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 7);
+                          handleInputChange("numeroTelefonico", val);
+                        }} placeholder="1234567" maxLength={7} />
+                        {formData.numeroTelefonico && formData.numeroTelefonico.length < 7 && formData.numeroTelefonico.length > 0 && (
+                          <p className="text-sm text-destructive">El teléfono debe tener exactamente 7 dígitos</p>
+                        )}
                       </div>
                     </div>
 
@@ -1639,7 +1657,7 @@ const ActivarPolizaNaturalPage = () => {
                       <Button onClick={() => setCurrentStep(1)} variant="outline" className="flex-1">
                         Anterior
                       </Button>
-                      <Button onClick={() => setCurrentStep(3)} variant="hero" className="flex-1" disabled={!formData.nombre || !formData.apellidos || !formData.numeroCedula || !formData.sexo || !formData.fechaNacimiento || !formData.estadoCivil || !formData.direccion || !formData.estado || !formData.ciudad || !formData.municipio || !formData.codigoTelefonico || !formData.numeroTelefonico || !formData.email || emailError !== "" || (formData.email2 && email2Error !== "")}>
+                      <Button onClick={() => setCurrentStep(3)} variant="hero" className="flex-1" disabled={!formData.nombre || formData.nombre.trim().length < 2 || !formData.apellidos || formData.apellidos.trim().length < 2 || !formData.numeroCedula || formData.numeroCedula.replace(/[^0-9]/g, '').length < 7 || !formData.sexo || !formData.fechaNacimiento || !formData.estadoCivil || !formData.direccion || formData.direccion.trim().length < 5 || !formData.estado || !formData.ciudad || !formData.municipio || !formData.codigoTelefonico || !formData.numeroTelefonico || formData.numeroTelefonico.length !== 7 || !formData.email || emailError !== "" || (formData.email2 && email2Error !== "")}>
                         Siguiente
                       </Button>
                     </div>
@@ -1668,7 +1686,8 @@ const ActivarPolizaNaturalPage = () => {
 
                     <div className="space-y-2">
                       <Label htmlFor="serialCarroceria">Serial de Carrocería *</Label>
-                      <Input id="serialCarroceria" value={formData.serialCarroceria} onChange={e => handleInputChange("serialCarroceria", e.target.value)} />
+                      <Input id="serialCarroceria" value={formData.serialCarroceria} readOnly className="bg-muted cursor-not-allowed" />
+                      <p className="text-xs text-muted-foreground">Este campo se precarga del inventario y no puede ser modificado</p>
                     </div>
 
                     <div className="space-y-2">
@@ -1730,6 +1749,9 @@ const ActivarPolizaNaturalPage = () => {
                       <div className="space-y-2">
                         <Label htmlFor="beneficiarioNumeroCedula">Número de Cédula o RIF *</Label>
                         <Input id="beneficiarioNumeroCedula" value={formData.beneficiarioNumeroCedula} onChange={e => handleBeneficiarioCedulaChange(e.target.value)} placeholder={formData.beneficiarioTipoIdentificacion ? `Ej: ${formData.beneficiarioTipoIdentificacion}-12345678` : "Seleccione tipo primero"} disabled={!formData.beneficiarioTipoIdentificacion} />
+                        {formData.beneficiarioNumeroCedula && formData.beneficiarioNumeroCedula.replace(/[^0-9]/g, '').length < 7 && formData.beneficiarioNumeroCedula.replace(/[^0-9]/g, '').length > 0 && (
+                          <p className="text-sm text-destructive">La cédula debe tener al menos 7 dígitos</p>
+                        )}
                       </div>
                     </div>
 

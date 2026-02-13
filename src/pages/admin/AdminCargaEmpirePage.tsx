@@ -412,19 +412,22 @@ export default function AdminCargaEmpirePage() {
         dataToUpload.push(...dupsToAdd);
       }
 
-      // Eliminar registros a reemplazar de la BD
+      // Eliminar registros a reemplazar de la BD (case-insensitive)
       if (duplicatesAction.platesToReplace.size > 0) {
         const placasToDelete = Array.from(duplicatesAction.platesToReplace);
-        const { error: deleteError } = await supabase
-          .from("bd_empire")
-          .delete()
-          .in("placa", placasToDelete.map(p => p.toUpperCase()));
-        
-        if (deleteError) {
-          console.error("Error deleting records to replace:", deleteError);
+        // Eliminar usando ilike para case-insensitive
+        for (const placaDel of placasToDelete) {
+          const { error: deleteError } = await supabase
+            .from("bd_empire")
+            .delete()
+            .ilike("placa", placaDel);
+          
+          if (deleteError) {
+            console.error("Error deleting record to replace:", placaDel, deleteError);
+          }
         }
         
-        // Agregar los nuevos registros de reemplazo
+        // Agregar los nuevos registros de reemplazo (sin marcar como duplicados)
         const replacements = allProcessedData.filter(
           item => duplicatesAction.platesToReplace.has(item.placa?.toLowerCase())
         );
@@ -447,12 +450,13 @@ export default function AdminCargaEmpirePage() {
       for (let i = 0; i < dataToUpload.length; i += batchSize) {
         const batch = dataToUpload.slice(i, i + batchSize).map(item => {
           const isMarkedDuplicate = duplicatesAction.platesToAdd.has(item.placa?.toLowerCase());
+          const isReplacement = duplicatesAction.platesToReplace.has(item.placa?.toLowerCase());
           if (isMarkedDuplicate) markedDuplicates++;
           
           return {
             ...item,
             lote_carga,
-            es_duplicado: isMarkedDuplicate,
+            es_duplicado: isMarkedDuplicate && !isReplacement,
           };
         });
         

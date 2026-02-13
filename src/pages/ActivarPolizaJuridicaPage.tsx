@@ -1444,13 +1444,16 @@ const ActivarPolizaJuridicaPage = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="nombreEmpresa">Razón Social</Label>
+                     <div className="space-y-2">
+                      <Label htmlFor="nombreEmpresa">Razón Social * (mín. 5 caracteres)</Label>
                       <Input
                         id="nombreEmpresa"
                         value={formData.nombreEmpresa}
                         onChange={(e) => handleInputChange("nombreEmpresa", e.target.value)}
                       />
+                      {formData.nombreEmpresa && formData.nombreEmpresa.trim().length < 5 && (
+                        <p className="text-sm text-destructive">Mínimo 5 caracteres</p>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1522,11 +1525,11 @@ const ActivarPolizaJuridicaPage = () => {
                       >
                         Anterior
                       </Button>
-                      <Button
+                       <Button
                         onClick={() => setCurrentStep(3)}
                         variant="hero"
                         className="flex-1"
-                        disabled={!formData.nombreEmpresa || !formData.tipoIdentificacion || !formData.numeroRIF || !!numeroRIFError}
+                        disabled={!formData.nombreEmpresa || formData.nombreEmpresa.trim().length < 5 || !formData.tipoIdentificacion || !formData.numeroRIF || formData.numeroRIF.replace(/[^0-9]/g, '').length < 7 || !!numeroRIFError}
                       >
                         Siguiente
                       </Button>
@@ -1562,7 +1565,7 @@ const ActivarPolizaJuridicaPage = () => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
+                     <div className="space-y-2">
                         <Label htmlFor="nombresRepresentante">
                           Nombre <span className="text-destructive">*</span>
                         </Label>
@@ -1571,6 +1574,9 @@ const ActivarPolizaJuridicaPage = () => {
                           value={formData.nombresRepresentante}
                           onChange={(e) => handleInputChange("nombresRepresentante", e.target.value)}
                         />
+                        {formData.nombresRepresentante && formData.nombresRepresentante.trim().length < 2 && (
+                          <p className="text-sm text-destructive">Mínimo 2 caracteres</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="apellidosRepresentante">
@@ -1581,6 +1587,9 @@ const ActivarPolizaJuridicaPage = () => {
                           value={formData.apellidosRepresentante}
                           onChange={(e) => handleInputChange("apellidosRepresentante", e.target.value)}
                         />
+                        {formData.apellidosRepresentante && formData.apellidosRepresentante.trim().length < 2 && (
+                          <p className="text-sm text-destructive">Mínimo 2 caracteres</p>
+                        )}
                       </div>
                     </div>
 
@@ -1709,15 +1718,15 @@ const ActivarPolizaJuridicaPage = () => {
                       >
                         Anterior
                       </Button>
-                      <Button
+                       <Button
                         onClick={() => setCurrentStep(4)}
                         variant="hero"
                         className="flex-1"
                         disabled={
-                          !formData.nombresRepresentante || 
-                          !formData.apellidosRepresentante || 
+                          !formData.nombresRepresentante || formData.nombresRepresentante.trim().length < 2 ||
+                          !formData.apellidosRepresentante || formData.apellidosRepresentante.trim().length < 2 ||
                           !formData.tipoIdentificacionRepresentante || 
-                          !formData.cedulaRepresentante ||
+                          !formData.cedulaRepresentante || formData.cedulaRepresentante.replace(/[^0-9]/g, '').length < 7 ||
                           !formData.estadoCivilRepresentante ||
                           !formData.sexoRepresentante ||
                           !formData.fechaNacimientoRepresentante ||
@@ -1896,15 +1905,23 @@ const ActivarPolizaJuridicaPage = () => {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="space-y-2">
+                       <div className="space-y-2">
                         <Label htmlFor="telefonoCelular">
-                          Número Telefónico con Whatsapp <span className="text-destructive">*</span>
+                          Número Telefónico con Whatsapp * (7 dígitos)
                         </Label>
                         <Input
                           id="telefonoCelular"
                           value={formData.telefonoCelular}
-                          onChange={(e) => handleInputChange("telefonoCelular", e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 7);
+                            handleInputChange("telefonoCelular", val);
+                          }}
+                          maxLength={7}
+                          placeholder="1234567"
                         />
+                        {formData.telefonoCelular && formData.telefonoCelular.length < 7 && formData.telefonoCelular.length > 0 && (
+                          <p className="text-sm text-destructive">El teléfono debe tener exactamente 7 dígitos</p>
+                        )}
                       </div>
                     </div>
 
@@ -1929,15 +1946,23 @@ const ActivarPolizaJuridicaPage = () => {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="space-y-2">
+                       <div className="space-y-2">
                         <Label htmlFor="telefonoOficina">
-                          Número Residencial <span className="text-destructive">*</span>
+                          Número Residencial * (7 dígitos)
                         </Label>
                         <Input
                           id="telefonoOficina"
                           value={formData.telefonoOficina}
-                          onChange={(e) => handleInputChange("telefonoOficina", e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 7);
+                            handleInputChange("telefonoOficina", val);
+                          }}
+                          maxLength={7}
+                          placeholder="1234567"
                         />
+                        {formData.telefonoOficina && formData.telefonoOficina.length < 7 && formData.telefonoOficina.length > 0 && (
+                          <p className="text-sm text-destructive">El teléfono debe tener exactamente 7 dígitos</p>
+                        )}
                       </div>
                     </div>
 
@@ -1979,14 +2004,14 @@ const ActivarPolizaJuridicaPage = () => {
                         variant="hero"
                         className="flex-1"
                         disabled={
-                          !formData.direccion ||
+                          !formData.direccion || formData.direccion.trim().length < 5 ||
                           !formData.estado ||
                           !formData.ciudad ||
                           !formData.municipio ||
                           !formData.codigoTelefonicoWhatsapp ||
-                          !formData.telefonoCelular ||
+                          !formData.telefonoCelular || formData.telefonoCelular.length !== 7 ||
                           !formData.codigoTelefonicoResidencial ||
-                          !formData.telefonoOficina ||
+                          !formData.telefonoOficina || formData.telefonoOficina.length !== 7 ||
                           !formData.correoElectronico ||
                           !formData.correoAlternativo
                         }
@@ -2032,12 +2057,10 @@ const ActivarPolizaJuridicaPage = () => {
                       <Input
                         id="serialCarroceria"
                         value={formData.serialCarroceria || vehicleData?.Carroceria || ""}
-                        onChange={(e) => {
-                          handleInputChange("serialCarroceria", e.target.value);
-                          setSerialConfirmado(null);
-                        }}
-                        placeholder="Ingrese el serial de carrocería"
+                        readOnly
+                        className="bg-muted cursor-not-allowed"
                       />
+                      <p className="text-xs text-muted-foreground">Este campo se precarga del inventario y no puede ser modificado</p>
                     </div>
 
                     <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg space-y-4">
@@ -2113,7 +2136,7 @@ const ActivarPolizaJuridicaPage = () => {
               >
                 <Card>
                   <CardHeader>
-                    <CardTitle>Carga de Documentos</CardTitle>
+                    <CardTitle>Carga de Documentos Personales</CardTitle>
                     <p className="text-sm text-muted-foreground mt-2">
                       Por favor, cargue las fotos de los documentos que se indican a continuación:
                     </p>
@@ -2167,6 +2190,69 @@ const ActivarPolizaJuridicaPage = () => {
                       required
                     />
 
+                    <div className="border-t pt-6 mt-6">
+                      <h3 className="text-lg font-semibold text-foreground mb-1">Documentos de la Empresa</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Documentos adicionales requeridos para la activación de póliza jurídica:
+                      </p>
+                    </div>
+
+                    <FileUploader
+                      id="docActaAsamblea"
+                      label="Acta de Asamblea"
+                      file={(formData as any).docActaAsamblea || null}
+                      onFileChange={(file) => handleFileChange("docActaAsamblea", file)}
+                      required
+                    />
+
+                    <FileUploader
+                      id="docActaConstitutiva"
+                      label="Acta Constitutiva o Registro Mercantil"
+                      file={(formData as any).docActaConstitutiva || null}
+                      onFileChange={(file) => handleFileChange("docActaConstitutiva", file)}
+                      required
+                    />
+
+                    <FileUploader
+                      id="docDeclaracionISLR"
+                      label="Declaración de Impuesto Sobre la Renta (Planilla o Certificado)"
+                      file={(formData as any).docDeclaracionISLR || null}
+                      onFileChange={(file) => handleFileChange("docDeclaracionISLR", file)}
+                      required
+                    />
+
+                    <FileUploader
+                      id="docReferenciaBancaria"
+                      label="Referencia Bancaria (no mayor a 3 meses)"
+                      file={(formData as any).docReferenciaBancaria || null}
+                      onFileChange={(file) => handleFileChange("docReferenciaBancaria", file)}
+                      required
+                    />
+
+                    <FileUploader
+                      id="docCedulaAccionistas"
+                      label="Cédula de Accionistas"
+                      file={(formData as any).docCedulaAccionistas || null}
+                      onFileChange={(file) => handleFileChange("docCedulaAccionistas", file)}
+                      required
+                    />
+
+                    <FileUploader
+                      id="docRIFAccionistas"
+                      label="RIF de los Accionistas Actualizados"
+                      file={(formData as any).docRIFAccionistas || null}
+                      onFileChange={(file) => handleFileChange("docRIFAccionistas", file)}
+                      required
+                    />
+
+                    <FileUploader
+                      id="docRIFEmpresa"
+                      label="RIF de la Empresa"
+                      file={(formData as any).docRIFEmpresa || null}
+                      onFileChange={(file) => handleFileChange("docRIFEmpresa", file)}
+                      required
+                    />
+
                     <div className="p-4 bg-muted rounded-lg">
                       <p className="text-xs text-muted-foreground leading-relaxed">
                         El arriba identificado como asegurado propuesto, como solicitante de la póliza o en representación de este, 
@@ -2195,7 +2281,14 @@ const ActivarPolizaJuridicaPage = () => {
                           !formData.docCertificadoMedico || 
                           !formData.docOrigenVehiculo || 
                           !formData.docFacturaCompra || 
-                          !formData.docRIF
+                          !formData.docRIF ||
+                          !(formData as any).docActaAsamblea ||
+                          !(formData as any).docActaConstitutiva ||
+                          !(formData as any).docDeclaracionISLR ||
+                          !(formData as any).docReferenciaBancaria ||
+                          !(formData as any).docCedulaAccionistas ||
+                          !(formData as any).docRIFAccionistas ||
+                          !(formData as any).docRIFEmpresa
                         }
                       >
                         {isSubmitting ? (
