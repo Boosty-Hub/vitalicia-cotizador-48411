@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertTriangle, Copy, Trash2, RefreshCw } from "lucide-react";
+import { AlertTriangle, Copy, Trash2, RefreshCw, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 export interface DuplicatePlate {
@@ -42,6 +43,7 @@ export function DuplicatePlatesHandler({
 }: DuplicatePlatesHandlerProps) {
   const [selectedPlates, setSelectedPlates] = useState<Set<string>>(new Set());
   const [action, setAction] = useState<"omit" | "add" | "replace">("omit");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const dbDuplicates = duplicates.filter(d => d.existsInDb);
   const batchDuplicates = duplicates.filter(d => !d.existsInDb);
@@ -148,18 +150,29 @@ export function DuplicatePlatesHandler({
           {/* Plates list - only show for add/replace actions */}
           {(action === "add" || action === "replace") && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">
-                  Seleccione las placas a {action === "add" ? "agregar" : "reemplazar"}:
-                </span>
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar placa..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-8 h-9"
+                  />
+                </div>
                 <Button variant="ghost" size="sm" onClick={toggleAll}>
-                  {selectedPlates.size === duplicates.length ? "Deseleccionar todo" : "Seleccionar todo"}
+                  {selectedPlates.size === duplicates.length ? "Deseleccionar" : "Seleccionar todo"}
                 </Button>
               </div>
               <ScrollArea className="h-[200px] border rounded-md p-2">
                 <div className="space-y-1">
                   {duplicates
                     .filter(d => action === "replace" ? d.existsInDb : true)
+                    .filter(d => {
+                      if (!searchQuery) return true;
+                      const q = searchQuery.toLowerCase();
+                      return d.placa.toLowerCase().includes(q) || d.marca.toLowerCase().includes(q) || d.modelo.toLowerCase().includes(q);
+                    })
                     .map((dup) => (
                     <label
                       key={dup.placa}
