@@ -41,6 +41,7 @@ import { format, parse } from "date-fns";
 import { es } from "date-fns/locale";
 import { DuplicatePlatesHandler, DuplicatePlate } from "@/components/admin/DuplicatePlatesHandler";
 import { UnknownModelsHandler, UnknownModel } from "@/components/admin/UnknownModelsHandler";
+import { ColumnMappingDialog, ColumnMappingResult } from "@/components/admin/ColumnMappingDialog";
 
 interface MotoBera {
   numero_fila: number;
@@ -120,6 +121,10 @@ export default function AdminCargaBeraPage() {
   const [showUnknownModelsDialog, setShowUnknownModelsDialog] = useState(false);
   const [unknownModels, setUnknownModels] = useState<UnknownModel[]>([]);
   const [unknownModelsData, setUnknownModelsData] = useState<MotoBera[]>([]);
+  const [showMappingDialog, setShowMappingDialog] = useState(false);
+  const [uploadedHeaders, setUploadedHeaders] = useState<string[]>([]);
+  const [pendingExcelData, setPendingExcelData] = useState<any[][] | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const pageSize = 20;
 
   const parseExcelDate = (value: any): string => {
@@ -189,38 +194,76 @@ export default function AdminCargaBeraPage() {
       }
 
       const headers = (jsonData[0] as string[]).map(h => h?.trim());
-      
+
       const normalizedHeaders = headers.filter(h => h);
       const missingColumns = REQUIRED_COLUMNS.filter(col => !normalizedHeaders.includes(col));
       const extraColumns = normalizedHeaders.filter(col => !REQUIRED_COLUMNS.includes(col));
       
       if (missingColumns.length > 0 || extraColumns.length > 0) {
-        let errorMsg = "El archivo no tiene el formato correcto de la plantilla BERA.";
-        if (missingColumns.length > 0) {
-          errorMsg += ` Columnas faltantes: ${missingColumns.join(", ")}.`;
-        }
-        if (extraColumns.length > 0) {
-          errorMsg += ` Columnas no reconocidas: ${extraColumns.join(", ")}.`;
-        }
-        toast({
-          title: "Formato de plantilla incorrecto",
-          description: errorMsg,
-          variant: "destructive",
-        });
-        setFile(null);
+        // Show mapping dialog instead of error toast
+        setUploadedHeaders(normalizedHeaders);
+        setPendingExcelData(jsonData);
+        setPendingFile(selectedFile);
+        setShowMappingDialog(true);
         setLoading(false);
         return;
       }
       
+      processWithMapping(headers, jsonData, COLUMN_MAPPING);
+    } catch (error) {
+      console.error("Error processing Excel:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo procesar el archivo Excel",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleMappingConfirm = useCallback(async (result: ColumnMappingResult) => {
+    if (!pendingExcelData) return;
+    setLoading(true);
+    try {
+      const headers = (pendingExcelData[0] as string[]).map(h => h?.trim());
+      const customMapping: Record<string, keyof MotoBera> = {};
+      for (const [expectedCol, uploadedCol] of Object.entries(result.mapping)) {
+        if (uploadedCol && uploadedCol !== "__AUTO__" && uploadedCol !== "__IGNORE__") {
+          const targetKey = COLUMN_MAPPING[expectedCol];
+          if (targetKey) {
+            customMapping[uploadedCol] = targetKey;
+          }
+        }
+      }
+      // Handle auto-generated "#" column
+      const autoGenNumeroFila = result.mapping["#"] === "__AUTO__";
+      processWithMapping(headers, pendingExcelData, customMapping, autoGenNumeroFila);
+    } catch (error) {
+      console.error("Error processing with mapping:", error);
+      toast({ title: "Error", description: "No se pudo procesar el archivo", variant: "destructive" });
+    } finally {
+      setLoading(false);
+      setPendingExcelData(null);
+      setPendingFile(null);
+    }
+  }, [pendingExcelData]);
+
+  const processWithMapping = useCallback(async (headers: string[], jsonData: any[][], columnMapping: Record<string, keyof MotoBera>, autoGenNumeroFila = false) => {
       const rows = jsonData.slice(1);
       
+      let rowCounter = 0;
       const processedData: MotoBera[] = rows
         .filter(row => row.some(cell => cell !== null && cell !== undefined && cell !== ""))
         .map((row) => {
+          rowCounter++;
           const item: Partial<MotoBera> = {};
+          if (autoGenNumeroFila) {
+            item.numero_fila = rowCounter;
+          }
           
           headers.forEach((header, index) => {
-            const mappedKey = COLUMN_MAPPING[header?.trim()];
+            const mappedKey = columnMapping[header?.trim()];
             if (mappedKey && row[index] !== undefined && row[index] !== null) {
               const value = row[index];
               
@@ -383,16 +426,6 @@ export default function AdminCargaBeraPage() {
           variant: "destructive",
         });
       }
-    } catch (error) {
-      console.error("Error processing Excel:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo procesar el archivo Excel",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -965,6 +998,17 @@ export default function AdminCargaBeraPage() {
         onOmitAll={handleOmitUnknownModels}
         onModelsCreated={handleModelsCreated}
         brandName="BERA"
+      />
+
+      {/* Column Mapping Dialog */}
+      <ColumnMappingDialog
+        open={showMappingDialog}
+        onOpenChange={setShowMappingDialog}
+        expectedColumns={REQUIRED_COLUMNS}
+        uploadedColumns={uploadedHeaders}
+        autoGeneratableColumns={["#"]}
+        templateName="BERA"
+        onConfirm={handleMappingConfirm}
       />
         </div>
       </main>
