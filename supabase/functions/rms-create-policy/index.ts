@@ -63,8 +63,8 @@ serve(async (req) => {
     const apiStatus = responseData.status || 'unknown';
     const apiMessage = responseData.message || '';
 
-    // Determinar si fue exitoso (tiene número de póliza o status exitoso)
-    const isSuccess = numeroPoliza || apiStatus === 'success' || apiStatus === 'ok';
+    // Determinar si fue exitoso: DEBE tener número de póliza Y status no ser "error"
+    const isSuccess = !!numeroPoliza && apiStatus !== 'error';
 
     console.log(`${isSuccess ? '✅' : '⚠️'} Respuesta RMS - Status: ${apiStatus}, Póliza: ${numeroPoliza || 'N/A'}`);
 
@@ -154,7 +154,7 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({
-      success: true,
+      success: isSuccess,
       numeroPoliza,
       nSerialcontrato,
       nSerialcertif,
@@ -162,6 +162,7 @@ serve(async (req) => {
       coberturas,
       apiStatus,
       apiMessage,
+      error: isSuccess ? undefined : (apiMessage || 'La API de RMS no generó número de póliza'),
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -290,9 +291,9 @@ function buildRmsPayload(data: Record<string, any>, tipoFormulario: string): Rec
     c_cd_versionseguro: data.c_cd_versionseguro || "",
     c_cd_subversionseguro: data.c_cd_subversionseguro || "",
     
-    // Titular
+    // Titular - n_cedrif: usar n_cedrif, fallback a nro_documento_natural_monday o nro_documento_juridico_monday
     c_cd_nacionalidad: data.c_cd_nacionalidad || "",
-    n_cedrif: parseInt(data.n_cedrif) || 0,
+    n_cedrif: parseInt(data.n_cedrif) || parseInt(data.nro_documento_natural_monday) || parseInt(data.nro_documento_juridico_monday) || 0,
     cd_sexo: data.cd_sexo || "",
     f_fecnac: data.f_fecnac || "",
     cd_edocivil: data.cd_edocivil || "",
