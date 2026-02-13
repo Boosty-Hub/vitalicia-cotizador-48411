@@ -362,13 +362,15 @@ export default function AdminCargaEmpirePage() {
       setData(uniqueData);
       setCurrentPage(1);
 
+      // Always store duplicates so they can be shown after unknown models are handled
+      setDuplicatePlates(allDuplicates);
+
       // Primero mostrar diálogo de modelos desconocidos si hay
       if (unknownModelsMap.size > 0) {
         setShowUnknownModelsDialog(true);
       }
       // Luego si hay duplicados, mostrar el diálogo
       else if (allDuplicates.length > 0) {
-        setDuplicatePlates(allDuplicates);
         setShowDuplicatesDialog(true);
       }
       
