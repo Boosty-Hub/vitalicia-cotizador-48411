@@ -259,6 +259,16 @@ export function PolicyDetailsDialog({
       });
     } finally {
       setProcessingPolizaId(null);
+      // Always re-fetch to update modal with latest status
+      const { data: latestPoliza } = await supabase
+        .from('polizas_activas')
+        .select('*')
+        .eq('id', selectedPoliza.id)
+        .single();
+      if (latestPoliza) {
+        setSelectedPoliza(latestPoliza);
+        setEditedPoliza(latestPoliza);
+      }
     }
   };
 
