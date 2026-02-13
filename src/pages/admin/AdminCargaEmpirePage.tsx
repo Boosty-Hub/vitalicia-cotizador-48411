@@ -164,6 +164,7 @@ export default function AdminCargaEmpirePage() {
           description: "El archivo no contiene datos",
           variant: "destructive",
         });
+        handleClear();
         setLoading(false);
         return;
       }
@@ -1024,7 +1025,10 @@ export default function AdminCargaEmpirePage() {
       {/* Column Mapping Dialog */}
       <ColumnMappingDialog
         open={showMappingDialog}
-        onOpenChange={setShowMappingDialog}
+        onOpenChange={(open) => {
+          setShowMappingDialog(open);
+          if (!open) handleClear();
+        }}
         expectedColumns={REQUIRED_COLUMNS}
         uploadedColumns={uploadedHeaders}
         autoGeneratableColumns={[]}
