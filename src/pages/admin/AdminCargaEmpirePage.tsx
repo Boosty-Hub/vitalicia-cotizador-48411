@@ -438,7 +438,7 @@ export default function AdminCargaEmpirePage() {
   };
 
   const handleUpload = async () => {
-    if (data.length === 0 && duplicatesAction.platesToAdd.size === 0) return;
+    if (data.length === 0 && duplicatesAction.platesToAdd.size === 0 && duplicatesAction.platesToReplace.size === 0) return;
     
     setUploading(true);
     setUploadProgress(0);
