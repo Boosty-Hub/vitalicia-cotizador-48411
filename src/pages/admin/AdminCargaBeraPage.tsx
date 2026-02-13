@@ -118,6 +118,7 @@ export default function AdminCargaBeraPage() {
     platesToReplace: Set<string>;
   }>({ platesToAdd: new Set(), platesToReplace: new Set() });
   const [invalidCount, setInvalidCount] = useState(0);
+  const [invalidData, setInvalidData] = useState<MotoBera[]>([]);
   const [allowModelCreation, setAllowModelCreation] = useState(false);
   const [showUnknownModelsDialog, setShowUnknownModelsDialog] = useState(false);
   const [unknownModels, setUnknownModels] = useState<UnknownModel[]>([]);
@@ -126,6 +127,7 @@ export default function AdminCargaBeraPage() {
   const [uploadedHeaders, setUploadedHeaders] = useState<string[]>([]);
   const [pendingExcelData, setPendingExcelData] = useState<any[][] | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [previewTab, setPreviewTab] = useState<"unicos" | "duplicados" | "omitidos">("unicos");
   const pageSize = 20;
 
   // Fetch admin setting for model creation
@@ -306,7 +308,7 @@ export default function AdminCargaBeraPage() {
       const withModelData = processedData.filter(item => item.modelo && item.modelo.trim() !== "");
       const invalidModelData = processedData.filter(item => !item.modelo || item.modelo.trim() === "");
       setInvalidCount(invalidModelData.length);
-
+      setInvalidData(invalidModelData);
       // Verificar qué modelos existen en board_cod_modelo
       const uniqueModelsInFile = [...new Set(withModelData.map(item => item.modelo.trim().toUpperCase()))];
       
@@ -595,7 +597,10 @@ export default function AdminCargaBeraPage() {
     setDuplicatesAction({ platesToAdd: new Set(), platesToReplace: new Set() });
     setUnknownModels([]);
     setUnknownModelsData([]);
+    setInvalidData([]);
+    setInvalidCount(0);
     setCurrentPage(1);
+    setPreviewTab("unicos");
   };
 
   // Handlers para modelos desconocidos
@@ -682,10 +687,27 @@ export default function AdminCargaBeraPage() {
     XLSX.writeFile(wb, "plantilla_carga_bera.xlsx");
   };
 
-  // Pagination
-  const totalPages = Math.ceil(data.length / pageSize);
+  // Computed data for tabs
+  const duplicateRecords = allProcessedData.filter(
+    item => duplicatesAction.platesToAdd.has(item.placa?.toLowerCase()) || 
+            duplicatesAction.platesToReplace.has(item.placa?.toLowerCase())
+  );
+  const omittedRecords = [
+    ...unknownModelsData,
+    ...invalidData,
+    // Duplicates that were omitted (not selected for add/replace)
+    ...allProcessedData.filter(item => {
+      const placaLower = item.placa?.toLowerCase();
+      const isDuplicate = duplicatePlates.some(d => d.placa.toLowerCase() === placaLower);
+      return isDuplicate && !duplicatesAction.platesToAdd.has(placaLower) && !duplicatesAction.platesToReplace.has(placaLower);
+    }),
+  ];
+
+  // Pagination based on active tab
+  const activeTabData = previewTab === "unicos" ? data : previewTab === "duplicados" ? duplicateRecords : omittedRecords;
+  const totalPages = Math.ceil(activeTabData.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
-  const paginatedData = data.slice(startIndex, startIndex + pageSize);
+  const paginatedData = activeTabData.slice(startIndex, startIndex + pageSize);
 
   const formatPrice = (price: number) => {
     return `$${price.toLocaleString("es-VE", { minimumFractionDigits: 2 })}`;
@@ -848,7 +870,7 @@ export default function AdminCargaBeraPage() {
       )}
 
       {/* Preview Section */}
-      {!loading && (data.length > 0 || duplicatesAction.platesToAdd.size > 0 || duplicatesAction.platesToReplace.size > 0) && (
+      {!loading && (data.length > 0 || duplicatesAction.platesToAdd.size > 0 || duplicatesAction.platesToReplace.size > 0 || omittedRecords.length > 0) && (
         <>
           <Card>
             <CardHeader className="pb-3">
@@ -862,19 +884,36 @@ export default function AdminCargaBeraPage() {
                     Archivo: {file?.name}
                   </CardDescription>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="text-lg px-3 py-1">
-                    {data.length} únicos
-                  </Badge>
-                  {(duplicatesAction.platesToAdd.size > 0 || duplicatesAction.platesToReplace.size > 0) && (
-                    <Badge variant="secondary" className="text-lg px-3 py-1 bg-amber-500/10 text-amber-600">
-                      +{duplicatesAction.platesToAdd.size + duplicatesAction.platesToReplace.size} duplicados
-                    </Badge>
-                  )}
-                  <Button variant="ghost" size="icon" onClick={handleClear}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
+                <Button variant="ghost" size="icon" onClick={handleClear}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+              {/* Tabs */}
+              <div className="flex gap-2 mt-3">
+                <Button
+                  variant={previewTab === "unicos" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => { setPreviewTab("unicos"); setCurrentPage(1); }}
+                >
+                  Únicos ({data.length})
+                </Button>
+                <Button
+                  variant={previewTab === "duplicados" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => { setPreviewTab("duplicados"); setCurrentPage(1); }}
+                  disabled={duplicateRecords.length === 0}
+                >
+                  Duplicados ({duplicateRecords.length})
+                </Button>
+                <Button
+                  variant={previewTab === "omitidos" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => { setPreviewTab("omitidos"); setCurrentPage(1); }}
+                  disabled={omittedRecords.length === 0}
+                  className={previewTab === "omitidos" ? "bg-destructive hover:bg-destructive/90" : ""}
+                >
+                  No se cargarán ({omittedRecords.length})
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -923,8 +962,8 @@ export default function AdminCargaBeraPage() {
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <p className="text-sm text-muted-foreground">
-                    Mostrando {startIndex + 1} a {Math.min(startIndex + pageSize, data.length)} de{" "}
-                    {data.length} registros
+                    Mostrando {startIndex + 1} a {Math.min(startIndex + pageSize, activeTabData.length)} de{" "}
+                    {activeTabData.length} registros
                   </p>
                   <div className="flex items-center gap-2">
                     <Button
