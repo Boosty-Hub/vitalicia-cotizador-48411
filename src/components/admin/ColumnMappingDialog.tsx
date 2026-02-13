@@ -225,7 +225,7 @@ export function ColumnMappingDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Link2 className="h-5 w-5 text-primary" />
@@ -260,7 +260,7 @@ export function ColumnMappingDialog({
         </div>
 
         {/* Mapping rows */}
-        <ScrollArea className="flex-1 min-h-0 max-h-[50vh] pr-3">
+        <ScrollArea className="flex-1 min-h-0 pr-3" style={{ maxHeight: 'calc(85vh - 280px)' }}>
           <div className="space-y-2">
             {expectedColumns.map((exp) => (
               <div
