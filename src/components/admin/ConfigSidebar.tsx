@@ -58,6 +58,7 @@ const personasItems = [
 const otrosItems = [
   { title: "Códigos Telefónicos", url: "/admin/configuraciones/codigos-telefonicos", icon: Phone, table: "board_cod_tlf" },
   { title: "Versiones API", url: "/admin/configuraciones/versiones-api", icon: Wrench, table: "board_cod_version_api" },
+  { title: "Ajustes del Sistema", url: "/admin/configuraciones/ajustes", icon: Wrench, table: "admin_settings" },
 ];
 
 const sistemaItems = [

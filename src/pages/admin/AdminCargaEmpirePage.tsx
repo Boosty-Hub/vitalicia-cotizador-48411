@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from "xlsx";
 import {
@@ -97,6 +97,7 @@ export default function AdminCargaEmpirePage() {
     platesToReplace: Set<string>;
   }>({ platesToAdd: new Set(), platesToReplace: new Set() });
   const [invalidCount, setInvalidCount] = useState(0);
+  const [allowModelCreation, setAllowModelCreation] = useState(false);
   const [showUnknownModelsDialog, setShowUnknownModelsDialog] = useState(false);
   const [unknownModels, setUnknownModels] = useState<UnknownModel[]>([]);
   const [unknownModelsData, setUnknownModelsData] = useState<MotoEmpire[]>([]);
@@ -105,6 +106,19 @@ export default function AdminCargaEmpirePage() {
   const [pendingExcelData, setPendingExcelData] = useState<any[][] | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const pageSize = 20;
+
+  // Fetch admin setting for model creation
+  useEffect(() => {
+    const fetchSetting = async () => {
+      const { data } = await supabase
+        .from("admin_settings" as any)
+        .select("value")
+        .eq("key", "allow_model_creation_on_upload")
+        .maybeSingle();
+      setAllowModelCreation((data as any)?.value === "true");
+    };
+    fetchSetting();
+  }, []);
 
   const parseExcelDate = (value: any): string => {
     if (!value) return "";
@@ -963,6 +977,7 @@ export default function AdminCargaEmpirePage() {
         onOmitAll={handleOmitUnknownModels}
         onModelsCreated={handleModelsCreated}
         brandName="EMPIRE"
+        allowCreation={allowModelCreation}
       />
 
       {/* Column Mapping Dialog */}
