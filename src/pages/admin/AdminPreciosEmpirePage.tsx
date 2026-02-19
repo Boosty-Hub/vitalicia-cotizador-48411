@@ -89,6 +89,8 @@ export default function AdminPreciosEmpirePage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [modelToDelete, setModelToDelete] = useState<ModeloAgrupado | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [associatedCount, setAssociatedCount] = useState<number | null>(null);
+  const [loadingAssociated, setLoadingAssociated] = useState(false);
   const pageSize = 10;
 
   useEffect(() => {
@@ -274,35 +276,28 @@ export default function AdminPreciosEmpirePage() {
     }
   };
 
+  const handleOpenDeleteDialog = async (modelo: ModeloAgrupado) => {
+    setModelToDelete(modelo);
+    setAssociatedCount(null);
+    setShowDeleteDialog(true);
+    setLoadingAssociated(true);
+    try {
+      const [empireRes, beraRes] = await Promise.all([
+        supabase.from("bd_empire").select("id", { count: "exact", head: true }).ilike("modelo", modelo.modelo),
+        supabase.from("bd_bera").select("id", { count: "exact", head: true }).ilike("modelo", modelo.modelo),
+      ]);
+      setAssociatedCount((empireRes.count || 0) + (beraRes.count || 0));
+    } catch {
+      setAssociatedCount(0);
+    } finally {
+      setLoadingAssociated(false);
+    }
+  };
+
   const handleDeleteModel = async () => {
     if (!modelToDelete) return;
     setDeleteLoading(true);
     try {
-      // Verificar si tiene motos en bd_empire
-      const { count: empireCount } = await supabase
-        .from("bd_empire")
-        .select("id", { count: "exact", head: true })
-        .ilike("modelo", modelToDelete.modelo);
-
-      // Verificar si tiene motos en bd_bera
-      const { count: beraCount } = await supabase
-        .from("bd_bera")
-        .select("id", { count: "exact", head: true })
-        .ilike("modelo", modelToDelete.modelo);
-
-      const totalAssociated = (empireCount || 0) + (beraCount || 0);
-
-      if (totalAssociated > 0) {
-        toast({
-          title: "No se puede eliminar",
-          description: `Este modelo tiene ${totalAssociated} moto(s) asociada(s) en inventario. Elimine las motos primero.`,
-          variant: "destructive",
-        });
-        setShowDeleteDialog(false);
-        setDeleteLoading(false);
-        return;
-      }
-
       // Eliminar todos los registros de precio de ese modelo
       const ids = modelToDelete.historial.map(h => h.id);
       const { error } = await supabase
@@ -446,15 +441,12 @@ export default function AdminPreciosEmpirePage() {
                           Historial de Precios
                         </h4>
                         <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => {
-                              setModelToDelete(modelo);
-                              setShowDeleteDialog(true);
-                            }}
-                            className="gap-1"
-                          >
+                           <Button
+                             size="sm"
+                             variant="destructive"
+                             onClick={() => handleOpenDeleteDialog(modelo)}
+                             className="gap-1"
+                           >
                             <Trash2 className="h-4 w-4" />
                             Eliminar Modelo
                           </Button>
@@ -605,22 +597,54 @@ export default function AdminPreciosEmpirePage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar modelo {modelToDelete?.modelo}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Se eliminarán todos los registros de precio ({modelToDelete?.historial.length || 0}) de este modelo.
-              Solo se permite si no tiene motos asociadas en inventario. Esta acción no se puede deshacer.
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Se eliminarán <strong>{modelToDelete?.historial.length || 0}</strong> registro(s) de precio de este modelo. Esta acción no se puede deshacer.
+                </p>
+                <div className={`rounded-lg p-3 text-sm font-medium flex items-center gap-2 ${
+                  loadingAssociated
+                    ? "bg-muted text-muted-foreground"
+                    : associatedCount === null
+                    ? "bg-muted text-muted-foreground"
+                    : associatedCount > 0
+                    ? "bg-destructive/10 text-destructive border border-destructive/30"
+                    : "bg-green-500/10 text-green-700 border border-green-500/30"
+                }`}>
+                  {loadingAssociated ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Verificando motos en inventario...
+                    </>
+                  ) : associatedCount !== null && associatedCount > 0 ? (
+                    <>
+                      <span className="text-lg">⛔</span>
+                      <span>
+                        Hay <strong>{associatedCount}</strong> moto{associatedCount !== 1 ? "s" : ""} asociada{associatedCount !== 1 ? "s" : ""} en inventario. <br />
+                        <span className="font-normal">No se puede eliminar hasta que se retiren del inventario.</span>
+                      </span>
+                    </>
+                  ) : associatedCount === 0 ? (
+                    <>
+                      <span className="text-lg">✅</span>
+                      <span>Sin motos en inventario. Se puede eliminar con seguridad.</span>
+                    </>
+                  ) : null}
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteLoading}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteModel}
-              disabled={deleteLoading}
+              disabled={deleteLoading || loadingAssociated || (associatedCount !== null && associatedCount > 0)}
               className="bg-destructive hover:bg-destructive/90"
             >
               {deleteLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Verificando...
+                  Eliminando...
                 </>
               ) : (
                 "Eliminar"
