@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { SimpleHeader } from "@/components/ui/SimpleHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import { FileUploader } from "@/components/ui/file-uploader";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { fetchVersionApi } from "@/utils/versionApi";
 import { formatPriceToTwoDecimals } from "@/lib/priceUtils";
+import { useDocumentValidation } from "@/hooks/useDocumentValidation";
 
 const ActivarPolizaNaturalPage = () => {
   const navigate = useNavigate();
@@ -655,11 +656,28 @@ const ActivarPolizaNaturalPage = () => {
       description: "Se han generado datos de prueba aleatorios"
     });
   };
+  const { validateDocument, clearValidation, getValidation, allCriticalDocsValid, hasAnyValidating, hasAnyInvalid } = useDocumentValidation();
+
+  const getFormDataForValidation = useCallback(() => {
+    const cedulaDigits = formData.numeroCedula.replace(/[^0-9]/g, '');
+    return {
+      cedula: cedulaDigits,
+      nombre: formData.nombre,
+      apellido: formData.apellidos,
+      placa: placa.toUpperCase().trim(),
+    };
+  }, [formData.numeroCedula, formData.nombre, formData.apellidos, placa]);
+
   const handleFileChange = (field: string, file: File | null) => {
     setFormData(prev => ({
       ...prev,
       [field]: file
     }));
+    if (file) {
+      validateDocument(field, file, getFormDataForValidation());
+    } else {
+      clearValidation(field);
+    }
   };
   const handleContactSupport = () => {
     window.open(`https://wa.me/584123230188?text=Hola, necesito ayuda con la activación de mi póliza RCV. Placa: ${placa}`, '_blank');
@@ -1818,6 +1836,9 @@ const ActivarPolizaNaturalPage = () => {
                       file={formData.docIdentidad}
                       onFileChange={(file) => handleFileChange("docIdentidad", file)}
                       required
+                      validationStatus={getValidation("docIdentidad").status}
+                      validationMessage={getValidation("docIdentidad").message}
+                      validationObservations={getValidation("docIdentidad").observations}
                     />
 
                     <FileUploader
@@ -1842,6 +1863,9 @@ const ActivarPolizaNaturalPage = () => {
                       file={formData.docOrigenVehiculo}
                       onFileChange={(file) => handleFileChange("docOrigenVehiculo", file)}
                       required
+                      validationStatus={getValidation("docOrigenVehiculo").status}
+                      validationMessage={getValidation("docOrigenVehiculo").message}
+                      validationObservations={getValidation("docOrigenVehiculo").observations}
                     />
 
                     <FileUploader
@@ -1850,6 +1874,9 @@ const ActivarPolizaNaturalPage = () => {
                       file={formData.docFacturaCompra}
                       onFileChange={(file) => handleFileChange("docFacturaCompra", file)}
                       required
+                      validationStatus={getValidation("docFacturaCompra").status}
+                      validationMessage={getValidation("docFacturaCompra").message}
+                      validationObservations={getValidation("docFacturaCompra").observations}
                     />
 
                     <FileUploader
@@ -1872,7 +1899,7 @@ const ActivarPolizaNaturalPage = () => {
                       <Button onClick={() => setCurrentStep(4)} variant="outline" className="flex-1" disabled={isSubmitting}>
                         Anterior
                       </Button>
-                      <Button onClick={handleSubmit} variant="hero" className="flex-1" disabled={isSubmitting || !formData.docIdentidad || !formData.docLicenciaConducir || !formData.docCertificadoMedico || !formData.docOrigenVehiculo || !formData.docFacturaCompra || !formData.docRIF}>
+                      <Button onClick={handleSubmit} variant="hero" className="flex-1" disabled={isSubmitting || !formData.docIdentidad || !formData.docLicenciaConducir || !formData.docCertificadoMedico || !formData.docOrigenVehiculo || !formData.docFacturaCompra || !formData.docRIF || !allCriticalDocsValid() || hasAnyValidating()}>
                         {isSubmitting ? (
                           <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />

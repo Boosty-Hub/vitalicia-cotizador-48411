@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { SimpleHeader } from "@/components/ui/SimpleHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import { fixEncoding } from "@/lib/utils";
 import { FileUploader } from "@/components/ui/file-uploader";
 import { fetchVersionApi } from "@/utils/versionApi";
 import { formatPriceToTwoDecimals } from "@/lib/priceUtils";
+import { useDocumentValidation } from "@/hooks/useDocumentValidation";
 
 const ActivarPolizaJuridicaPage = () => {
   const navigate = useNavigate();
@@ -591,8 +592,26 @@ const ActivarPolizaJuridicaPage = () => {
     }));
   };
 
+  const { validateDocument, clearValidation, getValidation, allCriticalDocsValid, hasAnyValidating, hasAnyInvalid } = useDocumentValidation();
+
+  const getFormDataForValidation = useCallback(() => {
+    const cedulaDigits = formData.cedulaRepresentante.replace(/[^0-9]/g, '');
+    return {
+      cedula: cedulaDigits,
+      nombre: formData.nombresRepresentante,
+      apellido: formData.apellidosRepresentante,
+      placa: placa.toUpperCase().trim(),
+      razon_social: formData.nombreEmpresa,
+    };
+  }, [formData.cedulaRepresentante, formData.nombresRepresentante, formData.apellidosRepresentante, placa, formData.nombreEmpresa]);
+
   const handleFileChange = (field: string, file: File | null) => {
     setFormData(prev => ({ ...prev, [field]: file }));
+    if (file) {
+      validateDocument(field, file, getFormDataForValidation());
+    } else {
+      clearValidation(field);
+    }
   };
 
   const handleContactSupport = () => {
@@ -2148,6 +2167,9 @@ const ActivarPolizaJuridicaPage = () => {
                       file={formData.docIdentidad}
                       onFileChange={(file) => handleFileChange("docIdentidad", file)}
                       required
+                      validationStatus={getValidation("docIdentidad").status}
+                      validationMessage={getValidation("docIdentidad").message}
+                      validationObservations={getValidation("docIdentidad").observations}
                     />
 
                     <FileUploader
@@ -2172,6 +2194,9 @@ const ActivarPolizaJuridicaPage = () => {
                       file={formData.docOrigenVehiculo}
                       onFileChange={(file) => handleFileChange("docOrigenVehiculo", file)}
                       required
+                      validationStatus={getValidation("docOrigenVehiculo").status}
+                      validationMessage={getValidation("docOrigenVehiculo").message}
+                      validationObservations={getValidation("docOrigenVehiculo").observations}
                     />
 
                     <FileUploader
@@ -2180,6 +2205,9 @@ const ActivarPolizaJuridicaPage = () => {
                       file={formData.docFacturaCompra}
                       onFileChange={(file) => handleFileChange("docFacturaCompra", file)}
                       required
+                      validationStatus={getValidation("docFacturaCompra").status}
+                      validationMessage={getValidation("docFacturaCompra").message}
+                      validationObservations={getValidation("docFacturaCompra").observations}
                     />
 
                     <FileUploader
@@ -2288,7 +2316,9 @@ const ActivarPolizaJuridicaPage = () => {
                           !(formData as any).docReferenciaBancaria ||
                           !(formData as any).docCedulaAccionistas ||
                           !(formData as any).docRIFAccionistas ||
-                          !(formData as any).docRIFEmpresa
+                          !(formData as any).docRIFEmpresa ||
+                          !allCriticalDocsValid() ||
+                          hasAnyValidating()
                         }
                       >
                         {isSubmitting ? (

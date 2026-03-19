@@ -1,6 +1,7 @@
-import { Upload, File, X, CheckCircle2 } from "lucide-react";
+import { Upload, File, X, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 import { Label } from "./label";
 import { Button } from "./button";
+import type { ValidationStatus } from "@/hooks/useDocumentValidation";
 
 interface FileUploaderProps {
   label: string;
@@ -9,6 +10,9 @@ interface FileUploaderProps {
   onFileChange: (file: File | null) => void;
   required?: boolean;
   accept?: string;
+  validationStatus?: ValidationStatus;
+  validationMessage?: string;
+  validationObservations?: string[];
 }
 
 export const FileUploader = ({
@@ -17,7 +21,10 @@ export const FileUploader = ({
   file,
   onFileChange,
   required = false,
-  accept = "image/*,.pdf"
+  accept = "image/*,.pdf",
+  validationStatus = "idle",
+  validationMessage,
+  validationObservations = [],
 }: FileUploaderProps) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null;
@@ -26,6 +33,19 @@ export const FileUploader = ({
 
   const handleRemoveFile = () => {
     onFileChange(null);
+  };
+
+  const getValidationBorderClass = () => {
+    switch (validationStatus) {
+      case "validating":
+        return "border-yellow-500/50 bg-yellow-50/30 dark:bg-yellow-950/10";
+      case "valid":
+        return "border-green-500/30 bg-green-50/30 dark:bg-green-950/10";
+      case "invalid":
+        return "border-destructive/50 bg-destructive/5";
+      default:
+        return "border-success/20 bg-success/5";
+    }
   };
 
   return (
@@ -57,28 +77,61 @@ export const FileUploader = ({
           />
         </label>
       ) : (
-        <div className="flex items-center justify-between w-full p-4 border-2 border-success/20 rounded-lg bg-success/5">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
-            <File className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">
-                {file.name}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {(file.size / 1024).toFixed(2)} KB
-              </p>
+        <div className={`flex flex-col w-full border-2 rounded-lg ${getValidationBorderClass()}`}>
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              {validationStatus === "validating" ? (
+                <Loader2 className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 animate-spin" />
+              ) : validationStatus === "valid" ? (
+                <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+              ) : validationStatus === "invalid" ? (
+                <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0" />
+              ) : (
+                <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+              )}
+              <File className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {file.name}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {(file.size / 1024).toFixed(2)} KB
+                </p>
+              </div>
             </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleRemoveFile}
+              className="flex-shrink-0 ml-2 hover:bg-destructive/10 hover:text-destructive"
+              disabled={validationStatus === "validating"}
+            >
+              <X className="w-4 h-4" />
+            </Button>
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleRemoveFile}
-            className="flex-shrink-0 ml-2 hover:bg-destructive/10 hover:text-destructive"
-          >
-            <X className="w-4 h-4" />
-          </Button>
+
+          {/* Validation status message */}
+          {validationMessage && (
+            <div className={`px-4 pb-3 ${
+              validationStatus === "validating" 
+                ? "text-yellow-700 dark:text-yellow-300" 
+                : validationStatus === "valid" 
+                  ? "text-green-700 dark:text-green-300" 
+                  : validationStatus === "invalid" 
+                    ? "text-destructive" 
+                    : "text-muted-foreground"
+            }`}>
+              <p className="text-xs font-medium">{validationMessage}</p>
+              {validationObservations.length > 0 && (
+                <ul className="mt-1 space-y-0.5">
+                  {validationObservations.map((obs, i) => (
+                    <li key={i} className="text-xs opacity-80">• {obs}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
