@@ -114,7 +114,7 @@ export function useDocumentValidation() {
         ...prev,
         [docKey]: {
           status: "validating",
-          message: "Validando documento con IA...",
+          message: "Validando documento...",
           observations: [],
         },
       }));
@@ -159,11 +159,11 @@ export function useDocumentValidation() {
 
         let message = "";
         if (!data.is_valid_document) {
-          message = `Este documento no parece ser ${getDocumentLabel(docKey)}`;
+          message = `El documento cargado no corresponde a ${getDocumentLabel(docKey)}`;
         } else if (!data.matches_form_data) {
-          message = "Los datos del documento no coinciden con los del formulario";
+          message = "Los datos del documento no coinciden con la información ingresada";
         } else {
-          message = "Documento validado correctamente";
+          message = "Documento verificado correctamente ✓";
         }
 
         setValidations((prev) => ({
