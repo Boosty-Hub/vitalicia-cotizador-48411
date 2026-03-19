@@ -74,17 +74,25 @@ serve(async (req) => {
     }
 
     const systemPrompt = `Eres un validador de documentos venezolanos especializado en seguros de vehículos.
-Tu trabajo es analizar imágenes de documentos y extraer información clave para validar que coincida con los datos del formulario.
-Sé preciso al extraer números de cédula y placas. Ignora prefijos como V-, E-, J-, G- al comparar cédulas - compara solo los dígitos.
+Tu trabajo es analizar imágenes de documentos y verificar que la información coincida con los datos del formulario.
+Sé preciso al verificar números de cédula y placas. Ignora prefijos como V-, E-, J-, G- al comparar cédulas - compara solo los dígitos.
 Para placas, ignora diferencias de mayúsculas/minúsculas.
-Para nombres, sé flexible con acentos y mayúsculas/minúsculas, pero verifica que sea sustancialmente la misma persona.`;
+Para nombres, sé flexible con acentos y mayúsculas/minúsculas, pero verifica que sea sustancialmente la misma persona.
+
+IMPORTANTE SOBRE LAS OBSERVACIONES: Las observaciones serán mostradas al usuario final. NO uses palabras técnicas como "extraída", "extraído", "detectado". Redacta las observaciones de forma amigable como si fuera un sistema de verificación automática. Ejemplos de formato correcto:
+- "La cédula del documento (27700707) no coincide con la ingresada en el formulario (12345678)"
+- "El nombre en el documento (JUAN PÉREZ) no coincide con el ingresado (CARLOS LÓPEZ)"  
+- "La placa en el documento (AB123CD) no coincide con la registrada (XY789ZW)"
+- "El documento no contiene información sobre la razón social indicada"
+Nunca menciones IA, extracción, ni procesamiento automático.`;
 
     const userPrompt = `${basePrompt}${contextPrompt}
 
-IMPORTANTE: Compara los datos extraídos del documento con los datos del formulario proporcionados.
+IMPORTANTE: Compara los datos del documento con los datos del formulario proporcionados.
 - Para cédulas: compara SOLO los dígitos numéricos (ignora prefijos V-, E-, etc.)
 - Para placas: ignora mayúsculas/minúsculas
-- Para nombres: sé flexible con acentos pero verifica que coincida sustancialmente`;
+- Para nombres: sé flexible con acentos pero verifica que coincida sustancialmente
+- Las observaciones deben ser claras y amigables para el usuario, sin jerga técnica`;
 
     // Determine mime type from base64
     let mimeType = "image/jpeg";
