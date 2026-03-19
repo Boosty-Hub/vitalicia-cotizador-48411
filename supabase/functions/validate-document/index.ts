@@ -152,12 +152,12 @@ IMPORTANTE: Compara los datos del documento con los datos del formulario proporc
                   },
                   matches_form_data: {
                     type: "boolean",
-                    description: "Si los datos extraídos coinciden con los datos del formulario proporcionados",
+                    description: "Si los datos del documento coinciden con los datos del formulario proporcionados",
                   },
                   observations: {
                     type: "array",
                     items: { type: "string" },
-                    description: "Lista de observaciones o razones de no coincidencia",
+                    description: "Lista de observaciones amigables para el usuario. NO uses palabras como 'extraída' o 'extraído'. Usa formato: 'La cédula del documento (X) no coincide con la ingresada (Y)'",
                   },
                 },
                 required: [
