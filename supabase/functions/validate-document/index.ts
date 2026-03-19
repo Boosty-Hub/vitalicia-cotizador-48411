@@ -6,27 +6,41 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const DOCUMENT_PROMPTS: Record<string, string> = {
-  cedula_identidad: `Analiza esta imagen de un documento de identidad venezolano (cédula de identidad).
+// Each document type defines its prompt AND which fields to validate
+const DOCUMENT_CONFIG: Record<string, { prompt: string; validFields: string[] }> = {
+  cedula_identidad: {
+    prompt: `Analiza esta imagen de un documento de identidad venezolano (cédula de identidad).
 Extrae el número de cédula (solo dígitos, sin prefijo V- o E-) y el nombre completo de la persona.
 Si NO es una cédula de identidad válida, indica que no es válida.`,
-
-  certificado_origen: `Analiza esta imagen de un Certificado de Origen de un vehículo venezolano (emitido por el INTT o similar).
+    validFields: ["cedula", "nombre"],
+  },
+  certificado_origen: {
+    prompt: `Analiza esta imagen de un Certificado de Origen de un vehículo venezolano (emitido por el INTT o similar).
 Extrae la placa del vehículo que aparece en el documento y el nombre del propietario/comprador.
 Si NO es un certificado de origen de vehículo, indica que no es válido.`,
-
-  factura_compra: `Analiza esta imagen de una factura de compra de un vehículo.
+    validFields: ["placa", "nombre"],
+  },
+  factura_compra: {
+    prompt: `Analiza esta imagen de una factura de compra de un vehículo.
 Extrae el nombre del comprador, su número de cédula (solo dígitos) y la placa del vehículo si aparece.
 Si NO es una factura de compra, indica que no es válida.`,
-
-  licencia_conducir: `Analiza esta imagen. Determina si es una licencia de conducir válida venezolana.
+    validFields: ["cedula", "nombre", "placa"],
+  },
+  licencia_conducir: {
+    prompt: `Analiza esta imagen. Determina si es una licencia de conducir válida venezolana.
 Extrae el nombre y número de cédula si son visibles.`,
-
-  certificado_medico: `Analiza esta imagen. Determina si es un certificado médico válido.
+    validFields: ["cedula", "nombre"],
+  },
+  certificado_medico: {
+    prompt: `Analiza esta imagen. Determina si es un certificado médico válido.
 Extrae el nombre de la persona si es visible.`,
-
-  rif: `Analiza esta imagen. Determina si es un RIF (Registro de Información Fiscal) venezolano válido.
+    validFields: ["nombre"],
+  },
+  rif: {
+    prompt: `Analiza esta imagen. Determina si es un RIF (Registro de Información Fiscal) venezolano válido.
 Extrae el número de RIF y el nombre/razón social.`,
+    validFields: ["razon_social"],
+  },
 };
 
 serve(async (req) => {
