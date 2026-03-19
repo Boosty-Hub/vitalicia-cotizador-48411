@@ -66,26 +66,30 @@ serve(async (req) => {
       );
     }
 
-    const basePrompt = DOCUMENT_PROMPTS[document_type] || "Analiza este documento e identifica su tipo y contenido.";
+    const config = DOCUMENT_CONFIG[document_type];
+    const basePrompt = config?.prompt || "Analiza este documento e identifica su tipo y contenido.";
+    const validFields = config?.validFields || [];
 
     let contextPrompt = "";
     if (form_data) {
-      if (form_data.cedula) {
+      if (form_data.cedula && validFields.includes("cedula")) {
         contextPrompt += `\nDatos del formulario - Cédula del titular: ${form_data.cedula}`;
       }
-      if (form_data.nombre) {
+      if (form_data.nombre && validFields.includes("nombre")) {
         contextPrompt += `\nDatos del formulario - Nombre del titular: ${form_data.nombre}`;
       }
-      if (form_data.apellido) {
+      if (form_data.apellido && validFields.includes("nombre")) {
         contextPrompt += `\nDatos del formulario - Apellido del titular: ${form_data.apellido}`;
       }
-      if (form_data.placa) {
+      if (form_data.placa && validFields.includes("placa")) {
         contextPrompt += `\nDatos del formulario - Placa del vehículo: ${form_data.placa}`;
       }
-      if (form_data.razon_social) {
+      if (form_data.razon_social && validFields.includes("razon_social")) {
         contextPrompt += `\nDatos del formulario - Razón social: ${form_data.razon_social}`;
       }
     }
+
+    const fieldsToValidate = validFields.join(", ");
 
     const systemPrompt = `Eres un validador de documentos venezolanos especializado en seguros de vehículos.
 Tu trabajo es analizar imágenes de documentos y verificar que la información coincida con los datos del formulario.
@@ -93,19 +97,22 @@ Sé preciso al verificar números de cédula y placas. Ignora prefijos como V-, 
 Para placas, ignora diferencias de mayúsculas/minúsculas.
 Para nombres, sé flexible con acentos y mayúsculas/minúsculas, pero verifica que sea sustancialmente la misma persona.
 
+IMPORTANTE: Para este tipo de documento, SOLO debes validar estos campos: ${fieldsToValidate}.
+NO generes observaciones sobre campos que NO corresponden a este documento. Por ejemplo, si es una cédula de identidad, NO menciones placa ni razón social.
+
 IMPORTANTE SOBRE LAS OBSERVACIONES: Las observaciones serán mostradas al usuario final. NO uses palabras técnicas como "extraída", "extraído", "detectado". Redacta las observaciones de forma amigable como si fuera un sistema de verificación automática. Ejemplos de formato correcto:
 - "La cédula del documento (27700707) no coincide con la ingresada en el formulario (12345678)"
 - "El nombre en el documento (JUAN PÉREZ) no coincide con el ingresado (CARLOS LÓPEZ)"  
 - "La placa en el documento (AB123CD) no coincide con la registrada (XY789ZW)"
-- "El documento no contiene información sobre la razón social indicada"
 Nunca menciones IA, extracción, ni procesamiento automático.`;
 
     const userPrompt = `${basePrompt}${contextPrompt}
 
-IMPORTANTE: Compara los datos del documento con los datos del formulario proporcionados.
+IMPORTANTE: Compara ÚNICAMENTE los siguientes campos: ${fieldsToValidate}.
 - Para cédulas: compara SOLO los dígitos numéricos (ignora prefijos V-, E-, etc.)
 - Para placas: ignora mayúsculas/minúsculas
 - Para nombres: sé flexible con acentos pero verifica que coincida sustancialmente
+- NO agregues observaciones sobre campos que no aplican a este tipo de documento
 - Las observaciones deben ser claras y amigables para el usuario, sin jerga técnica`;
 
     // Determine mime type from base64
