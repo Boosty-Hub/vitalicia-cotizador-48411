@@ -592,8 +592,26 @@ const ActivarPolizaJuridicaPage = () => {
     }));
   };
 
+  const { validateDocument, clearValidation, getValidation, allCriticalDocsValid, hasAnyValidating, hasAnyInvalid } = useDocumentValidation();
+
+  const getFormDataForValidation = useCallback(() => {
+    const cedulaDigits = formData.cedulaRepresentante.replace(/[^0-9]/g, '');
+    return {
+      cedula: cedulaDigits,
+      nombre: formData.nombresRepresentante,
+      apellido: formData.apellidosRepresentante,
+      placa: placa.toUpperCase().trim(),
+      razon_social: formData.nombreEmpresa,
+    };
+  }, [formData.cedulaRepresentante, formData.nombresRepresentante, formData.apellidosRepresentante, placa, formData.nombreEmpresa]);
+
   const handleFileChange = (field: string, file: File | null) => {
     setFormData(prev => ({ ...prev, [field]: file }));
+    if (file) {
+      validateDocument(field, file, getFormDataForValidation());
+    } else {
+      clearValidation(field);
+    }
   };
 
   const handleContactSupport = () => {
