@@ -15,6 +15,7 @@ import { FileUploader } from "@/components/ui/file-uploader";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { fetchVersionApi } from "@/utils/versionApi";
 import { formatPriceToTwoDecimals } from "@/lib/priceUtils";
+import { useDocumentValidation } from "@/hooks/useDocumentValidation";
 
 const ActivarPolizaNaturalPage = () => {
   const navigate = useNavigate();
