@@ -6,27 +6,41 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const DOCUMENT_PROMPTS: Record<string, string> = {
-  cedula_identidad: `Analiza esta imagen de un documento de identidad venezolano (cédula de identidad).
+// Each document type defines its prompt AND which fields to validate
+const DOCUMENT_CONFIG: Record<string, { prompt: string; validFields: string[] }> = {
+  cedula_identidad: {
+    prompt: `Analiza esta imagen de un documento de identidad venezolano (cédula de identidad).
 Extrae el número de cédula (solo dígitos, sin prefijo V- o E-) y el nombre completo de la persona.
 Si NO es una cédula de identidad válida, indica que no es válida.`,
-
-  certificado_origen: `Analiza esta imagen de un Certificado de Origen de un vehículo venezolano (emitido por el INTT o similar).
+    validFields: ["cedula", "nombre"],
+  },
+  certificado_origen: {
+    prompt: `Analiza esta imagen de un Certificado de Origen de un vehículo venezolano (emitido por el INTT o similar).
 Extrae la placa del vehículo que aparece en el documento y el nombre del propietario/comprador.
 Si NO es un certificado de origen de vehículo, indica que no es válido.`,
-
-  factura_compra: `Analiza esta imagen de una factura de compra de un vehículo.
+    validFields: ["placa", "nombre"],
+  },
+  factura_compra: {
+    prompt: `Analiza esta imagen de una factura de compra de un vehículo.
 Extrae el nombre del comprador, su número de cédula (solo dígitos) y la placa del vehículo si aparece.
 Si NO es una factura de compra, indica que no es válida.`,
-
-  licencia_conducir: `Analiza esta imagen. Determina si es una licencia de conducir válida venezolana.
+    validFields: ["cedula", "nombre", "placa"],
+  },
+  licencia_conducir: {
+    prompt: `Analiza esta imagen. Determina si es una licencia de conducir válida venezolana.
 Extrae el nombre y número de cédula si son visibles.`,
-
-  certificado_medico: `Analiza esta imagen. Determina si es un certificado médico válido.
+    validFields: ["cedula", "nombre"],
+  },
+  certificado_medico: {
+    prompt: `Analiza esta imagen. Determina si es un certificado médico válido.
 Extrae el nombre de la persona si es visible.`,
-
-  rif: `Analiza esta imagen. Determina si es un RIF (Registro de Información Fiscal) venezolano válido.
+    validFields: ["nombre"],
+  },
+  rif: {
+    prompt: `Analiza esta imagen. Determina si es un RIF (Registro de Información Fiscal) venezolano válido.
 Extrae el número de RIF y el nombre/razón social.`,
+    validFields: ["razon_social"],
+  },
 };
 
 serve(async (req) => {
@@ -52,26 +66,30 @@ serve(async (req) => {
       );
     }
 
-    const basePrompt = DOCUMENT_PROMPTS[document_type] || "Analiza este documento e identifica su tipo y contenido.";
+    const config = DOCUMENT_CONFIG[document_type];
+    const basePrompt = config?.prompt || "Analiza este documento e identifica su tipo y contenido.";
+    const validFields = config?.validFields || [];
 
     let contextPrompt = "";
     if (form_data) {
-      if (form_data.cedula) {
+      if (form_data.cedula && validFields.includes("cedula")) {
         contextPrompt += `\nDatos del formulario - Cédula del titular: ${form_data.cedula}`;
       }
-      if (form_data.nombre) {
+      if (form_data.nombre && validFields.includes("nombre")) {
         contextPrompt += `\nDatos del formulario - Nombre del titular: ${form_data.nombre}`;
       }
-      if (form_data.apellido) {
+      if (form_data.apellido && validFields.includes("nombre")) {
         contextPrompt += `\nDatos del formulario - Apellido del titular: ${form_data.apellido}`;
       }
-      if (form_data.placa) {
+      if (form_data.placa && validFields.includes("placa")) {
         contextPrompt += `\nDatos del formulario - Placa del vehículo: ${form_data.placa}`;
       }
-      if (form_data.razon_social) {
+      if (form_data.razon_social && validFields.includes("razon_social")) {
         contextPrompt += `\nDatos del formulario - Razón social: ${form_data.razon_social}`;
       }
     }
+
+    const fieldsToValidate = validFields.join(", ");
 
     const systemPrompt = `Eres un validador de documentos venezolanos especializado en seguros de vehículos.
 Tu trabajo es analizar imágenes de documentos y verificar que la información coincida con los datos del formulario.
@@ -79,19 +97,22 @@ Sé preciso al verificar números de cédula y placas. Ignora prefijos como V-, 
 Para placas, ignora diferencias de mayúsculas/minúsculas.
 Para nombres, sé flexible con acentos y mayúsculas/minúsculas, pero verifica que sea sustancialmente la misma persona.
 
+IMPORTANTE: Para este tipo de documento, SOLO debes validar estos campos: ${fieldsToValidate}.
+NO generes observaciones sobre campos que NO corresponden a este documento. Por ejemplo, si es una cédula de identidad, NO menciones placa ni razón social.
+
 IMPORTANTE SOBRE LAS OBSERVACIONES: Las observaciones serán mostradas al usuario final. NO uses palabras técnicas como "extraída", "extraído", "detectado". Redacta las observaciones de forma amigable como si fuera un sistema de verificación automática. Ejemplos de formato correcto:
 - "La cédula del documento (27700707) no coincide con la ingresada en el formulario (12345678)"
 - "El nombre en el documento (JUAN PÉREZ) no coincide con el ingresado (CARLOS LÓPEZ)"  
 - "La placa en el documento (AB123CD) no coincide con la registrada (XY789ZW)"
-- "El documento no contiene información sobre la razón social indicada"
 Nunca menciones IA, extracción, ni procesamiento automático.`;
 
     const userPrompt = `${basePrompt}${contextPrompt}
 
-IMPORTANTE: Compara los datos del documento con los datos del formulario proporcionados.
+IMPORTANTE: Compara ÚNICAMENTE los siguientes campos: ${fieldsToValidate}.
 - Para cédulas: compara SOLO los dígitos numéricos (ignora prefijos V-, E-, etc.)
 - Para placas: ignora mayúsculas/minúsculas
 - Para nombres: sé flexible con acentos pero verifica que coincida sustancialmente
+- NO agregues observaciones sobre campos que no aplican a este tipo de documento
 - Las observaciones deben ser claras y amigables para el usuario, sin jerga técnica`;
 
     // Determine mime type from base64
