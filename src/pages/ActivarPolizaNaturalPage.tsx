@@ -656,11 +656,28 @@ const ActivarPolizaNaturalPage = () => {
       description: "Se han generado datos de prueba aleatorios"
     });
   };
+  const { validateDocument, clearValidation, getValidation, allCriticalDocsValid, hasAnyValidating, hasAnyInvalid } = useDocumentValidation();
+
+  const getFormDataForValidation = useCallback(() => {
+    const cedulaDigits = formData.numeroCedula.replace(/[^0-9]/g, '');
+    return {
+      cedula: cedulaDigits,
+      nombre: formData.nombre,
+      apellido: formData.apellidos,
+      placa: placa.toUpperCase().trim(),
+    };
+  }, [formData.numeroCedula, formData.nombre, formData.apellidos, placa]);
+
   const handleFileChange = (field: string, file: File | null) => {
     setFormData(prev => ({
       ...prev,
       [field]: file
     }));
+    if (file) {
+      validateDocument(field, file, getFormDataForValidation());
+    } else {
+      clearValidation(field);
+    }
   };
   const handleContactSupport = () => {
     window.open(`https://wa.me/584123230188?text=Hola, necesito ayuda con la activación de mi póliza RCV. Placa: ${placa}`, '_blank');
