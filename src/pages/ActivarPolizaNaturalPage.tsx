@@ -1899,7 +1899,7 @@ const ActivarPolizaNaturalPage = () => {
                       <Button onClick={() => setCurrentStep(4)} variant="outline" className="flex-1" disabled={isSubmitting}>
                         Anterior
                       </Button>
-                      <Button onClick={handleSubmit} variant="hero" className="flex-1" disabled={isSubmitting || !formData.docIdentidad || !formData.docLicenciaConducir || !formData.docCertificadoMedico || !formData.docOrigenVehiculo || !formData.docFacturaCompra || !formData.docRIF}>
+                      <Button onClick={handleSubmit} variant="hero" className="flex-1" disabled={isSubmitting || !formData.docIdentidad || !formData.docLicenciaConducir || !formData.docCertificadoMedico || !formData.docOrigenVehiculo || !formData.docFacturaCompra || !formData.docRIF || !allCriticalDocsValid() || hasAnyValidating()}>
                         {isSubmitting ? (
                           <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
