@@ -17,6 +17,7 @@ import { fixEncoding } from "@/lib/utils";
 import { FileUploader } from "@/components/ui/file-uploader";
 import { fetchVersionApi } from "@/utils/versionApi";
 import { formatPriceToTwoDecimals } from "@/lib/priceUtils";
+import { useDocumentValidation } from "@/hooks/useDocumentValidation";
 
 const ActivarPolizaJuridicaPage = () => {
   const navigate = useNavigate();
