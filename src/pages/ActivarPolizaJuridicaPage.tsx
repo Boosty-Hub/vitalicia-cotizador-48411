@@ -2316,7 +2316,9 @@ const ActivarPolizaJuridicaPage = () => {
                           !(formData as any).docReferenciaBancaria ||
                           !(formData as any).docCedulaAccionistas ||
                           !(formData as any).docRIFAccionistas ||
-                          !(formData as any).docRIFEmpresa
+                          !(formData as any).docRIFEmpresa ||
+                          !allCriticalDocsValid() ||
+                          hasAnyValidating()
                         }
                       >
                         {isSubmitting ? (
