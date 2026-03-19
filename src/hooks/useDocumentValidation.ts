@@ -114,7 +114,7 @@ export function useDocumentValidation() {
         ...prev,
         [docKey]: {
           status: "validating",
-          message: "Validando documento con IA...",
+          message: "Validando documento...",
           observations: [],
         },
       }));
