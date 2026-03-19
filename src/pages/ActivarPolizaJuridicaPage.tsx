@@ -2167,6 +2167,9 @@ const ActivarPolizaJuridicaPage = () => {
                       file={formData.docIdentidad}
                       onFileChange={(file) => handleFileChange("docIdentidad", file)}
                       required
+                      validationStatus={getValidation("docIdentidad").status}
+                      validationMessage={getValidation("docIdentidad").message}
+                      validationObservations={getValidation("docIdentidad").observations}
                     />
 
                     <FileUploader
@@ -2191,6 +2194,9 @@ const ActivarPolizaJuridicaPage = () => {
                       file={formData.docOrigenVehiculo}
                       onFileChange={(file) => handleFileChange("docOrigenVehiculo", file)}
                       required
+                      validationStatus={getValidation("docOrigenVehiculo").status}
+                      validationMessage={getValidation("docOrigenVehiculo").message}
+                      validationObservations={getValidation("docOrigenVehiculo").observations}
                     />
 
                     <FileUploader
@@ -2199,6 +2205,9 @@ const ActivarPolizaJuridicaPage = () => {
                       file={formData.docFacturaCompra}
                       onFileChange={(file) => handleFileChange("docFacturaCompra", file)}
                       required
+                      validationStatus={getValidation("docFacturaCompra").status}
+                      validationMessage={getValidation("docFacturaCompra").message}
+                      validationObservations={getValidation("docFacturaCompra").observations}
                     />
 
                     <FileUploader
