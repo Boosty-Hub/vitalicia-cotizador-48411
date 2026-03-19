@@ -1,113 +1,137 @@
 
 
-# Plan de Mejoras del Sistema - Analisis Documento vs Implementacion Actual
+# Plan: Validacion de Documentos con IA - Bloqueo Obligatorio
 
-## Resumen General
+## Objetivo
 
-Despues de analizar el documento de requerimientos contra el codigo actual, se identificaron problemas en 4 areas principales: carga de Excel, configuraciones/precios, formularios de activacion de polizas, y datos corruptos en la base de datos. Se organizan en fases priorizadas por impacto.
+Al subir cada documento en el paso de "Carga de Documentos", validar automaticamente con IA (Gemini Vision) que:
+1. El documento sea del tipo correcto (cedula, certificado de origen, factura, etc.)
+2. La cedula de identidad coincida con el numero de cedula ingresado en el formulario
+3. El certificado de origen contenga la placa que se esta validando
+4. La factura de compra corresponda a la misma persona/placa
 
----
-
-## FASE 1: Datos Corruptos en Base de Datos (Critico)
-
-**Problema:** El documento reporta que en el selector de estados aparece "Zuliaq" (con una "q" al final), y en ciudades hay registros con formato "C_Ciudad Bolivia", "C_Ciudad De Nutrias", etc. Esto fue confirmado en la base de datos.
-
-**Solucion:**
-- Ejecutar una migracion SQL para corregir "Zuliaq" a "Zulia" en `board_cod_estado`
-- Ejecutar una migracion SQL para limpiar el prefijo "C_" de las ciudades en `board_cod_ciudad` (ej: "C_Ciudad Bolivia" -> "Ciudad Bolivia")
+El boton de enviar queda bloqueado hasta que TODOS los documentos pasen la validacion.
 
 ---
 
-## FASE 2: Validaciones de Formularios de Activacion (Natural y Juridica)
+## Arquitectura
 
-El documento reporta multiples problemas de validacion que aplican tanto al formulario natural como al juridico.
-
-### 2.1 - Cedula: minimo 7 digitos
-**Problema:** No hay validacion de longitud minima en cedulas. Se pueden poner numeros de 1 digito.
-**Solucion:** Agregar validacion `minLength(7)` en los campos de cedula del titular, beneficiario, representante legal y conductor. Mostrar mensaje "La cedula debe tener al menos 7 digitos".
-**Archivos:** `ActivarPolizaNaturalPage.tsx`, `ActivarPolizaJuridicaPage.tsx`
-
-### 2.2 - Telefono: rango de longitud
-**Problema:** El numero telefonico acepta cualquier cantidad de caracteres.
-**Solucion:** Limitar el campo de telefono a exactamente 7 digitos (formato venezolano sin codigo de area). Agregar `maxLength={7}` y `minLength={7}` con validacion.
-**Archivos:** `ActivarPolizaNaturalPage.tsx`, `ActivarPolizaJuridicaPage.tsx`
-
-### 2.3 - Nombres, apellidos y direcciones: minimo de caracteres
-**Problema:** Se puede registrar con una sola letra en nombres, apellidos y direcciones.
-**Solucion:** Agregar validacion `minLength(2)` para nombres y apellidos, `minLength(5)` para direcciones y razon social. Deshabilitar el boton "Siguiente" si no cumplen.
-**Archivos:** `ActivarPolizaNaturalPage.tsx`, `ActivarPolizaJuridicaPage.tsx`
-
-### 2.4 - Serial de carroceria: no debe ser editable libremente
-**Problema:** El usuario puede cambiar el serial de carroceria por cualquier valor, cuando deberia venir precargado del inventario y no poder modificarse arbitrariamente.
-**Solucion:** Hacer el campo de serial de carroceria de solo lectura (`readOnly`) con fondo gris, ya que el valor viene de la base de datos (bd_bera o bd_empire). El valor se precarga al validar la placa.
-**Archivos:** `ActivarPolizaNaturalPage.tsx`, `ActivarPolizaJuridicaPage.tsx`
-
----
-
-## FASE 3: Formulario Juridico - Documentos de Empresa Adicionales
-
-**Problema:** El documento indica que en la activacion juridica se deberia solicitar documentos adicionales de la empresa que actualmente no se piden:
-- Acta de asamblea
-- Acta constitutiva o registro mercantil
-- Declaracion de impuesto sobre la renta (planilla o certificado)
-- Referencia bancaria no mayor a 3 meses
-- Cedula de accionistas
-- RIF de los accionistas actualizados
-- RIF de la empresa
-
-**Solucion:** Agregar un paso adicional (o extender el paso de documentos existente) en el formulario juridico con estos 7 campos de subida de archivo usando el componente `FileUploader` existente. Los URLs se guardaran en nuevas columnas o como JSON en `polizas_activas`.
-**Archivos:** `ActivarPolizaJuridicaPage.tsx`
+```text
+Usuario sube documento
+     ↓
+Frontend convierte imagen a base64
+     ↓
+Llama Edge Function "validate-document"
+     ↓
+Edge Function envia imagen a Lovable AI Gateway (Gemini Vision)
+con prompt especializado + datos del formulario (cedula, placa, nombre)
+     ↓
+Retorna JSON estructurado via tool calling:
+  - is_valid: boolean
+  - document_type_detected: string
+  - extracted_data: { nombre, cedula, placa }
+  - matches_form_data: boolean
+  - observations: string[]
+     ↓
+Frontend muestra check verde o error rojo
+Si falla: no permite continuar
+```
 
 ---
 
-## FASE 4: Carga Excel - Bloqueo por formato incorrecto
+## Cambios a Implementar
 
-**Problema:** El documento menciona que "si el archivo de la carga no tiene la misma estructura que la plantilla, el sistema se va quedar bloqueado y no realizara las cargas". Actualmente el codigo SI valida las columnas, pero hay que verificar que la UI no se quede en un estado inconsistente.
+### 1. Edge Function `validate-document`
 
-**Solucion:** Revisar y asegurar que:
-- Al detectar formato incorrecto, se resetee completamente el estado del formulario (file, data, loading)
-- Se muestre un mensaje claro indicando exactamente que columnas faltan o sobran
-- Se ofrezca un boton para descargar la plantilla correcta junto al mensaje de error
+Crear `supabase/functions/validate-document/index.ts`:
 
-Esto ya esta parcialmente implementado, pero se reforzara el reset del estado y se mejorara el UX del mensaje de error.
-**Archivos:** `AdminCargaEmpirePage.tsx`, `AdminCargaBeraPage.tsx`
+- Recibe: `{ image_base64, document_type, form_data: { cedula, placa, nombre, apellido } }`
+- Envia a Lovable AI Gateway con `google/gemini-2.5-flash` (soporta vision)
+- Prompt especializado por tipo de documento:
+  - **Cedula de Identidad**: extraer numero de cedula, nombre completo. Comparar con `form_data.cedula` y `form_data.nombre`
+  - **Certificado de Origen**: extraer placa del vehiculo. Comparar con `form_data.placa`
+  - **Factura de Compra**: extraer nombre del comprador y/o placa. Comparar con datos del formulario
+  - **Licencia, Certificado Medico, RIF**: validar que sea un documento del tipo correcto
+- Usa tool calling para obtener respuesta estructurada
+- Retorna resultado al frontend
+- Maneja errores 429/402 del gateway
+
+### 2. Componente `FileUploader` mejorado
+
+Modificar `src/components/ui/file-uploader.tsx`:
+
+- Agregar props opcionales: `validationStatus` (`'idle' | 'validating' | 'valid' | 'invalid'`), `validationMessage`, `validationObservations`
+- Estados visuales:
+  - **validating**: spinner amarillo con "Validando documento..."
+  - **valid**: check verde con "Documento validado correctamente"
+  - **invalid**: icono rojo con mensaje de error especifico (ej: "La cedula no coincide con el numero ingresado")
+- No cambia la funcionalidad base del componente
+
+### 3. Hook `useDocumentValidation`
+
+Crear `src/hooks/useDocumentValidation.ts`:
+
+- Funcion `validateDocument(file, documentType, formData)`:
+  - Convierte File a base64 (con redimension a max 1024px para optimizar)
+  - Llama a la edge function via `supabase.functions.invoke`
+  - Retorna resultado de validacion
+- Estado por documento: `Map<string, ValidationResult>`
+- Funcion `allDocumentsValid()` para verificar si todos pasaron
+- Funcion `getValidationStatus(docType)` para obtener estado individual
+
+### 4. Integracion en paginas de activacion
+
+Modificar `ActivarPolizaNaturalPage.tsx` y `ActivarPolizaJuridicaPage.tsx`:
+
+- Al subir cada documento, disparar validacion automatica
+- Pasar `validationStatus` y `validationMessage` a cada `FileUploader`
+- Boton "Activar Poliza" bloqueado si algun documento tiene status `invalid` o `validating`
+- Si un documento falla, el usuario puede quitarlo y subir uno nuevo (re-valida automaticamente)
+- Datos que se cruzan:
+  - `docIdentidad` → compara cedula extraida vs `formData.numeroCedula`
+  - `docOrigenVehiculo` → compara placa extraida vs `placa` (la placa validada en paso 1)
+  - `docFacturaCompra` → compara nombre/cedula del comprador vs datos del titular
+
+### 5. Config y Deploy
+
+- Agregar `[functions.validate-document]` con `verify_jwt = false` en `supabase/config.toml`
+- `LOVABLE_API_KEY` ya esta disponible en secrets
 
 ---
 
-## FASE 5: Precios Empire - Permitir eliminar modelos sin motos asociadas
+## Detalle tecnico
 
-**Problema:** El documento indica que hay modelos mal cargados en precios_empire que no se pueden eliminar. El sistema deberia permitir eliminarlos siempre que no tengan motos asociadas en `bd_empire` o `bd_bera`.
+- **Modelo**: `google/gemini-2.5-flash` (vision, rapido, economico)
+- **Redimension de imagen**: canvas API en frontend, max 1024px lado mayor, calidad 0.8 JPEG
+- **Tool calling schema** para respuesta estructurada (no JSON libre):
 
-**Solucion:** Agregar un boton de eliminar en cada modelo del `AdminPreciosEmpirePage`. Al hacer clic:
-1. Verificar si existen registros en `bd_empire` o `bd_bera` con ese modelo
-2. Si tiene motos asociadas, mostrar error: "No se puede eliminar, tiene X motos asociadas"
-3. Si no tiene motos, eliminar todos los registros de precio de ese modelo en `precios_empire`
-
-**Archivos:** `AdminPreciosEmpirePage.tsx`
+```json
+{
+  "name": "validate_document",
+  "parameters": {
+    "properties": {
+      "is_valid": { "type": "boolean" },
+      "document_type_detected": { "type": "string" },
+      "extracted_cedula": { "type": "string" },
+      "extracted_placa": { "type": "string" },
+      "extracted_nombre": { "type": "string" },
+      "matches_form_data": { "type": "boolean" },
+      "observations": { "type": "array", "items": { "type": "string" } }
+    }
+  }
+}
+```
 
 ---
 
-## FASE 6: Duplicados en reemplazo (Bug reportado)
+## Archivos a crear/modificar
 
-**Problema:** El documento indica que "al momento de reemplazar aunque el sistema indique que se generaran duplicados, no los termina generando". Esto sugiere un bug en la logica de reemplazo.
-
-**Solucion:** Revisar la logica en `handleUpload` de ambas paginas de carga. Cuando se reemplaza, asegurar que:
-- Se elimine correctamente el registro anterior usando la placa exacta (case-insensitive)
-- El nuevo registro se inserte con `es_duplicado: false` (ya que reemplaza al anterior)
-- Se manejen correctamente los casos donde la placa en BD tiene distinta capitalizacion
-
-**Archivos:** `AdminCargaEmpirePage.tsx`, `AdminCargaBeraPage.tsx`
-
----
-
-## Resumen de Archivos a Modificar
-
-| Fase | Archivos | Tipo |
-|------|---------|------|
-| 1 | Migracion SQL | Correccion de datos |
-| 2 | `ActivarPolizaNaturalPage.tsx`, `ActivarPolizaJuridicaPage.tsx` | Validaciones |
-| 3 | `ActivarPolizaJuridicaPage.tsx` | Nuevo paso de documentos |
-| 4 | `AdminCargaEmpirePage.tsx`, `AdminCargaBeraPage.tsx` | UX mejoras |
-| 5 | `AdminPreciosEmpirePage.tsx` | Nueva funcionalidad |
-| 6 | `AdminCargaEmpirePage.tsx`, `AdminCargaBeraPage.tsx` | Bug fix |
+| Archivo | Accion |
+|---------|--------|
+| `supabase/functions/validate-document/index.ts` | Crear |
+| `supabase/config.toml` | Agregar funcion |
+| `src/hooks/useDocumentValidation.ts` | Crear |
+| `src/components/ui/file-uploader.tsx` | Modificar (agregar estados de validacion) |
+| `src/pages/ActivarPolizaNaturalPage.tsx` | Modificar (integrar validacion) |
+| `src/pages/ActivarPolizaJuridicaPage.tsx` | Modificar (integrar validacion) |
 
