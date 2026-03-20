@@ -116,7 +116,7 @@ export function useDocumentValidation() {
           body: {
             image_base64: base64,
             document_type: documentType,
-            form_data: formData,
+            form_data: isCritical ? formData : undefined,
           },
         });
 
