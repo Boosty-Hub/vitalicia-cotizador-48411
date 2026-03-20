@@ -97,18 +97,8 @@ export function useDocumentValidation() {
         return;
       }
 
-      // Only do full AI validation for critical documents
-      if (!CRITICAL_DOCUMENTS.includes(docKey)) {
-        setValidations((prev) => ({
-          ...prev,
-          [docKey]: {
-            status: "valid",
-            message: "Documento cargado correctamente",
-            observations: [],
-          },
-        }));
-        return;
-      }
+      // For non-critical documents, still validate document type but skip form data cross-check
+      const isCritical = CRITICAL_DOCUMENTS.includes(docKey);
 
       setValidations((prev) => ({
         ...prev,
