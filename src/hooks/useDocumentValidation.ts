@@ -29,6 +29,14 @@ const DOCUMENT_TYPE_MAP: Record<string, string> = {
   docLicenciaConducir: "licencia_conducir",
   docCertificadoMedico: "certificado_medico",
   docRIF: "rif",
+  // Juridical company documents
+  docActaAsamblea: "acta_asamblea",
+  docActaConstitutiva: "acta_constitutiva",
+  docDeclaracionISLR: "declaracion_islr",
+  docReferenciaBancaria: "referencia_bancaria",
+  docCedulaAccionistas: "cedula_accionistas",
+  docRIFAccionistas: "rif_accionistas",
+  docRIFEmpresa: "rif_empresa",
 };
 
 // Documents that require cross-validation with form data
@@ -241,6 +249,13 @@ function getDocumentLabel(docKey: string): string {
     docLicenciaConducir: "una licencia de conducir",
     docCertificadoMedico: "un certificado médico",
     docRIF: "un RIF",
+    docActaAsamblea: "un acta de asamblea",
+    docActaConstitutiva: "un acta constitutiva o registro mercantil",
+    docDeclaracionISLR: "una declaración de ISLR",
+    docReferenciaBancaria: "una referencia bancaria",
+    docCedulaAccionistas: "una cédula de accionistas",
+    docRIFAccionistas: "un RIF de accionistas",
+    docRIFEmpresa: "un RIF de empresa",
   };
   return labels[docKey] || "el documento esperado";
 }

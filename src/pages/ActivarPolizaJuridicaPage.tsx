@@ -2178,6 +2178,9 @@ const ActivarPolizaJuridicaPage = () => {
                       file={formData.docLicenciaConducir}
                       onFileChange={(file) => handleFileChange("docLicenciaConducir", file)}
                       required
+                      validationStatus={getValidation("docLicenciaConducir").status}
+                      validationMessage={getValidation("docLicenciaConducir").message}
+                      validationObservations={getValidation("docLicenciaConducir").observations}
                     />
 
                     <FileUploader
@@ -2186,6 +2189,9 @@ const ActivarPolizaJuridicaPage = () => {
                       file={formData.docCertificadoMedico}
                       onFileChange={(file) => handleFileChange("docCertificadoMedico", file)}
                       required
+                      validationStatus={getValidation("docCertificadoMedico").status}
+                      validationMessage={getValidation("docCertificadoMedico").message}
+                      validationObservations={getValidation("docCertificadoMedico").observations}
                     />
 
                     <FileUploader
@@ -2216,6 +2222,9 @@ const ActivarPolizaJuridicaPage = () => {
                       file={formData.docRIF}
                       onFileChange={(file) => handleFileChange("docRIF", file)}
                       required
+                      validationStatus={getValidation("docRIF").status}
+                      validationMessage={getValidation("docRIF").message}
+                      validationObservations={getValidation("docRIF").observations}
                     />
 
                     <div className="border-t pt-6 mt-6">
@@ -2231,6 +2240,9 @@ const ActivarPolizaJuridicaPage = () => {
                       file={(formData as any).docActaAsamblea || null}
                       onFileChange={(file) => handleFileChange("docActaAsamblea", file)}
                       required
+                      validationStatus={getValidation("docActaAsamblea").status}
+                      validationMessage={getValidation("docActaAsamblea").message}
+                      validationObservations={getValidation("docActaAsamblea").observations}
                     />
 
                     <FileUploader
@@ -2239,6 +2251,9 @@ const ActivarPolizaJuridicaPage = () => {
                       file={(formData as any).docActaConstitutiva || null}
                       onFileChange={(file) => handleFileChange("docActaConstitutiva", file)}
                       required
+                      validationStatus={getValidation("docActaConstitutiva").status}
+                      validationMessage={getValidation("docActaConstitutiva").message}
+                      validationObservations={getValidation("docActaConstitutiva").observations}
                     />
 
                     <FileUploader
@@ -2247,6 +2262,9 @@ const ActivarPolizaJuridicaPage = () => {
                       file={(formData as any).docDeclaracionISLR || null}
                       onFileChange={(file) => handleFileChange("docDeclaracionISLR", file)}
                       required
+                      validationStatus={getValidation("docDeclaracionISLR").status}
+                      validationMessage={getValidation("docDeclaracionISLR").message}
+                      validationObservations={getValidation("docDeclaracionISLR").observations}
                     />
 
                     <FileUploader
@@ -2255,6 +2273,9 @@ const ActivarPolizaJuridicaPage = () => {
                       file={(formData as any).docReferenciaBancaria || null}
                       onFileChange={(file) => handleFileChange("docReferenciaBancaria", file)}
                       required
+                      validationStatus={getValidation("docReferenciaBancaria").status}
+                      validationMessage={getValidation("docReferenciaBancaria").message}
+                      validationObservations={getValidation("docReferenciaBancaria").observations}
                     />
 
                     <FileUploader
@@ -2263,6 +2284,9 @@ const ActivarPolizaJuridicaPage = () => {
                       file={(formData as any).docCedulaAccionistas || null}
                       onFileChange={(file) => handleFileChange("docCedulaAccionistas", file)}
                       required
+                      validationStatus={getValidation("docCedulaAccionistas").status}
+                      validationMessage={getValidation("docCedulaAccionistas").message}
+                      validationObservations={getValidation("docCedulaAccionistas").observations}
                     />
 
                     <FileUploader
@@ -2271,6 +2295,9 @@ const ActivarPolizaJuridicaPage = () => {
                       file={(formData as any).docRIFAccionistas || null}
                       onFileChange={(file) => handleFileChange("docRIFAccionistas", file)}
                       required
+                      validationStatus={getValidation("docRIFAccionistas").status}
+                      validationMessage={getValidation("docRIFAccionistas").message}
+                      validationObservations={getValidation("docRIFAccionistas").observations}
                     />
 
                     <FileUploader
@@ -2279,6 +2306,9 @@ const ActivarPolizaJuridicaPage = () => {
                       file={(formData as any).docRIFEmpresa || null}
                       onFileChange={(file) => handleFileChange("docRIFEmpresa", file)}
                       required
+                      validationStatus={getValidation("docRIFEmpresa").status}
+                      validationMessage={getValidation("docRIFEmpresa").message}
+                      validationObservations={getValidation("docRIFEmpresa").observations}
                     />
 
                     <div className="p-4 bg-muted rounded-lg">

@@ -1871,6 +1871,9 @@ const ActivarPolizaNaturalPage = () => {
                       file={formData.docLicenciaConducir}
                       onFileChange={(file) => handleFileChange("docLicenciaConducir", file)}
                       required
+                      validationStatus={getValidation("docLicenciaConducir").status}
+                      validationMessage={getValidation("docLicenciaConducir").message}
+                      validationObservations={getValidation("docLicenciaConducir").observations}
                     />
 
                     <FileUploader
@@ -1879,6 +1882,9 @@ const ActivarPolizaNaturalPage = () => {
                       file={formData.docCertificadoMedico}
                       onFileChange={(file) => handleFileChange("docCertificadoMedico", file)}
                       required
+                      validationStatus={getValidation("docCertificadoMedico").status}
+                      validationMessage={getValidation("docCertificadoMedico").message}
+                      validationObservations={getValidation("docCertificadoMedico").observations}
                     />
 
                     <FileUploader
@@ -1909,6 +1915,9 @@ const ActivarPolizaNaturalPage = () => {
                       file={formData.docRIF}
                       onFileChange={(file) => handleFileChange("docRIF", file)}
                       required
+                      validationStatus={getValidation("docRIF").status}
+                      validationMessage={getValidation("docRIF").message}
+                      validationObservations={getValidation("docRIF").observations}
                     />
 
                     <div className="p-4 bg-muted rounded-lg">
