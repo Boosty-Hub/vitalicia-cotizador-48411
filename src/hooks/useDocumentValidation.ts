@@ -249,6 +249,13 @@ function getDocumentLabel(docKey: string): string {
     docLicenciaConducir: "una licencia de conducir",
     docCertificadoMedico: "un certificado médico",
     docRIF: "un RIF",
+    docActaAsamblea: "un acta de asamblea",
+    docActaConstitutiva: "un acta constitutiva o registro mercantil",
+    docDeclaracionISLR: "una declaración de ISLR",
+    docReferenciaBancaria: "una referencia bancaria",
+    docCedulaAccionistas: "una cédula de accionistas",
+    docRIFAccionistas: "un RIF de accionistas",
+    docRIFEmpresa: "un RIF de empresa",
   };
   return labels[docKey] || "el documento esperado";
 }
