@@ -97,18 +97,8 @@ export function useDocumentValidation() {
         return;
       }
 
-      // Only do full AI validation for critical documents
-      if (!CRITICAL_DOCUMENTS.includes(docKey)) {
-        setValidations((prev) => ({
-          ...prev,
-          [docKey]: {
-            status: "valid",
-            message: "Documento cargado correctamente",
-            observations: [],
-          },
-        }));
-        return;
-      }
+      // For non-critical documents, still validate document type but skip form data cross-check
+      const isCritical = CRITICAL_DOCUMENTS.includes(docKey);
 
       setValidations((prev) => ({
         ...prev,
@@ -126,7 +116,7 @@ export function useDocumentValidation() {
           body: {
             image_base64: base64,
             document_type: documentType,
-            form_data: formData,
+            form_data: isCritical ? formData : undefined,
           },
         });
 
@@ -155,12 +145,14 @@ export function useDocumentValidation() {
           return;
         }
 
-        const isValid = data.is_valid_document && data.matches_form_data;
+        const isValid = isCritical
+          ? data.is_valid_document && data.matches_form_data
+          : data.is_valid_document;
 
         let message = "";
         if (!data.is_valid_document) {
           message = `El documento cargado no corresponde a ${getDocumentLabel(docKey)}`;
-        } else if (!data.matches_form_data) {
+        } else if (isCritical && !data.matches_form_data) {
           message = "Los datos del documento no coinciden con la información ingresada";
         } else {
           message = "Documento verificado correctamente ✓";
