@@ -39,6 +39,7 @@ const ActivarPolizaNaturalPage = () => {
     MondayId?: string | null;
     Source?: 'bd_bera' | 'bd_empire';
   } | null>(null);
+  const [serialConfirmado, setSerialConfirmado] = useState<boolean | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [nacionalidades, setNacionalidades] = useState<Array<{
     cd_valdet: string | null;
