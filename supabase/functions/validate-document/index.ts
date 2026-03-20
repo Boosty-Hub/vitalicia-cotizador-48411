@@ -28,18 +28,53 @@ Si NO es una factura de compra, indica que no es válida.`,
   },
   licencia_conducir: {
     prompt: `Analiza esta imagen. Determina si es una licencia de conducir válida venezolana.
-Extrae el nombre y número de cédula si son visibles.`,
-    validFields: ["cedula", "nombre"],
+Si NO es una licencia de conducir, indica que no es válida.`,
+    validFields: [],
   },
   certificado_medico: {
     prompt: `Analiza esta imagen. Determina si es un certificado médico válido.
-Extrae el nombre de la persona si es visible.`,
-    validFields: ["nombre"],
+Si NO es un certificado médico o documento médico, indica que no es válido.`,
+    validFields: [],
   },
   rif: {
     prompt: `Analiza esta imagen. Determina si es un RIF (Registro de Información Fiscal) venezolano válido.
-Extrae el número de RIF y el nombre/razón social.`,
-    validFields: ["razon_social"],
+Si NO es un RIF, indica que no es válido.`,
+    validFields: [],
+  },
+  acta_asamblea: {
+    prompt: `Analiza esta imagen. Determina si es un Acta de Asamblea de una empresa.
+Si NO es un acta de asamblea o documento societario, indica que no es válido.`,
+    validFields: [],
+  },
+  acta_constitutiva: {
+    prompt: `Analiza esta imagen. Determina si es un Acta Constitutiva o Registro Mercantil de una empresa.
+Si NO es un acta constitutiva o registro mercantil, indica que no es válido.`,
+    validFields: [],
+  },
+  declaracion_islr: {
+    prompt: `Analiza esta imagen. Determina si es una Declaración de Impuesto Sobre la Renta (ISLR) o su certificado/planilla.
+Si NO es una declaración de ISLR o documento fiscal relacionado, indica que no es válido.`,
+    validFields: [],
+  },
+  referencia_bancaria: {
+    prompt: `Analiza esta imagen. Determina si es una Referencia Bancaria emitida por una institución financiera.
+Si NO es una referencia bancaria, indica que no es válida.`,
+    validFields: [],
+  },
+  cedula_accionistas: {
+    prompt: `Analiza esta imagen. Determina si es una cédula de identidad venezolana (puede ser de un accionista).
+Si NO es una cédula de identidad válida, indica que no es válida.`,
+    validFields: [],
+  },
+  rif_accionistas: {
+    prompt: `Analiza esta imagen. Determina si es un RIF (Registro de Información Fiscal) venezolano válido.
+Si NO es un RIF, indica que no es válido.`,
+    validFields: [],
+  },
+  rif_empresa: {
+    prompt: `Analiza esta imagen. Determina si es un RIF (Registro de Información Fiscal) de una empresa venezolana.
+Si NO es un RIF empresarial, indica que no es válido.`,
+    validFields: [],
   },
 };
 

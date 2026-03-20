@@ -29,6 +29,14 @@ const DOCUMENT_TYPE_MAP: Record<string, string> = {
   docLicenciaConducir: "licencia_conducir",
   docCertificadoMedico: "certificado_medico",
   docRIF: "rif",
+  // Juridical company documents
+  docActaAsamblea: "acta_asamblea",
+  docActaConstitutiva: "acta_constitutiva",
+  docDeclaracionISLR: "declaracion_islr",
+  docReferenciaBancaria: "referencia_bancaria",
+  docCedulaAccionistas: "cedula_accionistas",
+  docRIFAccionistas: "rif_accionistas",
+  docRIFEmpresa: "rif_empresa",
 };
 
 // Documents that require cross-validation with form data
