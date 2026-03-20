@@ -90,20 +90,27 @@ serve(async (req) => {
     }
 
     const fieldsToValidate = validFields.join(", ");
+    const hasFormData = form_data && Object.keys(form_data).length > 0;
 
-    const systemPrompt = `Eres un validador de documentos venezolanos especializado en seguros de vehículos.
+    const systemPrompt = hasFormData
+      ? `Eres un validador de documentos venezolanos especializado en seguros de vehículos.
 Tu trabajo es analizar imágenes de documentos y verificar que la información coincida con los datos del formulario.
 Sé preciso al verificar números de cédula y placas. Ignora prefijos como V-, E-, J-, G- al comparar cédulas - compara solo los dígitos.
 Para placas, ignora diferencias de mayúsculas/minúsculas.
 Para nombres, sé flexible con acentos y mayúsculas/minúsculas, pero verifica que sea sustancialmente la misma persona.
 
 IMPORTANTE: Para este tipo de documento, SOLO debes validar estos campos: ${fieldsToValidate}.
-NO generes observaciones sobre campos que NO corresponden a este documento. Por ejemplo, si es una cédula de identidad, NO menciones placa ni razón social.
+NO generes observaciones sobre campos que NO corresponden a este documento.
 
-IMPORTANTE SOBRE LAS OBSERVACIONES: Las observaciones serán mostradas al usuario final. NO uses palabras técnicas como "extraída", "extraído", "detectado". Redacta las observaciones de forma amigable como si fuera un sistema de verificación automática. Ejemplos de formato correcto:
+IMPORTANTE SOBRE LAS OBSERVACIONES: Las observaciones serán mostradas al usuario final. NO uses palabras técnicas como "extraída", "extraído", "detectado". Redacta las observaciones de forma amigable. Ejemplos:
 - "La cédula del documento (27700707) no coincide con la ingresada en el formulario (12345678)"
-- "El nombre en el documento (JUAN PÉREZ) no coincide con el ingresado (CARLOS LÓPEZ)"  
+- "El nombre en el documento (JUAN PÉREZ) no coincide con el ingresado (CARLOS LÓPEZ)"
 - "La placa en el documento (AB123CD) no coincide con la registrada (XY789ZW)"
+Nunca menciones IA, extracción, ni procesamiento automático.`
+      : `Eres un validador de documentos venezolanos.
+Tu trabajo es verificar que la imagen corresponde al tipo de documento esperado.
+Determina si el documento es válido y del tipo correcto. Si la imagen está en blanco, es ilegible, o no corresponde al tipo de documento esperado, indica que no es válido.
+NO uses palabras técnicas. Redacta observaciones de forma amigable para el usuario.
 Nunca menciones IA, extracción, ni procesamiento automático.`;
 
     const userPrompt = `${basePrompt}${contextPrompt}
