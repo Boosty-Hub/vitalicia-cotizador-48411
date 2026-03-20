@@ -145,12 +145,14 @@ export function useDocumentValidation() {
           return;
         }
 
-        const isValid = data.is_valid_document && data.matches_form_data;
+        const isValid = isCritical
+          ? data.is_valid_document && data.matches_form_data
+          : data.is_valid_document;
 
         let message = "";
         if (!data.is_valid_document) {
           message = `El documento cargado no corresponde a ${getDocumentLabel(docKey)}`;
-        } else if (!data.matches_form_data) {
+        } else if (isCritical && !data.matches_form_data) {
           message = "Los datos del documento no coinciden con la información ingresada";
         } else {
           message = "Documento verificado correctamente ✓";
