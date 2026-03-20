@@ -39,6 +39,7 @@ const ActivarPolizaNaturalPage = () => {
     MondayId?: string | null;
     Source?: 'bd_bera' | 'bd_empire';
   } | null>(null);
+  const [serialConfirmado, setSerialConfirmado] = useState<boolean | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [nacionalidades, setNacionalidades] = useState<Array<{
     cd_valdet: string | null;
@@ -1708,6 +1709,29 @@ const ActivarPolizaNaturalPage = () => {
                       <p className="text-xs text-muted-foreground">Este campo se precarga del inventario y no puede ser modificado</p>
                     </div>
 
+                    <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg space-y-4">
+                      <p className="text-blue-900 dark:text-blue-100 text-sm font-medium">
+                        Confirme que este sea su serial de carrocería.
+                      </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Button
+                          onClick={() => setSerialConfirmado(true)}
+                          variant={serialConfirmado === true ? "default" : "outline"}
+                          className={serialConfirmado === true ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
+                        >
+                          <CheckCircle2 className="w-4 h-4 mr-2" />
+                          Sí es
+                        </Button>
+                        <Button
+                          onClick={() => setSerialConfirmado(false)}
+                          variant={serialConfirmado === false ? "destructive" : "outline"}
+                        >
+                          <MessageCircle className="w-4 h-4 mr-2" />
+                          No es
+                        </Button>
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="fechaCompra">Fecha de Compra en la Factura *</Label>
                       <Input id="fechaCompra" type="date" value={formData.fechaCompra} onChange={e => handleInputChange("fechaCompra", e.target.value)} />
@@ -1717,7 +1741,7 @@ const ActivarPolizaNaturalPage = () => {
                       <Button onClick={() => setCurrentStep(2)} variant="outline" className="flex-1">
                         Anterior
                       </Button>
-                      <Button onClick={() => setCurrentStep(4)} variant="hero" className="flex-1" disabled={!placa || !formData.serialCarroceria || !formData.fechaCompra}>
+                      <Button onClick={() => setCurrentStep(4)} variant="hero" className="flex-1" disabled={!placa || !formData.serialCarroceria || !formData.fechaCompra || serialConfirmado !== true}>
                         Siguiente
                       </Button>
                     </div>
