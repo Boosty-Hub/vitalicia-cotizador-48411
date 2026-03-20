@@ -113,14 +113,22 @@ Determina si el documento es válido y del tipo correcto. Si la imagen está en 
 NO uses palabras técnicas. Redacta observaciones de forma amigable para el usuario.
 Nunca menciones IA, extracción, ni procesamiento automático.`;
 
-    const userPrompt = `${basePrompt}${contextPrompt}
+    const userPrompt = hasFormData
+      ? `${basePrompt}${contextPrompt}
 
 IMPORTANTE: Compara ÚNICAMENTE los siguientes campos: ${fieldsToValidate}.
 - Para cédulas: compara SOLO los dígitos numéricos (ignora prefijos V-, E-, etc.)
 - Para placas: ignora mayúsculas/minúsculas
 - Para nombres: sé flexible con acentos pero verifica que coincida sustancialmente
 - NO agregues observaciones sobre campos que no aplican a este tipo de documento
-- Las observaciones deben ser claras y amigables para el usuario, sin jerga técnica`;
+- Las observaciones deben ser claras y amigables para el usuario, sin jerga técnica`
+      : `${basePrompt}
+
+Verifica ÚNICAMENTE si la imagen corresponde al tipo de documento esperado.
+- Si es una imagen en blanco, ilegible, o de otro tipo de documento, indica que NO es válido.
+- Si es el tipo de documento correcto, indica que ES válido.
+- Marca matches_form_data como true si el documento es del tipo correcto.
+- Las observaciones deben ser claras y amigables.`;
 
     // Determine mime type from base64
     let mimeType = "image/jpeg";
