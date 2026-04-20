@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -11,7 +10,9 @@ import {
 import { toast } from "@/hooks/use-toast";
 import {
   Search, Download, Loader2, FolderDown, RefreshCw, FileCheck2, FileX2, FileMinus,
+  Sparkles, Package,
 } from "lucide-react";
+import { DateRangeFilter, getDefaultDateRange, type DateRangeValue } from "@/components/admin/DateRangeFilter";
 
 const DOC_DEFS = [
   { field: "cedula_identidad_url", key: "cedula_identidad", label: "Cédula" },
@@ -35,16 +36,17 @@ export default function AdminDescargasPage() {
   const [polizas, setPolizas] = useState<Poliza[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [tipo, setTipo] = useState<string>("all");
-  const [estado, setEstado] = useState<string>("all"); // all | not_downloaded | downloaded
+  const [estado, setEstado] = useState<string>("not_downloaded"); // default: solo nuevos
+  const [dateRange, setDateRange] = useState<DateRangeValue>(getDefaultDateRange());
   const [downloadedMap, setDownloadedMap] = useState<Map<string, Set<string>>>(new Map());
   const [history, setHistory] = useState<Array<{ downloaded_at: string; count: number }>>([]);
 
   useEffect(() => {
     fetchData();
-  }, [tipo]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tipo, dateRange.from, dateRange.to]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -54,6 +56,8 @@ export default function AdminDescargasPage() {
         .select(
           `id, nombre_titular_monday, apellidos_titular_monday, razon_social_juridico_monday, nro_documento_natural_monday, nro_documento_juridico_monday, placa_monday, numero_poliza_monday, formulario, created_at, ${DOC_DEFS.map(d => d.field).join(",")}`,
         )
+        .gte("created_at", dateRange.from.toISOString())
+        .lte("created_at", dateRange.to.toISOString())
         .order("created_at", { ascending: false })
         .limit(500);
       if (tipo !== "all") q = q.eq("formulario", tipo);
@@ -61,7 +65,6 @@ export default function AdminDescargasPage() {
       if (error) throw error;
       setPolizas(data || []);
 
-      // Load this admin's downloads
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const ids = (data || []).map((p: any) => p.id);
@@ -77,9 +80,10 @@ export default function AdminDescargasPage() {
             m.get(r.poliza_id)!.add(r.document_type);
           }
           setDownloadedMap(m);
+        } else {
+          setDownloadedMap(new Map());
         }
 
-        // History: group by day (last 10 days with downloads)
         const { data: hist } = await supabase
           .from("admin_document_downloads")
           .select("downloaded_at")
@@ -105,6 +109,7 @@ export default function AdminDescargasPage() {
     }
   };
 
+  // Filtrado completo: search + estado descarga
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
     return polizas.filter((p) => {
@@ -126,37 +131,46 @@ export default function AdminDescargasPage() {
     });
   }, [polizas, search, estado, downloadedMap]);
 
-  const toggleAll = () => {
-    if (selected.size === filtered.length) setSelected(new Set());
-    else setSelected(new Set(filtered.map((p) => p.id)));
-  };
+  // Pólizas que realmente tienen documentos
+  const withDocs = useMemo(
+    () => filtered.filter((p) => DOC_DEFS.some((d) => p[d.field])),
+    [filtered],
+  );
 
-  const toggleOne = (id: string) => {
-    const ns = new Set(selected);
-    ns.has(id) ? ns.delete(id) : ns.add(id);
-    setSelected(ns);
-  };
-
-  const totalDocsSelected = useMemo(() => {
+  const totalDocsToDownload = useMemo(() => {
     let n = 0;
-    for (const id of selected) {
-      const p = polizas.find((x) => x.id === id);
-      if (!p) continue;
-      n += DOC_DEFS.filter((d) => p[d.field]).length;
+    for (const p of withDocs) {
+      const dl = downloadedMap.get(p.id) || new Set();
+      for (const d of DOC_DEFS) {
+        if (!p[d.field]) continue;
+        if (estado === "not_downloaded" && dl.has(d.key)) continue;
+        n++;
+      }
     }
     return n;
-  }, [selected, polizas]);
+  }, [withDocs, downloadedMap, estado]);
 
-  const handleDownload = async (onlyNotDownloaded: boolean, ids?: string[]) => {
-    const polizaIds = ids ?? Array.from(selected);
-    if (polizaIds.length === 0) {
-      toast({ title: "Selecciona al menos una póliza", variant: "destructive" });
+  const handleDownloadAll = async () => {
+    if (withDocs.length === 0) {
+      toast({ title: "No hay documentos para descargar", variant: "destructive" });
       return;
     }
-    if (polizaIds.length > 100) {
-      toast({ title: "Máximo 100 pólizas por descarga", variant: "destructive" });
+    if (withDocs.length > 100) {
+      toast({
+        title: "Demasiadas pólizas",
+        description: `Hay ${withDocs.length} pólizas. Reduce el rango o filtra para descargar máximo 100 a la vez.`,
+        variant: "destructive",
+      });
       return;
     }
+    await runDownload(withDocs.map((p) => p.id), estado === "not_downloaded");
+  };
+
+  const handleDownloadOne = async (id: string) => {
+    await runDownload([id], false);
+  };
+
+  const runDownload = async (polizaIds: string[], onlyNotDownloaded: boolean) => {
     setDownloading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -196,65 +210,98 @@ export default function AdminDescargasPage() {
     }
   };
 
+  const isOnlyNew = estado === "not_downloaded";
+  const downloadLabel = isOnlyNew
+    ? `Descargar ${withDocs.length} póliza${withDocs.length === 1 ? "" : "s"} nuevas`
+    : `Descargar ${withDocs.length} póliza${withDocs.length === 1 ? "" : "s"}`;
+
   return (
-    <div className="space-y-6 pb-32">
+    <div className="space-y-6 pb-8">
       <div className="flex items-center gap-3">
         <FolderDown className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-semibold text-foreground">Descarga de Documentos</h1>
       </div>
 
-      {/* Filters */}
+      {/* Filtros */}
       <Card>
-        <CardContent className="p-4 flex flex-col md:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nombre, cédula, placa, póliza..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
+        <CardContent className="p-4 space-y-3">
+          <div className="flex flex-col lg:flex-row gap-3">
+            <div className="relative flex-1 min-w-[220px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nombre, cédula, placa, póliza..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <DateRangeFilter value={dateRange} onChange={setDateRange} />
+            <Select value={tipo} onValueChange={setTipo}>
+              <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los tipos</SelectItem>
+                <SelectItem value="natural">Natural</SelectItem>
+                <SelectItem value="juridico">Jurídico</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={estado} onValueChange={setEstado}>
+              <SelectTrigger className="w-[210px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="not_downloaded">⭐ Solo nuevos (no descargados)</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="downloaded">Ya descargados por mí</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="icon" onClick={fetchData} disabled={loading} title="Recargar">
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            </Button>
           </div>
-          <Select value={tipo} onValueChange={setTipo}>
-            <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos los tipos</SelectItem>
-              <SelectItem value="natural">Natural</SelectItem>
-              <SelectItem value="juridico">Jurídico</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={estado} onValueChange={setEstado}>
-            <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="not_downloaded">No descargados por mí</SelectItem>
-              <SelectItem value="downloaded">Descargados por mí</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" onClick={fetchData} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          </Button>
+
+          {/* Resumen + acción principal */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-border">
+            <div className="flex items-center gap-2 text-sm">
+              {isOnlyNew ? (
+                <Sparkles className="h-4 w-4 text-primary" />
+              ) : (
+                <Package className="h-4 w-4 text-primary" />
+              )}
+              <span className="text-foreground">
+                <strong>{withDocs.length}</strong> póliza{withDocs.length === 1 ? "" : "s"} con documentos
+                {totalDocsToDownload > 0 && (
+                  <span className="text-muted-foreground"> · {totalDocsToDownload} archivos a descargar</span>
+                )}
+              </span>
+            </div>
+            <Button
+              size="lg"
+              onClick={handleDownloadAll}
+              disabled={downloading || withDocs.length === 0}
+              className="w-full sm:w-auto"
+            >
+              {downloading ? (
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-5 w-5 mr-2" />
+              )}
+              {downloadLabel}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
-      {/* List */}
+      {/* Lista */}
       <Card>
         <CardContent className="p-0">
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
-            <Checkbox
-              checked={filtered.length > 0 && selected.size === filtered.length}
-              onCheckedChange={toggleAll}
-            />
-            <span className="text-sm text-muted-foreground">
-              {selected.size} de {filtered.length} seleccionadas
-            </span>
-          </div>
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">Sin resultados</div>
+            <div className="text-center py-12 text-muted-foreground">
+              <FolderDown className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p>Sin resultados con los filtros actuales</p>
+              <p className="text-xs mt-1">Prueba ampliar el rango de fechas o cambiar el estado</p>
+            </div>
           ) : (
             <div className="divide-y divide-border">
               {filtered.map((p) => {
@@ -262,9 +309,9 @@ export default function AdminDescargasPage() {
                 const titular = p.formulario === "juridico"
                   ? (p.razon_social_juridico_monday || `${p.nombre_titular_monday || ""} ${p.apellidos_titular_monday || ""}`)
                   : `${p.nombre_titular_monday || ""} ${p.apellidos_titular_monday || ""}`;
+                const hasAnyDoc = DOC_DEFS.some((d) => p[d.field]);
                 return (
                   <div key={p.id} className="flex items-start gap-3 p-4 hover:bg-muted/30">
-                    <Checkbox checked={selected.has(p.id)} onCheckedChange={() => toggleOne(p.id)} />
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-2">
                         <span className="font-medium text-foreground">{titular || "Sin nombre"}</span>
@@ -291,7 +338,13 @@ export default function AdminDescargasPage() {
                         })}
                       </div>
                     </div>
-                    <Button size="sm" variant="outline" onClick={() => handleDownload(false, [p.id])} disabled={downloading}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDownloadOne(p.id)}
+                      disabled={downloading || !hasAnyDoc}
+                      title={hasAnyDoc ? "Descargar esta póliza" : "Sin documentos"}
+                    >
                       <Download className="h-4 w-4" />
                     </Button>
                   </div>
@@ -302,7 +355,29 @@ export default function AdminDescargasPage() {
         </CardContent>
       </Card>
 
-      {/* History */}
+      {/* Leyenda */}
+      <Card>
+        <CardContent className="p-4 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Leyenda:</span>
+          <span className="inline-flex items-center gap-1">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+              <FileCheck2 className="h-3 w-3" /> Descargado
+            </span>
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-500/15 text-blue-700 dark:text-blue-300">
+              <FileX2 className="h-3 w-3" /> Pendiente
+            </span>
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-muted text-muted-foreground">
+              <FileMinus className="h-3 w-3" /> No cargado
+            </span>
+          </span>
+        </CardContent>
+      </Card>
+
+      {/* Historial */}
       {history.length > 0 && (
         <Card>
           <CardContent className="p-4">
@@ -316,30 +391,6 @@ export default function AdminDescargasPage() {
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {/* Sticky bottom action bar */}
-      {selected.size > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-lg p-4 z-50">
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="text-sm text-muted-foreground">
-              <strong className="text-foreground">{selected.size}</strong> pólizas · <strong className="text-foreground">{totalDocsSelected}</strong> documentos
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setSelected(new Set())} disabled={downloading}>
-                Limpiar
-              </Button>
-              <Button variant="outline" onClick={() => handleDownload(true)} disabled={downloading}>
-                {downloading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-                Solo nuevos (ZIP)
-              </Button>
-              <Button onClick={() => handleDownload(false)} disabled={downloading}>
-                {downloading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-                Descargar todo (ZIP)
-              </Button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
