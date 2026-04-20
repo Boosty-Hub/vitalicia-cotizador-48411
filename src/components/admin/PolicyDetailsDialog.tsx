@@ -738,6 +738,17 @@ export function PolicyDetailsDialog({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {renderDocumentLink("Certificado Origen Vehículo", selectedPoliza.certificado_origen_vehiculo_url)}
                     {renderDocumentLink("Factura Compra Vehículo", selectedPoliza.factura_compra_vehiculo_url)}
+                    {selectedPoliza.formulario === 'juridico' && (
+                      <>
+                        {renderDocumentLink("Acta de Asamblea", (selectedPoliza as any).acta_asamblea_url)}
+                        {renderDocumentLink("Acta Constitutiva", (selectedPoliza as any).acta_constitutiva_url)}
+                        {renderDocumentLink("Declaración ISLR", (selectedPoliza as any).declaracion_islr_url)}
+                        {renderDocumentLink("Referencia Bancaria", (selectedPoliza as any).referencia_bancaria_url)}
+                        {renderDocumentLink("Cédula de Accionistas", (selectedPoliza as any).cedula_accionistas_url)}
+                        {renderDocumentLink("RIF de Accionistas", (selectedPoliza as any).rif_accionistas_url)}
+                        {renderDocumentLink("RIF de la Empresa", (selectedPoliza as any).rif_empresa_url)}
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>
