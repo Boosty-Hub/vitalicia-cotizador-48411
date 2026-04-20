@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_document_downloads: {
+        Row: {
+          admin_user_id: string
+          document_type: string
+          downloaded_at: string
+          id: string
+          poliza_id: string
+        }
+        Insert: {
+          admin_user_id: string
+          document_type: string
+          downloaded_at?: string
+          id?: string
+          poliza_id: string
+        }
+        Update: {
+          admin_user_id?: string
+          document_type?: string
+          downloaded_at?: string
+          id?: string
+          poliza_id?: string
+        }
+        Relationships: []
+      }
       admin_settings: {
         Row: {
           created_at: string
@@ -559,6 +583,8 @@ export type Database = {
       }
       polizas_activas: {
         Row: {
+          acta_asamblea_url: string | null
+          acta_constitutiva_url: string | null
           año_monday: string | null
           apellido_apoderado_monday: string | null
           apellidos_titular_monday: string | null
@@ -604,6 +630,7 @@ export type Database = {
           cd_sexo: string | null
           cd_sexoap: string | null
           cd_sexoch: string | null
+          cedula_accionistas_url: string | null
           cedula_identidad_url: string | null
           certificado_medico_url: string | null
           certificado_origen_vehiculo_url: string | null
@@ -614,6 +641,7 @@ export type Database = {
           codigo_telefonico_titular_monday: string | null
           color_bera_monday: string | null
           created_at: string
+          declaracion_islr_url: string | null
           desde: string | null
           direccion_monday: string | null
           email_alternativo_monday: string | null
@@ -659,6 +687,9 @@ export type Database = {
           precio_venta_tienda_monday: string | null
           razon_social_juridico_monday: string | null
           recordatorio_de_vencimiento_monday: string | null
+          referencia_bancaria_url: string | null
+          rif_accionistas_url: string | null
+          rif_empresa_url: string | null
           rif_url: string | null
           s_ciudad: string | null
           s_color: string | null
@@ -692,6 +723,8 @@ export type Database = {
           version_modelo_monday: string | null
         }
         Insert: {
+          acta_asamblea_url?: string | null
+          acta_constitutiva_url?: string | null
           año_monday?: string | null
           apellido_apoderado_monday?: string | null
           apellidos_titular_monday?: string | null
@@ -737,6 +770,7 @@ export type Database = {
           cd_sexo?: string | null
           cd_sexoap?: string | null
           cd_sexoch?: string | null
+          cedula_accionistas_url?: string | null
           cedula_identidad_url?: string | null
           certificado_medico_url?: string | null
           certificado_origen_vehiculo_url?: string | null
@@ -747,6 +781,7 @@ export type Database = {
           codigo_telefonico_titular_monday?: string | null
           color_bera_monday?: string | null
           created_at?: string
+          declaracion_islr_url?: string | null
           desde?: string | null
           direccion_monday?: string | null
           email_alternativo_monday?: string | null
@@ -792,6 +827,9 @@ export type Database = {
           precio_venta_tienda_monday?: string | null
           razon_social_juridico_monday?: string | null
           recordatorio_de_vencimiento_monday?: string | null
+          referencia_bancaria_url?: string | null
+          rif_accionistas_url?: string | null
+          rif_empresa_url?: string | null
           rif_url?: string | null
           s_ciudad?: string | null
           s_color?: string | null
@@ -825,6 +863,8 @@ export type Database = {
           version_modelo_monday?: string | null
         }
         Update: {
+          acta_asamblea_url?: string | null
+          acta_constitutiva_url?: string | null
           año_monday?: string | null
           apellido_apoderado_monday?: string | null
           apellidos_titular_monday?: string | null
@@ -870,6 +910,7 @@ export type Database = {
           cd_sexo?: string | null
           cd_sexoap?: string | null
           cd_sexoch?: string | null
+          cedula_accionistas_url?: string | null
           cedula_identidad_url?: string | null
           certificado_medico_url?: string | null
           certificado_origen_vehiculo_url?: string | null
@@ -880,6 +921,7 @@ export type Database = {
           codigo_telefonico_titular_monday?: string | null
           color_bera_monday?: string | null
           created_at?: string
+          declaracion_islr_url?: string | null
           desde?: string | null
           direccion_monday?: string | null
           email_alternativo_monday?: string | null
@@ -925,6 +967,9 @@ export type Database = {
           precio_venta_tienda_monday?: string | null
           razon_social_juridico_monday?: string | null
           recordatorio_de_vencimiento_monday?: string | null
+          referencia_bancaria_url?: string | null
+          rif_accionistas_url?: string | null
+          rif_empresa_url?: string | null
           rif_url?: string | null
           s_ciudad?: string | null
           s_color?: string | null
