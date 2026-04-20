@@ -1,137 +1,147 @@
 
 
-# Plan: Validacion de Documentos con IA - Bloqueo Obligatorio
+# Plan: Descarga Masiva de Documentos de Pólizas
 
 ## Objetivo
 
-Al subir cada documento en el paso de "Carga de Documentos", validar automaticamente con IA (Gemini Vision) que:
-1. El documento sea del tipo correcto (cedula, certificado de origen, factura, etc.)
-2. La cedula de identidad coincida con el numero de cedula ingresado en el formulario
-3. El certificado de origen contenga la placa que se esta validando
-4. La factura de compra corresponda a la misma persona/placa
-
-El boton de enviar queda bloqueado hasta que TODOS los documentos pasen la validacion.
+Permitir a los administradores descargar la documentación completa de los usuarios, organizada por póliza, con seguimiento individual por admin de qué se ha descargado. Incluye:
+- Acceso rápido desde la tabla de Pólizas
+- Página dedicada `/admin/descargas` con vista avanzada
+- Soporte completo para los 13 documentos del formulario jurídico (no solo 6)
 
 ---
 
-## Arquitectura
+## 1. Cambios en Base de Datos
 
+### 1.1 Agregar columnas faltantes a `polizas_activas`
+Nuevas columnas (todas `text` nullable) para los 7 documentos jurídicos:
+- `acta_asamblea_url`
+- `acta_constitutiva_url`
+- `declaracion_islr_url`
+- `referencia_bancaria_url`
+- `cedula_accionistas_url`
+- `rif_accionistas_url`
+- `rif_empresa_url`
+
+### 1.2 Nueva tabla `admin_document_downloads` (tracking por admin)
 ```text
-Usuario sube documento
-     ↓
-Frontend convierte imagen a base64
-     ↓
-Llama Edge Function "validate-document"
-     ↓
-Edge Function envia imagen a Lovable AI Gateway (Gemini Vision)
-con prompt especializado + datos del formulario (cedula, placa, nombre)
-     ↓
-Retorna JSON estructurado via tool calling:
-  - is_valid: boolean
-  - document_type_detected: string
-  - extracted_data: { nombre, cedula, placa }
-  - matches_form_data: boolean
-  - observations: string[]
-     ↓
-Frontend muestra check verde o error rojo
-Si falla: no permite continuar
+id              uuid PK
+admin_user_id   uuid (auth.users.id)
+poliza_id       uuid (polizas_activas.id)
+document_type   text  -- ej: 'cedula_identidad', 'rif', 'all_zip'
+downloaded_at   timestamptz default now()
+```
+Índices: `(admin_user_id, poliza_id)`, `(admin_user_id, downloaded_at)`.
+
+**RLS**: solo admins (`has_role(auth.uid(),'admin')`) pueden hacer SELECT/INSERT, y cada admin solo ve sus propios registros (`admin_user_id = auth.uid()`).
+
+---
+
+## 2. Actualizar `ActivarPolizaJuridicaPage.tsx`
+
+Subir y guardar los 7 documentos extra:
+- Extender `Promise.all` con uploads para `docActaAsamblea`, `docActaConstitutiva`, `docDeclaracionISLR`, `docReferenciaBancaria`, `docCedulaAccionistas`, `docRIFAccionistas`, `docRIFEmpresa`.
+- Mapear cada URL al campo correspondiente en el `insert` a `polizas_activas`.
+
+---
+
+## 3. Edge Function: `download-poliza-documents`
+
+Nueva función que recibe `{ polizaIds: string[], onlyNotDownloaded?: boolean }` y:
+1. Valida JWT y rol admin.
+2. Si `onlyNotDownloaded=true`, filtra documentos ya registrados en `admin_document_downloads` para ese admin.
+3. Lee las URLs de documentos de cada póliza, descarga cada archivo desde el bucket `poliza-documentos` usando service role.
+4. Construye un ZIP con esta estructura:
+   ```text
+   descargas-YYYY-MM-DD.zip
+   ├── 12345678 - Carlos Gonzalez - AB123CD/
+   │   ├── 01-cedula-identidad.pdf
+   │   ├── 02-licencia-conducir.jpg
+   │   ├── 03-certificado-origen.pdf
+   │   └── ...
+   ├── J-12345678-9 - Empresa XYZ - XY789ZW/
+   │   ├── 01-cedula-identidad.pdf
+   │   ├── 07-acta-asamblea.pdf
+   │   └── ...
+   └── _resumen.csv  (titular, documento, placa, póliza, archivos incluidos)
+   ```
+5. Registra cada documento descargado en `admin_document_downloads`.
+6. Devuelve el ZIP como stream (`application/zip`).
+
+**Librería ZIP**: `jsr:@zip-js/zip-js` (compatible con Deno, streaming).
+
+---
+
+## 4. UI: Acceso rápido en `/admin/polizas`
+
+Modificar `AdminPolizasPage.tsx`:
+- Agregar columna de checkbox al inicio de la tabla + checkbox "seleccionar todo" en header.
+- Barra de acciones masivas que aparece cuando hay selecciones:
+  - Botón **"Descargar seleccionadas (N)"** → invoca edge function con esos IDs.
+  - Toggle **"Solo no descargados"** → marca el flag.
+- En la columna de acciones de cada fila, un nuevo botón ⬇ "Descargar documentos de esta póliza".
+- Indicador visual (punto verde pequeño) en filas cuyas pólizas el admin actual ya descargó completamente.
+
+---
+
+## 5. UI: Nueva página `/admin/descargas`
+
+Nueva entrada en `AdminSidebar` ("Descarga de Documentos", icono `FolderDown`).
+
+Página con tres secciones:
+
+### 5.1 Filtros superiores
+- Rango de fechas (creación de póliza)
+- Tipo: Natural / Jurídico / Todos
+- Estado descarga: Todos / No descargados por mí / Descargados por mí
+- Buscador (nombre, cédula, placa)
+
+### 5.2 Vista de tarjetas/tabla
+Cada póliza muestra:
+- Titular, documento, placa
+- Mini-grid de chips por tipo de documento (verde si existe + descargado por mí, azul si existe + no descargado, gris si falta)
+- Checkbox de selección
+- Botón "Descargar esta"
+
+### 5.3 Barra inferior fija
+- "X pólizas seleccionadas · Y documentos · ~Z MB estimados"
+- Botones: **"Descargar todo (ZIP)"** y **"Descargar solo nuevos (ZIP)"**
+- Historial colapsable: últimas 10 descargas hechas por el admin actual con fecha y conteo.
+
+---
+
+## 6. Detalles técnicos
+
+| Archivo | Acción |
+|---|---|
+| `supabase/migrations/*` | Agregar 7 columnas + crear tabla `admin_document_downloads` con RLS |
+| `supabase/functions/download-poliza-documents/index.ts` | Crear edge function (descarga + ZIP + tracking) |
+| `supabase/config.toml` | Registrar nueva función |
+| `src/pages/ActivarPolizaJuridicaPage.tsx` | Subir y guardar 7 documentos extra |
+| `src/components/admin/PolicyDetailsDialog.tsx` | Mostrar 7 documentos extra en sección documentos |
+| `src/pages/admin/AdminPolizasPage.tsx` | Checkboxes, selección masiva, botón descarga por fila |
+| `src/pages/admin/AdminDescargasPage.tsx` | Crear página dedicada |
+| `src/components/admin/AdminSidebar.tsx` | Agregar entrada "Descargas" |
+| `src/App.tsx` | Registrar ruta `/admin/descargas` |
+| `src/integrations/supabase/types.ts` | Se regenera automático tras migración |
+
+### Mapeo de tipos de documento (centralizado)
+```text
+cedula_identidad, licencia_conducir, certificado_medico,
+certificado_origen, factura_compra, rif,
+acta_asamblea, acta_constitutiva, declaracion_islr,
+referencia_bancaria, cedula_accionistas, rif_accionistas, rif_empresa
 ```
 
----
-
-## Cambios a Implementar
-
-### 1. Edge Function `validate-document`
-
-Crear `supabase/functions/validate-document/index.ts`:
-
-- Recibe: `{ image_base64, document_type, form_data: { cedula, placa, nombre, apellido } }`
-- Envia a Lovable AI Gateway con `google/gemini-2.5-flash` (soporta vision)
-- Prompt especializado por tipo de documento:
-  - **Cedula de Identidad**: extraer numero de cedula, nombre completo. Comparar con `form_data.cedula` y `form_data.nombre`
-  - **Certificado de Origen**: extraer placa del vehiculo. Comparar con `form_data.placa`
-  - **Factura de Compra**: extraer nombre del comprador y/o placa. Comparar con datos del formulario
-  - **Licencia, Certificado Medico, RIF**: validar que sea un documento del tipo correcto
-- Usa tool calling para obtener respuesta estructurada
-- Retorna resultado al frontend
-- Maneja errores 429/402 del gateway
-
-### 2. Componente `FileUploader` mejorado
-
-Modificar `src/components/ui/file-uploader.tsx`:
-
-- Agregar props opcionales: `validationStatus` (`'idle' | 'validating' | 'valid' | 'invalid'`), `validationMessage`, `validationObservations`
-- Estados visuales:
-  - **validating**: spinner amarillo con "Validando documento..."
-  - **valid**: check verde con "Documento validado correctamente"
-  - **invalid**: icono rojo con mensaje de error especifico (ej: "La cedula no coincide con el numero ingresado")
-- No cambia la funcionalidad base del componente
-
-### 3. Hook `useDocumentValidation`
-
-Crear `src/hooks/useDocumentValidation.ts`:
-
-- Funcion `validateDocument(file, documentType, formData)`:
-  - Convierte File a base64 (con redimension a max 1024px para optimizar)
-  - Llama a la edge function via `supabase.functions.invoke`
-  - Retorna resultado de validacion
-- Estado por documento: `Map<string, ValidationResult>`
-- Funcion `allDocumentsValid()` para verificar si todos pasaron
-- Funcion `getValidationStatus(docType)` para obtener estado individual
-
-### 4. Integracion en paginas de activacion
-
-Modificar `ActivarPolizaNaturalPage.tsx` y `ActivarPolizaJuridicaPage.tsx`:
-
-- Al subir cada documento, disparar validacion automatica
-- Pasar `validationStatus` y `validationMessage` a cada `FileUploader`
-- Boton "Activar Poliza" bloqueado si algun documento tiene status `invalid` o `validating`
-- Si un documento falla, el usuario puede quitarlo y subir uno nuevo (re-valida automaticamente)
-- Datos que se cruzan:
-  - `docIdentidad` → compara cedula extraida vs `formData.numeroCedula`
-  - `docOrigenVehiculo` → compara placa extraida vs `placa` (la placa validada en paso 1)
-  - `docFacturaCompra` → compara nombre/cedula del comprador vs datos del titular
-
-### 5. Config y Deploy
-
-- Agregar `[functions.validate-document]` con `verify_jwt = false` en `supabase/config.toml`
-- `LOVABLE_API_KEY` ya esta disponible en secrets
+### Manejo de errores
+- Si un archivo no se puede descargar del bucket, se incluye un `_errores.txt` dentro del ZIP listando los faltantes; el resto se entrega igual.
+- Límite por descarga: 100 pólizas por ZIP (para evitar timeouts). Si hay más seleccionadas, se avisa al usuario y se sugiere lotes.
 
 ---
 
-## Detalle tecnico
+## 7. Flujo de uso final
 
-- **Modelo**: `google/gemini-2.5-flash` (vision, rapido, economico)
-- **Redimension de imagen**: canvas API en frontend, max 1024px lado mayor, calidad 0.8 JPEG
-- **Tool calling schema** para respuesta estructurada (no JSON libre):
-
-```json
-{
-  "name": "validate_document",
-  "parameters": {
-    "properties": {
-      "is_valid": { "type": "boolean" },
-      "document_type_detected": { "type": "string" },
-      "extracted_cedula": { "type": "string" },
-      "extracted_placa": { "type": "string" },
-      "extracted_nombre": { "type": "string" },
-      "matches_form_data": { "type": "boolean" },
-      "observations": { "type": "array", "items": { "type": "string" } }
-    }
-  }
-}
-```
-
----
-
-## Archivos a crear/modificar
-
-| Archivo | Accion |
-|---------|--------|
-| `supabase/functions/validate-document/index.ts` | Crear |
-| `supabase/config.toml` | Agregar funcion |
-| `src/hooks/useDocumentValidation.ts` | Crear |
-| `src/components/ui/file-uploader.tsx` | Modificar (agregar estados de validacion) |
-| `src/pages/ActivarPolizaNaturalPage.tsx` | Modificar (integrar validacion) |
-| `src/pages/ActivarPolizaJuridicaPage.tsx` | Modificar (integrar validacion) |
+1. Admin entra a `/admin/polizas` → ve indicadores de descarga, marca varias pólizas → click "Descargar seleccionadas" → recibe `descargas-2026-04-20.zip`.
+2. Admin entra a `/admin/descargas` → filtra "No descargados por mí, últimos 30 días, jurídicos" → click "Descargar solo nuevos" → recibe ZIP organizado y queda registrado.
+3. Próxima vez que entra, las pólizas ya descargadas aparecen marcadas y puede pedir solo las nuevas.
 
