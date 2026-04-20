@@ -975,14 +975,22 @@ const ActivarPolizaJuridicaPage = () => {
     setIsSubmitting(true);
     
     try {
-      // Upload all documents to Supabase storage
+      const fd: any = formData;
+      // Upload all documents to Supabase storage (6 base + 7 jurídicos)
       const [
         cedulaUrl,
         licenciaUrl,
         certificadoUrl,
         origenUrl,
         facturaUrl,
-        rifUrl
+        rifUrl,
+        actaAsambleaUrl,
+        actaConstitutivaUrl,
+        declaracionIslrUrl,
+        referenciaBancariaUrl,
+        cedulaAccionistasUrl,
+        rifAccionistasUrl,
+        rifEmpresaUrl,
       ] = await Promise.all([
         formData.docIdentidad ? uploadFileToStorage(formData.docIdentidad, 'cedulas') : null,
         formData.docLicenciaConducir ? uploadFileToStorage(formData.docLicenciaConducir, 'licencias') : null,
@@ -990,9 +998,16 @@ const ActivarPolizaJuridicaPage = () => {
         formData.docOrigenVehiculo ? uploadFileToStorage(formData.docOrigenVehiculo, 'origenes') : null,
         formData.docFacturaCompra ? uploadFileToStorage(formData.docFacturaCompra, 'facturas') : null,
         formData.docRIF ? uploadFileToStorage(formData.docRIF, 'rifs') : null,
+        fd.docActaAsamblea ? uploadFileToStorage(fd.docActaAsamblea, 'actas-asamblea') : null,
+        fd.docActaConstitutiva ? uploadFileToStorage(fd.docActaConstitutiva, 'actas-constitutivas') : null,
+        fd.docDeclaracionISLR ? uploadFileToStorage(fd.docDeclaracionISLR, 'islr') : null,
+        fd.docReferenciaBancaria ? uploadFileToStorage(fd.docReferenciaBancaria, 'referencias-bancarias') : null,
+        fd.docCedulaAccionistas ? uploadFileToStorage(fd.docCedulaAccionistas, 'cedulas-accionistas') : null,
+        fd.docRIFAccionistas ? uploadFileToStorage(fd.docRIFAccionistas, 'rifs-accionistas') : null,
+        fd.docRIFEmpresa ? uploadFileToStorage(fd.docRIFEmpresa, 'rifs-empresa') : null,
       ]);
 
-      // Validate all files were uploaded
+      // Validate the 6 mandatory base documents were uploaded
       if (!cedulaUrl || !licenciaUrl || !certificadoUrl || !origenUrl || !facturaUrl || !rifUrl) {
         throw new Error('Error al subir uno o más documentos');
       }
