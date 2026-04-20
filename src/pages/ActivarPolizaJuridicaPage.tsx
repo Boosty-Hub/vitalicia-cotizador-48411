@@ -1189,6 +1189,15 @@ const ActivarPolizaJuridicaPage = () => {
         origenUrl,
         facturaUrl,
         rifUrl,
+        {
+          actaAsambleaUrl,
+          actaConstitutivaUrl,
+          declaracionIslrUrl,
+          referenciaBancariaUrl,
+          cedulaAccionistasUrl,
+          rifAccionistasUrl,
+          rifEmpresaUrl,
+        },
         codigosData,
         versionApiData
       );
