@@ -714,6 +714,15 @@ const ActivarPolizaJuridicaPage = () => {
     origenUrl: string,
     facturaUrl: string,
     rifUrl: string,
+    extraDocs: {
+      actaAsambleaUrl: string | null,
+      actaConstitutivaUrl: string | null,
+      declaracionIslrUrl: string | null,
+      referenciaBancariaUrl: string | null,
+      cedulaAccionistasUrl: string | null,
+      rifAccionistasUrl: string | null,
+      rifEmpresaUrl: string | null,
+    },
     codigosData: {
       marcaCodigo: string,
       modeloCodigo: string,
@@ -805,6 +814,13 @@ const ActivarPolizaJuridicaPage = () => {
         certificado_origen_vehiculo_url: origenUrl,
         factura_compra_vehiculo_url: facturaUrl,
         rif_url: rifUrl,
+        acta_asamblea_url: extraDocs.actaAsambleaUrl,
+        acta_constitutiva_url: extraDocs.actaConstitutivaUrl,
+        declaracion_islr_url: extraDocs.declaracionIslrUrl,
+        referencia_bancaria_url: extraDocs.referenciaBancariaUrl,
+        cedula_accionistas_url: extraDocs.cedulaAccionistasUrl,
+        rif_accionistas_url: extraDocs.rifAccionistasUrl,
+        rif_empresa_url: extraDocs.rifEmpresaUrl,
         
         // Campos de API (formato del webhook anterior)
         f_fchdesde: hoy,
