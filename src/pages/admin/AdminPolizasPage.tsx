@@ -29,7 +29,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Search, Eye, Trash2, ChevronLeft, ChevronRight, FileDown, Loader2, RefreshCw } from "lucide-react";
+import { Search, Eye, Trash2, ChevronLeft, ChevronRight, FileDown, Loader2, RefreshCw, Download } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Database } from "@/integrations/supabase/types";
 import { PolicyStatusBadge, getPolizaStatus } from "@/components/admin/PolicyStatusBadge";
 import { PolicyDetailsDialog } from "@/components/admin/PolicyDetailsDialog";
@@ -49,7 +50,65 @@ export default function AdminPolizasPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [polizaToDelete, setPolizaToDelete] = useState<string | null>(null);
   const [processingPolizaId, setProcessingPolizaId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [downloading, setDownloading] = useState(false);
   const pageSize = 10;
+
+  const toggleSelected = (id: string) => {
+    const ns = new Set(selectedIds);
+    ns.has(id) ? ns.delete(id) : ns.add(id);
+    setSelectedIds(ns);
+  };
+  const toggleAllPage = () => {
+    if (polizas.every((p) => selectedIds.has(p.id))) {
+      const ns = new Set(selectedIds);
+      polizas.forEach((p) => ns.delete(p.id));
+      setSelectedIds(ns);
+    } else {
+      const ns = new Set(selectedIds);
+      polizas.forEach((p) => ns.add(p.id));
+      setSelectedIds(ns);
+    }
+  };
+
+  const downloadDocs = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    if (ids.length > 100) {
+      toast({ title: "Máximo 100 pólizas por descarga", variant: "destructive" });
+      return;
+    }
+    setDownloading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const resp = await fetch(`${supabaseUrl}/functions/v1/download-poliza-documents`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ polizaIds: ids, onlyNotDownloaded: false }),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err?.error || `HTTP ${resp.status}`);
+      }
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `descargas-${new Date().toISOString().split("T")[0]}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({ title: "✅ Descarga lista" });
+    } catch (e: any) {
+      toast({ title: "Error en descarga", description: e.message, variant: "destructive" });
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   useEffect(() => {
     fetchPolizas();
@@ -312,10 +371,18 @@ export default function AdminPolizasPage() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={exportToCSV} variant="outline" className="gap-2">
-          <FileDown className="h-4 w-4" />
-          Exportar CSV
-        </Button>
+        <div className="flex gap-2">
+          {selectedIds.size > 0 && (
+            <Button onClick={() => downloadDocs(Array.from(selectedIds))} disabled={downloading} className="gap-2">
+              {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              Descargar ({selectedIds.size})
+            </Button>
+          )}
+          <Button onClick={exportToCSV} variant="outline" className="gap-2">
+            <FileDown className="h-4 w-4" />
+            Exportar CSV
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-lg border border-border bg-card">
@@ -327,6 +394,12 @@ export default function AdminPolizasPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={polizas.length > 0 && polizas.every((p) => selectedIds.has(p.id))}
+                    onCheckedChange={toggleAllPage}
+                  />
+                </TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Titular</TableHead>
                 <TableHead>Documento</TableHead>
@@ -341,7 +414,7 @@ export default function AdminPolizasPage() {
             <TableBody>
               {polizas.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                     No se encontraron pólizas
                   </TableCell>
                 </TableRow>
@@ -349,9 +422,15 @@ export default function AdminPolizasPage() {
                 polizas.map((poliza) => {
                   const { status, message } = getPolizaStatus(poliza);
                   const isProcessing = processingPolizaId === poliza.id;
-                  
+
                   return (
                     <TableRow key={poliza.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.has(poliza.id)}
+                          onCheckedChange={() => toggleSelected(poliza.id)}
+                        />
+                      </TableCell>
                       <TableCell>
                         <PolicyStatusBadge
                           status={isProcessing ? 'processing' : status}
@@ -387,6 +466,15 @@ export default function AdminPolizasPage() {
                               <RefreshCw className={`h-4 w-4 ${isProcessing ? 'animate-spin' : ''}`} />
                             </Button>
                           )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => downloadDocs([poliza.id])}
+                            disabled={downloading}
+                            title="Descargar documentos de esta póliza"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
