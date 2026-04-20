@@ -48,6 +48,7 @@ import AdminCargaBeraPage from "./pages/admin/AdminCargaBeraPage";
 import AdminCargaEmpirePage from "./pages/admin/AdminCargaEmpirePage";
 import AdminInventarioBeraPage from "./pages/admin/AdminInventarioBeraPage";
 import AdminInventarioEmpirePage from "./pages/admin/AdminInventarioEmpirePage";
+import AdminDescargasPage from "./pages/admin/AdminDescargasPage";
 
 const queryClient = new QueryClient();
 
@@ -103,6 +104,7 @@ const App = () => (
             >
               <Route index element={<AdminDashboardPage />} />
               <Route path="polizas" element={<AdminPolizasPage />} />
+              <Route path="descargas" element={<AdminDescargasPage />} />
               <Route path="inventario-bera" element={<AdminInventarioBeraPage />} />
               <Route path="inventario-empire" element={<AdminInventarioEmpirePage />} />
               <Route path="configuraciones" element={<AdminConfiguracionesPage />} />
