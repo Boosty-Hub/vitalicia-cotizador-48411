@@ -249,14 +249,14 @@ const ActivarPolizaNaturalPage = () => {
   useEffect(() => {
     const fetchActividades = async () => {
       const { data, error } = await supabase
-        .from('board_cod_actividad')
+        .from('cod_act_economica')
         .select('descripcion')
         .order('descripcion');
       if (error) {
         console.error('Error loading actividades:', error);
       } else if (data) {
         const fixed = data
-          .map((a) => ({ descripcion: fixSpecialCharacters(a.descripcion) || "" }))
+          .map((a: { descripcion: string | null }) => ({ descripcion: fixSpecialCharacters(a.descripcion) || "" }))
           .filter((a) => a.descripcion);
         setActividadesEconomicas(fixed);
       }
