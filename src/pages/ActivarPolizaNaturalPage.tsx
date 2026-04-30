@@ -1784,6 +1784,8 @@ const ActivarPolizaNaturalPage = () => {
                         variant="hero"
                         className="flex-1"
                       >
+                        Siguiente
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
