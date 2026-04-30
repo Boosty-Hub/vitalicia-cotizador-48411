@@ -1231,59 +1231,6 @@ const ActivarPolizaJuridicaPage = () => {
       setIsSubmitting(false);
     }
   };
-
-  const fillTestDataStep2 = () => {
-    setFormData(prev => ({
-      ...prev,
-      nombreEmpresa: "Inversiones El Roble C.A.",
-      tipoIdentificacion: "RIF",
-      numeroRIF: "J-12345678-9"
-    }));
-    toast({
-      title: "Datos de prueba cargados",
-      description: "Formulario llenado con datos aleatorios"
-    });
-  };
-
-  const fillTestDataStep3 = () => {
-    setFormData(prev => ({
-      ...prev,
-      nombresRepresentante: "Carlos Alberto",
-      apellidosRepresentante: "González Pérez",
-      tipoIdentificacionRepresentante: "Venezolano",
-      cedulaRepresentante: "V-12345678",
-      estadoCivilRepresentante: "Casado",
-      sexoRepresentante: "Masculino",
-      fechaNacimientoRepresentante: "1985-05-15"
-    }));
-    toast({
-      title: "Datos de prueba cargados",
-      description: "Formulario llenado con datos aleatorios"
-    });
-  };
-
-  const fillTestDataStep4 = () => {
-    setFormData(prev => ({
-      ...prev,
-      actividadEconomica: "Comercio",
-      direccion: "Av. Principal, Centro Empresarial Torre Norte, Piso 5",
-      estado: "Distrito Capital",
-      ciudad: "Caracas",
-      municipio: "Libertador",
-      codigoPostal: "1050",
-      codigoTelefonicoWhatsapp: "0412",
-      telefonoCelular: "9876543",
-      codigoTelefonicoResidencial: "0212",
-      telefonoOficina: "5551234",
-      correoElectronico: "contacto@empresa-test.com",
-      correoAlternativo: "info@empresa-test.com"
-    }));
-    toast({
-      title: "Datos de prueba cargados",
-      description: "Formulario llenado con datos aleatorios"
-    });
-  };
-
   const pageVariants = {
     initial: { opacity: 0, x: 20 },
     in: { opacity: 1, x: 0 },
@@ -1489,17 +1436,8 @@ const ActivarPolizaJuridicaPage = () => {
               >
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
+                    <CardTitle>
                       <span>Datos del Tomador</span>
-                      <Button
-                        onClick={fillTestDataStep2}
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                      >
-                        <Wand2 className="w-4 h-4" />
-                        Llenar Prueba
-                      </Button>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -1586,17 +1524,8 @@ const ActivarPolizaJuridicaPage = () => {
               >
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
+                    <CardTitle>
                       <span className="text-primary">DATOS DEL REPRESENTANTE LEGAL</span>
-                      <Button
-                        onClick={fillTestDataStep3}
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                      >
-                        <Wand2 className="w-4 h-4" />
-                        Llenar Prueba
-                      </Button>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -1788,17 +1717,8 @@ const ActivarPolizaJuridicaPage = () => {
               >
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
+                    <CardTitle>
                       <span className="text-primary">Información de Contacto</span>
-                      <Button
-                        onClick={fillTestDataStep4}
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                      >
-                        <Wand2 className="w-4 h-4" />
-                        Llenar Prueba
-                      </Button>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
