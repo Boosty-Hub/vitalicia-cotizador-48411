@@ -14,26 +14,54 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// Centralized document type map: field name in polizas_activas -> { key, label, ext-default }
-const DOCUMENT_FIELDS: Array<{
+// Sections used to group files inside each policy folder
+type SectionKey = "titular" | "empresa" | "accionistas" | "vehiculo" | "poliza";
+
+const SECTION_LABEL: Record<SectionKey, string> = {
+  titular: "01-Titular",
+  empresa: "02-Empresa",
+  accionistas: "03-Accionistas",
+  vehiculo: "04-Vehiculo",
+  poliza: "05-Poliza",
+};
+
+// Document field map: groups + ordering + which formularios it applies to.
+// `multi: true` means the column may contain multiple URLs separated by \n.
+type DocDef = {
   field: string;
   key: string;
   label: string;
+  section: SectionKey;
   order: number;
-}> = [
-  { field: "cedula_identidad_url", key: "cedula_identidad", label: "cedula-identidad", order: 1 },
-  { field: "licencia_conducir_url", key: "licencia_conducir", label: "licencia-conducir", order: 2 },
-  { field: "certificado_medico_url", key: "certificado_medico", label: "certificado-medico", order: 3 },
-  { field: "certificado_origen_vehiculo_url", key: "certificado_origen", label: "certificado-origen", order: 4 },
-  { field: "factura_compra_vehiculo_url", key: "factura_compra", label: "factura-compra", order: 5 },
-  { field: "rif_url", key: "rif", label: "rif", order: 6 },
-  { field: "acta_asamblea_url", key: "acta_asamblea", label: "acta-asamblea", order: 7 },
-  { field: "acta_constitutiva_url", key: "acta_constitutiva", label: "acta-constitutiva", order: 8 },
-  { field: "declaracion_islr_url", key: "declaracion_islr", label: "declaracion-islr", order: 9 },
-  { field: "referencia_bancaria_url", key: "referencia_bancaria", label: "referencia-bancaria", order: 10 },
-  { field: "cedula_accionistas_url", key: "cedula_accionistas", label: "cedula-accionistas", order: 11 },
-  { field: "rif_accionistas_url", key: "rif_accionistas", label: "rif-accionistas", order: 12 },
-  { field: "rif_empresa_url", key: "rif_empresa", label: "rif-empresa", order: 13 },
+  multi?: boolean;
+  appliesTo?: Array<"natural" | "juridico" | "rcv">; // omit = all
+};
+
+const DOCUMENT_FIELDS: DocDef[] = [
+  // Titular (Natural)
+  { field: "cedula_identidad_url", key: "cedula_identidad", label: "cedula-identidad", section: "titular", order: 1, appliesTo: ["natural", "rcv"] },
+  { field: "licencia_conducir_url", key: "licencia_conducir", label: "licencia-conducir", section: "titular", order: 2, appliesTo: ["natural", "rcv"] },
+  { field: "certificado_medico_url", key: "certificado_medico", label: "certificado-medico", section: "titular", order: 3, appliesTo: ["natural", "rcv"] },
+  { field: "rif_url", key: "rif_titular", label: "rif-titular", section: "titular", order: 4, appliesTo: ["natural", "rcv"] },
+
+  // Empresa (Jurídico)
+  { field: "rif_empresa_url", key: "rif_empresa", label: "rif-empresa", section: "empresa", order: 1, appliesTo: ["juridico"] },
+  { field: "acta_constitutiva_url", key: "acta_constitutiva", label: "acta-constitutiva", section: "empresa", order: 2, appliesTo: ["juridico"] },
+  { field: "acta_asamblea_url", key: "acta_asamblea", label: "acta-asamblea", section: "empresa", order: 3, appliesTo: ["juridico"] },
+  { field: "declaracion_islr_url", key: "declaracion_islr", label: "declaracion-islr", section: "empresa", order: 4, appliesTo: ["juridico"] },
+  { field: "referencia_bancaria_url", key: "referencia_bancaria", label: "referencia-bancaria", section: "empresa", order: 5, appliesTo: ["juridico"] },
+
+  // Accionistas (Jurídico, multi)
+  { field: "cedula_accionistas_url", key: "cedula_accionistas", label: "cedula-accionista", section: "accionistas", order: 1, multi: true, appliesTo: ["juridico"] },
+  { field: "rif_accionistas_url", key: "rif_accionistas", label: "rif-accionista", section: "accionistas", order: 2, multi: true, appliesTo: ["juridico"] },
+
+  // Vehículo
+  { field: "factura_compra_vehiculo_url", key: "factura_compra", label: "factura-compra", section: "vehiculo", order: 1 },
+  { field: "certificado_origen_vehiculo_url", key: "certificado_origen", label: "certificado-origen", section: "vehiculo", order: 2 },
+
+  // Póliza emitida
+  { field: "url_poliza_monday", key: "poliza_emitida", label: "poliza-emitida", section: "poliza", order: 1 },
+  { field: "url_carnet_monday", key: "carnet_asegurado", label: "carnet-asegurado", section: "poliza", order: 2 },
 ];
 
 function sanitize(name: string | null | undefined): string {
@@ -56,6 +84,14 @@ function getExtFromUrl(url: string, fallback = "bin"): string {
   }
 }
 
+function splitUrls(value: string | null | undefined): string[] {
+  if (!value) return [];
+  return String(value)
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0 && /^https?:\/\//i.test(s));
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -74,7 +110,6 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Client to verify user
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -88,7 +123,6 @@ Deno.serve(async (req) => {
     }
     const userId = userData.user.id;
 
-    // Verify admin role
     const { data: roleOk, error: roleErr } = await userClient.rpc("has_role", {
       _user_id: userId,
       _role: "admin",
@@ -100,7 +134,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Parse body
     const body = await req.json().catch(() => ({}));
     const polizaIds: string[] = Array.isArray(body?.polizaIds) ? body.polizaIds : [];
     const onlyNotDownloaded: boolean = !!body?.onlyNotDownloaded;
@@ -123,7 +156,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Service role for fetching everything
     const admin = createClient(supabaseUrl, serviceKey);
 
     const fields = DOCUMENT_FIELDS.map((d) => d.field).join(",");
@@ -142,7 +174,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Existing downloads for this admin to filter (if requested)
     let existing: Set<string> = new Set();
     if (onlyNotDownloaded) {
       const { data: ex } = await admin
@@ -155,7 +186,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Build ZIP
     const zipBlobWriter = new BlobWriter("application/zip");
     const zip = new ZipWriter(zipBlobWriter);
 
@@ -174,8 +204,10 @@ Deno.serve(async (req) => {
     let totalFiles = 0;
 
     for (const p of polizas) {
+      const formulario = (p.formulario || "natural") as "natural" | "juridico" | "rcv";
+
       const titular =
-        p.formulario === "juridico"
+        formulario === "juridico"
           ? p.razon_social_juridico_monday ||
             `${p.nombre_titular_monday || ""} ${p.apellidos_titular_monday || ""}`.trim()
           : `${p.nombre_titular_monday || ""} ${p.apellidos_titular_monday || ""}`.trim();
@@ -187,31 +219,47 @@ Deno.serve(async (req) => {
       const includedFiles: string[] = [];
 
       for (const def of DOCUMENT_FIELDS) {
-        const url = (p as any)[def.field] as string | null;
-        if (!url) continue;
-        if (onlyNotDownloaded && existing.has(`${p.id}::${def.key}`)) continue;
+        // Skip docs that don't apply to this formulario
+        if (def.appliesTo && !def.appliesTo.includes(formulario)) continue;
 
-        try {
-          const resp = await fetch(url);
-          if (!resp.ok) {
-            errors.push(`${folder}/${def.label}: HTTP ${resp.status}`);
-            continue;
+        const raw = (p as any)[def.field] as string | null;
+        const urls = def.multi ? splitUrls(raw) : raw ? [raw] : [];
+        if (urls.length === 0) continue;
+
+        // For tracking we mark the doc type once per poliza (not per file)
+        const trackKey = `${p.id}::${def.key}`;
+        if (onlyNotDownloaded && existing.has(trackKey)) continue;
+
+        for (let i = 0; i < urls.length; i++) {
+          const url = urls[i];
+          try {
+            const resp = await fetch(url);
+            if (!resp.ok) {
+              errors.push(`${folder}/${def.label}: HTTP ${resp.status}`);
+              continue;
+            }
+            const blob = await resp.blob();
+            const ext = getExtFromUrl(url, "bin");
+            const suffix = urls.length > 1 ? `-${String(i + 1).padStart(2, "0")}` : "";
+            const fileName = `${String(def.order).padStart(2, "0")}-${def.label}${suffix}.${ext}`;
+            const sectionFolder = SECTION_LABEL[def.section];
+
+            await zip.add(
+              `${folder}/${sectionFolder}/${fileName}`,
+              new BlobReader(blob),
+            );
+            includedFiles.push(`${sectionFolder}/${fileName}`);
+            totalFiles++;
+          } catch (e) {
+            errors.push(`${folder}/${def.label}: ${(e as Error).message}`);
           }
-          const blob = await resp.blob();
-          const ext = getExtFromUrl(url, "bin");
-          const fileName = `${String(def.order).padStart(2, "0")}-${def.label}.${ext}`;
-
-          await zip.add(`${folder}/${fileName}`, new BlobReader(blob));
-          includedFiles.push(fileName);
-          totalFiles++;
-          trackingInserts.push({
-            admin_user_id: userId,
-            poliza_id: p.id,
-            document_type: def.key,
-          });
-        } catch (e) {
-          errors.push(`${folder}/${def.label}: ${(e as Error).message}`);
         }
+
+        trackingInserts.push({
+          admin_user_id: userId,
+          poliza_id: p.id,
+          document_type: def.key,
+        });
       }
 
       summaryRows.push(
@@ -220,7 +268,7 @@ Deno.serve(async (req) => {
           documento,
           placa,
           p.numero_poliza_monday || "",
-          p.formulario || "",
+          formulario,
           includedFiles.join(" | "),
         ]
           .map((c) => `"${String(c).replace(/"/g, '""')}"`)
@@ -228,7 +276,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Add summary CSV (with BOM for Excel)
     const csv = "\uFEFF" + summaryRows.join("\n");
     await zip.add("_resumen.csv", new TextReader(csv));
 
@@ -238,7 +285,6 @@ Deno.serve(async (req) => {
 
     const zipBlob = await zip.close();
 
-    // Insert tracking rows (best-effort, batch)
     if (trackingInserts.length > 0) {
       const { error: trackErr } = await admin
         .from("admin_document_downloads")
