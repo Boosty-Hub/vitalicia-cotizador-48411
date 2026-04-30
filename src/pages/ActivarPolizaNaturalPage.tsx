@@ -1747,9 +1747,43 @@ const ActivarPolizaNaturalPage = () => {
                       <Button onClick={() => setCurrentStep(1)} variant="outline" className="flex-1">
                         Anterior
                       </Button>
-                      <Button onClick={() => setCurrentStep(3)} variant="hero" className="flex-1" disabled={!formData.nombre || formData.nombre.trim().length < 2 || !formData.apellidos || formData.apellidos.trim().length < 2 || !formData.numeroCedula || formData.numeroCedula.replace(/[^0-9]/g, '').length < 7 || !formData.sexo || !formData.fechaNacimiento || !formData.estadoCivil || !formData.direccion || formData.direccion.trim().length < 5 || !formData.estado || !formData.ciudad || !formData.municipio || !formData.codigoTelefonico || !formData.numeroTelefonico || formData.numeroTelefonico.length !== 7 || !formData.email || emailError !== "" || (formData.email2 && email2Error !== "")}>
-                        Siguiente
-                      </Button>
+                      <Button
+                        onClick={() => {
+                          const missing: string[] = [];
+                          if (!formData.nombre || formData.nombre.trim().length < 2) missing.push("Nombre");
+                          if (!formData.apellidos || formData.apellidos.trim().length < 2) missing.push("Apellidos");
+                          if (!formData.tipoIdentificacion) missing.push("Tipo de identificación");
+                          if (!formData.numeroCedula) missing.push("Número de cédula/pasaporte");
+                          else if (validateCedula(formData.tipoIdentificacion, formData.numeroCedula).error) {
+                            missing.push("Número de cédula/pasaporte (formato inválido)");
+                          }
+                          if (!formData.sexo) missing.push("Sexo");
+                          if (!formData.fechaNacimiento) missing.push("Fecha de nacimiento");
+                          else if (!isAdult(formData.fechaNacimiento)) missing.push("Fecha de nacimiento (debe ser mayor de edad)");
+                          if (!formData.estadoCivil) missing.push("Estado civil");
+                          if (!formData.actividadEconomica) missing.push("Actividad económica");
+                          if (!formData.direccion || validateDireccion(formData.direccion).error) missing.push("Dirección");
+                          if (!formData.estado) missing.push("Estado");
+                          if (!formData.ciudad) missing.push("Ciudad");
+                          if (!formData.municipio) missing.push("Municipio");
+                          if (!formData.codigoTelefonico) missing.push("Código de celular");
+                          if (!formData.numeroTelefonico || formData.numeroTelefonico.length !== 7) missing.push("Número de celular (7 dígitos)");
+                          if (!formData.email || validateEmailFormat(formData.email).error) missing.push("Correo electrónico");
+                          if (formData.email2 && validateEmailFormat(formData.email2).error) missing.push("Correo electrónico 2 (formato inválido)");
+
+                          if (missing.length > 0) {
+                            toast({
+                              title: "Faltan campos por completar",
+                              description: missing.join(" • "),
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          setCurrentStep(3);
+                        }}
+                        variant="hero"
+                        className="flex-1"
+                      >
                     </div>
                   </CardContent>
                 </Card>
