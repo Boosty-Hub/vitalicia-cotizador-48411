@@ -1502,10 +1502,27 @@ const ActivarPolizaNaturalPage = () => {
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="numeroCedula">Número de Cédula o RIF *</Label>
-                        <Input id="numeroCedula" value={formData.numeroCedula} onChange={e => handleCedulaChange(e.target.value)} placeholder={formData.tipoIdentificacion ? `Ej: ${formData.tipoIdentificacion}-12345678` : "Seleccione tipo primero"} disabled={!formData.tipoIdentificacion} />
-                        {formData.numeroCedula && formData.numeroCedula.replace(/[^0-9]/g, '').length < 7 && formData.numeroCedula.replace(/[^0-9]/g, '').length > 0 && (
-                          <p className="text-sm text-destructive">La cédula debe tener al menos 7 dígitos</p>
+                        <Label htmlFor="numeroCedula">Número de {formData.tipoIdentificacion === "P" ? "Pasaporte" : "Cédula o RIF"} *</Label>
+                        <Input
+                          id="numeroCedula"
+                          value={formData.numeroCedula}
+                          onChange={e => handleCedulaChange(e.target.value)}
+                          placeholder={
+                            formData.tipoIdentificacion === "P"
+                              ? "Ej: AB123456 (alfanumérico)"
+                              : formData.tipoIdentificacion === "V"
+                              ? "Ej: V-12345678 (entre 2.000.000 y 45.000.000)"
+                              : formData.tipoIdentificacion === "E"
+                              ? "Ej: E-85123456 (entre 80.000.000 y 99.999.999)"
+                              : formData.tipoIdentificacion
+                              ? `Ej: ${formData.tipoIdentificacion}-12345678`
+                              : "Seleccione tipo primero"
+                          }
+                          disabled={!formData.tipoIdentificacion}
+                          className={cedulaError ? "border-destructive" : ""}
+                        />
+                        {cedulaError && (
+                          <p className="text-sm text-destructive">{cedulaError}</p>
                         )}
                       </div>
                     </div>
@@ -1526,8 +1543,18 @@ const ActivarPolizaNaturalPage = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="fechaNacimiento">Fecha de Nacimiento *</Label>
-                        <Input id="fechaNacimiento" type="date" value={formData.fechaNacimiento} onChange={e => handleInputChange("fechaNacimiento", e.target.value)} />
+                        <Label htmlFor="fechaNacimiento">Fecha de Nacimiento * (mayor de edad)</Label>
+                        <Input
+                          id="fechaNacimiento"
+                          type="date"
+                          value={formData.fechaNacimiento}
+                          max={maxBirthDateForAdult()}
+                          onChange={e => handleInputChange("fechaNacimiento", e.target.value)}
+                          className={fechaNacimientoError ? "border-destructive" : ""}
+                        />
+                        {fechaNacimientoError && (
+                          <p className="text-sm text-destructive">{fechaNacimientoError}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="estadoCivil">Estado Civil *</Label>
@@ -1545,10 +1572,35 @@ const ActivarPolizaNaturalPage = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="direccion">Dirección * (mín. 5 caracteres)</Label>
-                      <Input id="direccion" value={formData.direccion} onChange={e => handleInputChange("direccion", e.target.value)} />
-                      {formData.direccion && formData.direccion.trim().length < 5 && (
-                        <p className="text-sm text-destructive">Mínimo 5 caracteres</p>
+                      <Label htmlFor="actividadEconomica">Actividad Económica *</Label>
+                      <Select
+                        value={formData.actividadEconomica}
+                        onValueChange={value => handleInputChange("actividadEconomica", value)}
+                      >
+                        <SelectTrigger id="actividadEconomica">
+                          <SelectValue placeholder="Seleccione una actividad" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {actividadesEconomicas.map((act) => (
+                            <SelectItem key={act.descripcion} value={act.descripcion}>
+                              {act.descripcion}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="direccion">Dirección * (mín. 5 caracteres, sin comas)</Label>
+                      <Input
+                        id="direccion"
+                        value={formData.direccion}
+                        onChange={e => handleInputChange("direccion", e.target.value)}
+                        placeholder="Ej: Av. Principal Edificio Vista Piso 3 Apto 5"
+                        className={direccionError ? "border-destructive" : ""}
+                      />
+                      {direccionError && (
+                        <p className="text-sm text-destructive">{direccionError}</p>
                       )}
                     </div>
 
