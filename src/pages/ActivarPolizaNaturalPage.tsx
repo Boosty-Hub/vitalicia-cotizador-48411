@@ -195,7 +195,7 @@ const ActivarPolizaNaturalPage = () => {
       if (error) {
         console.error('Error loading sexos:', error);
       } else if (data) {
-        setSexos(data);
+        setSexos(filterSexos(data));
       }
     };
     fetchSexos();
@@ -209,7 +209,7 @@ const ActivarPolizaNaturalPage = () => {
       if (error) {
         console.error('Error loading estados civiles:', error);
       } else if (data) {
-        setEstadosCiviles(data);
+        setEstadosCiviles(filterEstadosCiviles(data));
       }
     };
     fetchEstadosCiviles();
