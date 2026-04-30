@@ -241,10 +241,27 @@ const ActivarPolizaNaturalPage = () => {
       if (error) {
         console.error('Error loading códigos telefónicos:', error);
       } else if (data) {
-        setCodigosTelefonicos(data);
+        setCodigosTelefonicos(filterCodigosMoviles(data));
       }
     };
     fetchCodigosTelefonicos();
+  }, []);
+  useEffect(() => {
+    const fetchActividades = async () => {
+      const { data, error } = await supabase
+        .from('board_cod_actividad')
+        .select('descripcion')
+        .order('descripcion');
+      if (error) {
+        console.error('Error loading actividades:', error);
+      } else if (data) {
+        const fixed = data
+          .map((a) => ({ descripcion: fixSpecialCharacters(a.descripcion) || "" }))
+          .filter((a) => a.descripcion);
+        setActividadesEconomicas(fixed);
+      }
+    };
+    fetchActividades();
   }, []);
 
   // Fetch ciudades when estado changes
