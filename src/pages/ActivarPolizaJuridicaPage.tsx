@@ -981,40 +981,51 @@ const ActivarPolizaJuridicaPage = () => {
     
     try {
       const fd: any = formData;
-      // Upload all documents to Supabase storage (6 base + 7 jurídicos)
+
+      // Subir documentos de moto y empresa en paralelo
       const [
-        cedulaUrl,
-        licenciaUrl,
-        certificadoUrl,
         origenUrl,
+        tituloUrl,
         facturaUrl,
-        rifUrl,
         actaAsambleaUrl,
         actaConstitutivaUrl,
         declaracionIslrUrl,
         referenciaBancariaUrl,
-        cedulaAccionistasUrl,
-        rifAccionistasUrl,
         rifEmpresaUrl,
       ] = await Promise.all([
-        formData.docIdentidad ? uploadFileToStorage(formData.docIdentidad, 'cedulas') : null,
-        formData.docLicenciaConducir ? uploadFileToStorage(formData.docLicenciaConducir, 'licencias') : null,
-        formData.docCertificadoMedico ? uploadFileToStorage(formData.docCertificadoMedico, 'certificados') : null,
         formData.docOrigenVehiculo ? uploadFileToStorage(formData.docOrigenVehiculo, 'origenes') : null,
+        formData.docTituloPropiedad ? uploadFileToStorage(formData.docTituloPropiedad, 'titulos-propiedad') : null,
         formData.docFacturaCompra ? uploadFileToStorage(formData.docFacturaCompra, 'facturas') : null,
-        formData.docRIF ? uploadFileToStorage(formData.docRIF, 'rifs') : null,
         fd.docActaAsamblea ? uploadFileToStorage(fd.docActaAsamblea, 'actas-asamblea') : null,
         fd.docActaConstitutiva ? uploadFileToStorage(fd.docActaConstitutiva, 'actas-constitutivas') : null,
         fd.docDeclaracionISLR ? uploadFileToStorage(fd.docDeclaracionISLR, 'islr') : null,
         fd.docReferenciaBancaria ? uploadFileToStorage(fd.docReferenciaBancaria, 'referencias-bancarias') : null,
-        fd.docCedulaAccionistas ? uploadFileToStorage(fd.docCedulaAccionistas, 'cedulas-accionistas') : null,
-        fd.docRIFAccionistas ? uploadFileToStorage(fd.docRIFAccionistas, 'rifs-accionistas') : null,
         fd.docRIFEmpresa ? uploadFileToStorage(fd.docRIFEmpresa, 'rifs-empresa') : null,
       ]);
 
-      // Validate the 6 mandatory base documents were uploaded
-      if (!cedulaUrl || !licenciaUrl || !certificadoUrl || !origenUrl || !facturaUrl || !rifUrl) {
-        throw new Error('Error al subir uno o más documentos');
+      // Subir documentos de cada accionista
+      const accionistasUploads = await Promise.all(
+        accionistas.map(async (a) => ({
+          cedulaUrl: a.cedula ? await uploadFileToStorage(a.cedula, 'cedulas-accionistas') : null,
+          rifUrl: a.rif ? await uploadFileToStorage(a.rif, 'rifs-accionistas') : null,
+        }))
+      );
+
+      // URLs concatenadas (mantener compatibilidad con columnas existentes)
+      const cedulaAccionistasUrl = accionistasUploads.map(a => a.cedulaUrl).filter(Boolean).join("\n") || null;
+      const rifAccionistasUrl = accionistasUploads.map(a => a.rifUrl).filter(Boolean).join("\n") || null;
+
+      // Compatibilidad con flujo existente: usamos los mismos nombres
+      const cedulaUrl = cedulaAccionistasUrl;
+      const licenciaUrl = null;
+      const certificadoUrl = null;
+      const rifUrl = rifEmpresaUrl;
+      // Si no hay Cert. de Origen, usar Título de Propiedad como respaldo en la columna existente
+      const origenFinalUrl = origenUrl || tituloUrl;
+
+      // Validaciones mínimas
+      if (!facturaUrl || !origenFinalUrl || !rifEmpresaUrl) {
+        throw new Error('Error al subir uno o más documentos obligatorios');
       }
 
       // Fetch precio venta para EMPIRE
