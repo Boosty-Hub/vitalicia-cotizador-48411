@@ -18,6 +18,21 @@ import { FileUploader } from "@/components/ui/file-uploader";
 import { fetchVersionApi } from "@/utils/versionApi";
 import { formatPriceToTwoDecimals } from "@/lib/priceUtils";
 import { useDocumentValidation } from "@/hooks/useDocumentValidation";
+import {
+  formatCedulaInput as formatCedulaInputHelper,
+  validateCedula,
+  validateEmailFormat,
+  validateFechaCompra as validateFechaCompraHelper,
+  validateDireccion,
+  sanitizeDireccion,
+  isAdult,
+  maxBirthDateForAdult,
+  todayISO,
+  MIN_FECHA_COMPRA,
+  filterSexosByDescripcion,
+  filterEstadosCiviles,
+  filterCodigosMoviles,
+} from "@/lib/formValidation";
 
 const ActivarPolizaJuridicaPage = () => {
   const navigate = useNavigate();
