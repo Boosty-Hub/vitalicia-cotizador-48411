@@ -2161,201 +2161,245 @@ const ActivarPolizaJuridicaPage = () => {
               >
                 <Card>
                   <CardHeader>
-                    <CardTitle>Carga de Documentos Personales</CardTitle>
+                    <CardTitle>Carga de Documentos</CardTitle>
                     <p className="text-sm text-muted-foreground mt-2">
-                      Por favor, cargue las fotos de los documentos que se indican a continuación:
+                      Por favor, cargue las fotos de los documentos agrupados a continuación.
                     </p>
                   </CardHeader>
-                  <CardContent className="space-y-6">
-                    <FileUploader
-                      id="docIdentidad"
-                      label="Cédula de Identidad"
-                      file={formData.docIdentidad}
-                      onFileChange={(file) => handleFileChange("docIdentidad", file)}
-                      required
-                      validationStatus={getValidation("docIdentidad").status}
-                      validationMessage={getValidation("docIdentidad").message}
-                      validationObservations={getValidation("docIdentidad").observations}
-                    />
+                  <CardContent className="space-y-8">
+                    {/* SECCIÓN 1: DOCUMENTOS DE LA EMPRESA */}
+                    <div>
+                      <div className="border-l-4 border-primary pl-3 mb-4">
+                        <h3 className="text-lg font-semibold text-foreground">Documentos de la Empresa</h3>
+                        <p className="text-sm text-muted-foreground">Documentación legal y fiscal de la empresa.</p>
+                      </div>
+                      <div className="space-y-6">
+                        <FileUploader
+                          id="docRIFEmpresa"
+                          label="RIF de la Empresa"
+                          file={(formData as any).docRIFEmpresa || null}
+                          onFileChange={(file) => handleFileChange("docRIFEmpresa", file)}
+                          required
+                          validationStatus={getValidation("docRIFEmpresa").status}
+                          validationMessage={getValidation("docRIFEmpresa").message}
+                          validationObservations={getValidation("docRIFEmpresa").observations}
+                        />
 
-                    <FileUploader
-                      id="docLicenciaConducir"
-                      label="Licencia de Conducir"
-                      file={formData.docLicenciaConducir}
-                      onFileChange={(file) => handleFileChange("docLicenciaConducir", file)}
-                      required
-                      validationStatus={getValidation("docLicenciaConducir").status}
-                      validationMessage={getValidation("docLicenciaConducir").message}
-                      validationObservations={getValidation("docLicenciaConducir").observations}
-                    />
+                        <FileUploader
+                          id="docActaConstitutiva"
+                          label="Registro Mercantil (Acta Constitutiva)"
+                          file={(formData as any).docActaConstitutiva || null}
+                          onFileChange={(file) => handleFileChange("docActaConstitutiva", file)}
+                          required
+                          validationStatus={getValidation("docActaConstitutiva").status}
+                          validationMessage={getValidation("docActaConstitutiva").message}
+                          validationObservations={getValidation("docActaConstitutiva").observations}
+                        />
 
-                    <FileUploader
-                      id="docCertificadoMedico"
-                      label="Certificado Médico"
-                      file={formData.docCertificadoMedico}
-                      onFileChange={(file) => handleFileChange("docCertificadoMedico", file)}
-                      required
-                      validationStatus={getValidation("docCertificadoMedico").status}
-                      validationMessage={getValidation("docCertificadoMedico").message}
-                      validationObservations={getValidation("docCertificadoMedico").observations}
-                    />
+                        <div className="space-y-2">
+                          <FileUploader
+                            id="docActaAsamblea"
+                            label="Acta de Asamblea (opcional)"
+                            file={(formData as any).docActaAsamblea || null}
+                            onFileChange={(file) => handleFileChange("docActaAsamblea", file)}
+                            validationStatus={getValidation("docActaAsamblea").status}
+                            validationMessage={getValidation("docActaAsamblea").message}
+                            validationObservations={getValidation("docActaAsamblea").observations}
+                          />
+                          {!((formData as any).docActaAsamblea) && (
+                            <label className="flex items-start gap-2 text-sm text-muted-foreground cursor-pointer p-2 rounded-md hover:bg-muted">
+                              <input
+                                type="checkbox"
+                                className="mt-1"
+                                checked={formData.sinActaAsamblea}
+                                onChange={(e) => setFormData(prev => ({ ...prev, sinActaAsamblea: e.target.checked }))}
+                              />
+                              <span>No hemos hecho asambleas (marcar para continuar sin cargar este documento).</span>
+                            </label>
+                          )}
+                        </div>
 
-                    <FileUploader
-                      id="docOrigenVehiculo"
-                      label="Certificado de Origen del Vehículo"
-                      file={formData.docOrigenVehiculo}
-                      onFileChange={(file) => handleFileChange("docOrigenVehiculo", file)}
-                      required
-                      validationStatus={getValidation("docOrigenVehiculo").status}
-                      validationMessage={getValidation("docOrigenVehiculo").message}
-                      validationObservations={getValidation("docOrigenVehiculo").observations}
-                    />
+                        <FileUploader
+                          id="docReferenciaBancaria"
+                          label="Referencia Bancaria (no mayor a 3 meses)"
+                          file={(formData as any).docReferenciaBancaria || null}
+                          onFileChange={(file) => handleFileChange("docReferenciaBancaria", file)}
+                          required
+                          validationStatus={getValidation("docReferenciaBancaria").status}
+                          validationMessage={getValidation("docReferenciaBancaria").message}
+                          validationObservations={getValidation("docReferenciaBancaria").observations}
+                        />
 
-                    <FileUploader
-                      id="docFacturaCompra"
-                      label="Factura de Compra del Vehículo"
-                      file={formData.docFacturaCompra}
-                      onFileChange={(file) => handleFileChange("docFacturaCompra", file)}
-                      required
-                      validationStatus={getValidation("docFacturaCompra").status}
-                      validationMessage={getValidation("docFacturaCompra").message}
-                      validationObservations={getValidation("docFacturaCompra").observations}
-                    />
-
-                    <FileUploader
-                      id="docRIF"
-                      label="RIF"
-                      file={formData.docRIF}
-                      onFileChange={(file) => handleFileChange("docRIF", file)}
-                      required
-                      validationStatus={getValidation("docRIF").status}
-                      validationMessage={getValidation("docRIF").message}
-                      validationObservations={getValidation("docRIF").observations}
-                    />
-
-                    <div className="border-t pt-6 mt-6">
-                      <h3 className="text-lg font-semibold text-foreground mb-1">Documentos de la Empresa</h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Documentos adicionales requeridos para la activación de póliza jurídica:
-                      </p>
+                        <FileUploader
+                          id="docDeclaracionISLR"
+                          label="Declaración del ISLR"
+                          file={(formData as any).docDeclaracionISLR || null}
+                          onFileChange={(file) => handleFileChange("docDeclaracionISLR", file)}
+                          required
+                          validationStatus={getValidation("docDeclaracionISLR").status}
+                          validationMessage={getValidation("docDeclaracionISLR").message}
+                          validationObservations={getValidation("docDeclaracionISLR").observations}
+                        />
+                      </div>
                     </div>
 
-                    <FileUploader
-                      id="docActaAsamblea"
-                      label="Acta de Asamblea"
-                      file={(formData as any).docActaAsamblea || null}
-                      onFileChange={(file) => handleFileChange("docActaAsamblea", file)}
-                      required
-                      validationStatus={getValidation("docActaAsamblea").status}
-                      validationMessage={getValidation("docActaAsamblea").message}
-                      validationObservations={getValidation("docActaAsamblea").observations}
-                    />
+                    {/* SECCIÓN 2: ACCIONISTAS (DINÁMICOS) */}
+                    <div>
+                      <div className="border-l-4 border-primary pl-3 mb-4 flex items-start justify-between gap-2">
+                        <div>
+                          <h3 className="text-lg font-semibold text-foreground">Documentos de los Accionistas</h3>
+                          <p className="text-sm text-muted-foreground">Por cada accionista, cargue su Cédula y RIF.</p>
+                        </div>
+                      </div>
 
-                    <FileUploader
-                      id="docActaConstitutiva"
-                      label="Acta Constitutiva o Registro Mercantil"
-                      file={(formData as any).docActaConstitutiva || null}
-                      onFileChange={(file) => handleFileChange("docActaConstitutiva", file)}
-                      required
-                      validationStatus={getValidation("docActaConstitutiva").status}
-                      validationMessage={getValidation("docActaConstitutiva").message}
-                      validationObservations={getValidation("docActaConstitutiva").observations}
-                    />
+                      <div className="space-y-4">
+                        {accionistas.map((acc, idx) => (
+                          <div key={acc.id} className="rounded-lg border bg-card p-4 space-y-4">
+                            <div className="flex items-center justify-between">
+                              <p className="font-semibold text-foreground">Accionista #{idx + 1}</p>
+                              {accionistas.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => setAccionistas(prev => prev.filter(a => a.id !== acc.id))}
+                                >
+                                  Eliminar
+                                </Button>
+                              )}
+                            </div>
+                            <FileUploader
+                              id={`acc-cedula-${acc.id}`}
+                              label="Cédula del accionista"
+                              file={acc.cedula}
+                              onFileChange={(file) => setAccionistas(prev => prev.map(a => a.id === acc.id ? { ...a, cedula: file } : a))}
+                              required
+                            />
+                            <FileUploader
+                              id={`acc-rif-${acc.id}`}
+                              label="RIF del accionista"
+                              file={acc.rif}
+                              onFileChange={(file) => setAccionistas(prev => prev.map(a => a.id === acc.id ? { ...a, rif: file } : a))}
+                              required
+                            />
+                          </div>
+                        ))}
 
-                    <FileUploader
-                      id="docDeclaracionISLR"
-                      label="Declaración de Impuesto Sobre la Renta (Planilla o Certificado)"
-                      file={(formData as any).docDeclaracionISLR || null}
-                      onFileChange={(file) => handleFileChange("docDeclaracionISLR", file)}
-                      required
-                      validationStatus={getValidation("docDeclaracionISLR").status}
-                      validationMessage={getValidation("docDeclaracionISLR").message}
-                      validationObservations={getValidation("docDeclaracionISLR").observations}
-                    />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => setAccionistas(prev => [...prev, { id: crypto.randomUUID(), cedula: null, rif: null }])}
+                        >
+                          + Agregar otro accionista
+                        </Button>
+                      </div>
+                    </div>
 
-                    <FileUploader
-                      id="docReferenciaBancaria"
-                      label="Referencia Bancaria (no mayor a 3 meses)"
-                      file={(formData as any).docReferenciaBancaria || null}
-                      onFileChange={(file) => handleFileChange("docReferenciaBancaria", file)}
-                      required
-                      validationStatus={getValidation("docReferenciaBancaria").status}
-                      validationMessage={getValidation("docReferenciaBancaria").message}
-                      validationObservations={getValidation("docReferenciaBancaria").observations}
-                    />
+                    {/* SECCIÓN 3: DOCUMENTOS DE LA MOTO */}
+                    <div>
+                      <div className="border-l-4 border-primary pl-3 mb-4">
+                        <h3 className="text-lg font-semibold text-foreground">Documentos de la Moto</h3>
+                        <p className="text-sm text-muted-foreground">
+                          La factura es obligatoria. Adicionalmente cargue Certificado de Origen <strong>o</strong> Título de Propiedad.
+                        </p>
+                      </div>
+                      <div className="space-y-6">
+                        <FileUploader
+                          id="docFacturaCompra"
+                          label="Factura de Compra del Vehículo"
+                          file={formData.docFacturaCompra}
+                          onFileChange={(file) => handleFileChange("docFacturaCompra", file)}
+                          required
+                          validationStatus={getValidation("docFacturaCompra").status}
+                          validationMessage={getValidation("docFacturaCompra").message}
+                          validationObservations={getValidation("docFacturaCompra").observations}
+                        />
 
-                    <FileUploader
-                      id="docCedulaAccionistas"
-                      label="Cédula de Accionistas"
-                      file={(formData as any).docCedulaAccionistas || null}
-                      onFileChange={(file) => handleFileChange("docCedulaAccionistas", file)}
-                      required
-                      validationStatus={getValidation("docCedulaAccionistas").status}
-                      validationMessage={getValidation("docCedulaAccionistas").message}
-                      validationObservations={getValidation("docCedulaAccionistas").observations}
-                    />
+                        <FileUploader
+                          id="docOrigenVehiculo"
+                          label="Certificado de Origen del Vehículo"
+                          file={formData.docOrigenVehiculo}
+                          onFileChange={(file) => handleFileChange("docOrigenVehiculo", file)}
+                          validationStatus={getValidation("docOrigenVehiculo").status}
+                          validationMessage={getValidation("docOrigenVehiculo").message}
+                          validationObservations={getValidation("docOrigenVehiculo").observations}
+                        />
 
-                    <FileUploader
-                      id="docRIFAccionistas"
-                      label="RIF de los Accionistas Actualizados"
-                      file={(formData as any).docRIFAccionistas || null}
-                      onFileChange={(file) => handleFileChange("docRIFAccionistas", file)}
-                      required
-                      validationStatus={getValidation("docRIFAccionistas").status}
-                      validationMessage={getValidation("docRIFAccionistas").message}
-                      validationObservations={getValidation("docRIFAccionistas").observations}
-                    />
-
-                    <FileUploader
-                      id="docRIFEmpresa"
-                      label="RIF de la Empresa"
-                      file={(formData as any).docRIFEmpresa || null}
-                      onFileChange={(file) => handleFileChange("docRIFEmpresa", file)}
-                      required
-                      validationStatus={getValidation("docRIFEmpresa").status}
-                      validationMessage={getValidation("docRIFEmpresa").message}
-                      validationObservations={getValidation("docRIFEmpresa").observations}
-                    />
+                        <FileUploader
+                          id="docTituloPropiedad"
+                          label="Título de Propiedad (alternativa al Cert. de Origen)"
+                          file={formData.docTituloPropiedad}
+                          onFileChange={(file) => handleFileChange("docTituloPropiedad", file)}
+                        />
+                        <p className="text-xs text-muted-foreground -mt-3">
+                          Debe cargar al menos uno: Certificado de Origen <strong>o</strong> Título de Propiedad.
+                        </p>
+                      </div>
+                    </div>
 
                     <div className="p-4 bg-muted rounded-lg">
                       <p className="text-xs text-muted-foreground leading-relaxed">
-                        El arriba identificado como asegurado propuesto, como solicitante de la póliza o en representación de este, 
-                        declaro que la información aquí suministrada es exacta, sin omisión alguna de detalle, hecho o circunstancia, 
+                        El arriba identificado como asegurado propuesto, como solicitante de la póliza o en representación de este,
+                        declaro que la información aquí suministrada es exacta, sin omisión alguna de detalle, hecho o circunstancia,
                         con el propósito de eliminar el riesgo, en el entendido que servirá de base para la emisión de la póliza.
                       </p>
                     </div>
 
                     <div className="flex gap-3 pt-4">
-                      <Button 
-                        onClick={() => setCurrentStep(5)} 
-                        variant="outline" 
-                        className="flex-1" 
+                      <Button
+                        onClick={() => setCurrentStep(5)}
+                        variant="outline"
+                        className="flex-1"
                         disabled={isSubmitting}
                       >
                         Anterior
                       </Button>
-                      <Button 
-                        onClick={handleSubmit} 
-                        variant="hero" 
-                        className="flex-1" 
-                        disabled={
-                          isSubmitting || 
-                          !formData.docIdentidad || 
-                          !formData.docLicenciaConducir || 
-                          !formData.docCertificadoMedico || 
-                          !formData.docOrigenVehiculo || 
-                          !formData.docFacturaCompra || 
-                          !formData.docRIF ||
-                          !(formData as any).docActaAsamblea ||
-                          !(formData as any).docActaConstitutiva ||
-                          !(formData as any).docDeclaracionISLR ||
-                          !(formData as any).docReferenciaBancaria ||
-                          !(formData as any).docCedulaAccionistas ||
-                          !(formData as any).docRIFAccionistas ||
-                          !(formData as any).docRIFEmpresa ||
-                          !allCriticalDocsValid() ||
-                          hasAnyValidating()
-                        }
+                      <Button
+                        onClick={() => {
+                          // Validación amigable: listar faltantes
+                          const missing: string[] = [];
+                          if (!(formData as any).docRIFEmpresa) missing.push("RIF de la Empresa");
+                          if (!(formData as any).docActaConstitutiva) missing.push("Registro Mercantil");
+                          if (!(formData as any).docActaAsamblea && !formData.sinActaAsamblea) {
+                            missing.push("Acta de Asamblea (o marque 'No hemos hecho asambleas')");
+                          }
+                          if (!(formData as any).docReferenciaBancaria) missing.push("Referencia Bancaria");
+                          if (!(formData as any).docDeclaracionISLR) missing.push("Declaración del ISLR");
+                          if (accionistas.length === 0) {
+                            missing.push("Al menos un accionista");
+                          } else {
+                            accionistas.forEach((a, i) => {
+                              if (!a.cedula) missing.push(`Cédula del accionista #${i + 1}`);
+                              if (!a.rif) missing.push(`RIF del accionista #${i + 1}`);
+                            });
+                          }
+                          if (!formData.docFacturaCompra) missing.push("Factura de Compra del Vehículo");
+                          if (!formData.docOrigenVehiculo && !formData.docTituloPropiedad) {
+                            missing.push("Certificado de Origen o Título de Propiedad");
+                          }
+                          if (missing.length > 0) {
+                            toast({
+                              title: "Faltan documentos por cargar",
+                              description: missing.join(" • "),
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          if (hasAnyValidating()) {
+                            toast({ title: "Validando documentos", description: "Espere a que termine la validación.", variant: "destructive" });
+                            return;
+                          }
+                          if (!allCriticalDocsValid()) {
+                            toast({ title: "Documentos no válidos", description: "Revise los documentos con errores.", variant: "destructive" });
+                            return;
+                          }
+                          handleSubmit();
+                        }}
+                        variant="hero"
+                        className="flex-1"
+                        disabled={isSubmitting}
                       >
                         {isSubmitting ? (
                           <>
