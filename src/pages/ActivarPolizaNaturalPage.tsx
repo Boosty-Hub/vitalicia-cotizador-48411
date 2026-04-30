@@ -1682,9 +1682,15 @@ const ActivarPolizaNaturalPage = () => {
                       </div>
                     </div>
 
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">
+                        📱 Ingresa un número celular con WhatsApp (lo usaremos para contactarte).
+                      </p>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="codigoTelefonico">Código Telefónico *</Label>
+                        <Label htmlFor="codigoTelefonico">Código de Celular (WhatsApp) *</Label>
                         <Select value={formData.codigoTelefonico} onValueChange={value => handleInputChange("codigoTelefonico", value)}>
                           <SelectTrigger>
                             <SelectValue placeholder="Seleccione un código" />
@@ -1697,7 +1703,7 @@ const ActivarPolizaNaturalPage = () => {
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="numeroTelefonico">Número Telefónico * (7 dígitos)</Label>
+                        <Label htmlFor="numeroTelefonico">Número de Celular (WhatsApp) * (7 dígitos)</Label>
                         <Input id="numeroTelefonico" type="tel" value={formData.numeroTelefonico} onChange={e => {
                           const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 7);
                           handleInputChange("numeroTelefonico", val);
