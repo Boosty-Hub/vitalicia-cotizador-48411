@@ -1436,17 +1436,8 @@ const ActivarPolizaJuridicaPage = () => {
               >
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
+                    <CardTitle>
                       <span>Datos del Tomador</span>
-                      <Button
-                        onClick={fillTestDataStep2}
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                      >
-                        <Wand2 className="w-4 h-4" />
-                        Llenar Prueba
-                      </Button>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -1533,17 +1524,8 @@ const ActivarPolizaJuridicaPage = () => {
               >
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
+                    <CardTitle>
                       <span className="text-primary">DATOS DEL REPRESENTANTE LEGAL</span>
-                      <Button
-                        onClick={fillTestDataStep3}
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                      >
-                        <Wand2 className="w-4 h-4" />
-                        Llenar Prueba
-                      </Button>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -1735,17 +1717,8 @@ const ActivarPolizaJuridicaPage = () => {
               >
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
+                    <CardTitle>
                       <span className="text-primary">Información de Contacto</span>
-                      <Button
-                        onClick={fillTestDataStep4}
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                      >
-                        <Wand2 className="w-4 h-4" />
-                        Llenar Prueba
-                      </Button>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
