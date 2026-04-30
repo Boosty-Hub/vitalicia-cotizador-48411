@@ -496,106 +496,64 @@ const ActivarPolizaNaturalPage = () => {
       setIsValidating(false);
     }
   };
-  const formatCedulaInput = (tipo: string, value: string) => {
-    // Remover caracteres no numéricos y guiones
-    const numbersOnly = value.replace(/[^0-9]/g, '');
+  const formatCedulaInput = (tipo: string, value: string) =>
+    formatCedulaInputHelper(tipo, value);
 
-    // Obtener el prefijo según el tipo
-    const prefix = tipo || '';
-    if (!prefix) return value;
+  const validateEmail = validateEmailFormat;
 
-    // Formatear según el tipo
-    switch (prefix) {
-      case 'V':
-      case 'E':
-        // Formato: V-12345678 (hasta 8 dígitos)
-        if (numbersOnly.length === 0) return `${prefix}-`;
-        return `${prefix}-${numbersOnly.slice(0, 8)}`;
-      case 'J':
-      case 'G':
-        // Formato: J-123456789-0 (hasta 9 dígitos + 1 dígito verificador)
-        if (numbersOnly.length === 0) return `${prefix}-`;
-        if (numbersOnly.length <= 9) {
-          return `${prefix}-${numbersOnly}`;
-        }
-        return `${prefix}-${numbersOnly.slice(0, 9)}-${numbersOnly.slice(9, 10)}`;
-      case 'P':
-        // Pasaporte: texto libre
-        return value;
-      default:
-        return value;
-    }
-  };
-  const validateEmail = (email: string): { valid: boolean; error: string } => {
-    if (!email) return { valid: true, error: "" };
-    
-    // Verificar que no contenga acentos o caracteres especiales latinos
-    const hasAccents = /[áéíóúÁÉÍÓÚñÑüÜ]/.test(email);
-    if (hasAccents) {
-      return { valid: false, error: "El correo no debe contener acentos o tildes" };
-    }
-    
-    // Verificar longitud máxima (API RMS requiere máximo 70 caracteres)
-    if (email.length > 70) {
-      return { valid: false, error: `El correo no puede tener más de 70 caracteres (actual: ${email.length})` };
-    }
-    
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return { valid: false, error: "Por favor ingrese un correo electrónico válido" };
-    }
-    
-    return { valid: true, error: "" };
-  };
-  
   const removeAccents = (str: string): string => {
     return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[ñÑ]/g, (match) => match === 'ñ' ? 'n' : 'N');
   };
 
   const handleInputChange = (field: string, value: string | File | null) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    // Email handling (sanitize + validate)
+    if ((field === "email" || field === "email2") && typeof value === "string") {
+      const cleanValue = removeAccents(value.trim());
+      setFormData(prev => ({ ...prev, [field]: cleanValue }));
+      const validation = validateEmail(cleanValue);
+      if (field === "email") setEmailError(validation.error);
+      else setEmail2Error(validation.error);
+      return;
+    }
 
-    // Validate and sanitize email fields
-    if (field === "email" && typeof value === "string") {
-      // Remover acentos automáticamente
-      const cleanValue = removeAccents(value.trim());
-      setFormData(prev => ({
-        ...prev,
-        [field]: cleanValue
-      }));
-      
-      const validation = validateEmail(cleanValue);
-      setEmailError(validation.error);
+    // Address: strip commas as the user types and validate
+    if (field === "direccion" && typeof value === "string") {
+      const clean = sanitizeDireccion(value);
+      setFormData(prev => ({ ...prev, direccion: clean }));
+      setDireccionError(clean ? validateDireccion(clean).error : "");
       return;
     }
-    if (field === "email2" && typeof value === "string") {
-      // Remover acentos automáticamente
-      const cleanValue = removeAccents(value.trim());
-      setFormData(prev => ({
-        ...prev,
-        [field]: cleanValue
-      }));
-      
-      const validation = validateEmail(cleanValue);
-      setEmail2Error(validation.error);
+
+    // Birthdate: must be adult
+    if (field === "fechaNacimiento" && typeof value === "string") {
+      setFormData(prev => ({ ...prev, fechaNacimiento: value }));
+      if (value && !isAdult(value)) {
+        setFechaNacimientoError("El titular debe ser mayor de edad (18 años o más)");
+      } else {
+        setFechaNacimientoError("");
+      }
       return;
     }
+
+    // Purchase date: in range
+    if (field === "fechaCompra" && typeof value === "string") {
+      setFormData(prev => ({ ...prev, fechaCompra: value }));
+      setFechaCompraError(value ? validateFechaCompraHelper(value).error : "");
+      return;
+    }
+
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
+
   const handleTipoIdentificacionChange = (value: string) => {
     setFormData(prev => {
-      // Si hay un número de cédula existente, reformatearlo con el nuevo tipo
       const currentNumero = prev.numeroCedula;
       let newNumero = '';
       if (currentNumero) {
-        // Extraer solo los números del valor actual
         const numbersOnly = currentNumero.replace(/[^0-9]/g, '');
         newNumero = formatCedulaInput(value, numbersOnly);
       } else {
-        // Si no hay número, solo poner el prefijo
-        newNumero = value ? `${value}-` : '';
+        newNumero = value === "P" ? "" : value ? `${value}-` : '';
       }
       return {
         ...prev,
@@ -603,6 +561,7 @@ const ActivarPolizaNaturalPage = () => {
         numeroCedula: newNumero
       };
     });
+    setCedulaError("");
   };
   const handleCedulaChange = (value: string) => {
     const formatted = formatCedulaInput(formData.tipoIdentificacion, value);
@@ -610,6 +569,11 @@ const ActivarPolizaNaturalPage = () => {
       ...prev,
       numeroCedula: formatted
     }));
+    if (formatted) {
+      setCedulaError(validateCedula(formData.tipoIdentificacion, formatted).error);
+    } else {
+      setCedulaError("");
+    }
   };
   const handleBeneficiarioTipoIdentificacionChange = (value: string) => {
     setFormData(prev => {
@@ -619,7 +583,7 @@ const ActivarPolizaNaturalPage = () => {
         const numbersOnly = currentNumero.replace(/[^0-9]/g, '');
         newNumero = formatCedulaInput(value, numbersOnly);
       } else {
-        newNumero = value ? `${value}-` : '';
+        newNumero = value === "P" ? "" : value ? `${value}-` : '';
       }
       return {
         ...prev,
@@ -627,6 +591,7 @@ const ActivarPolizaNaturalPage = () => {
         beneficiarioNumeroCedula: newNumero
       };
     });
+    setBeneficiarioCedulaError("");
   };
   const handleBeneficiarioCedulaChange = (value: string) => {
     const formatted = formatCedulaInput(formData.beneficiarioTipoIdentificacion, value);
@@ -634,6 +599,11 @@ const ActivarPolizaNaturalPage = () => {
       ...prev,
       beneficiarioNumeroCedula: formatted
     }));
+    if (formatted) {
+      setBeneficiarioCedulaError(validateCedula(formData.beneficiarioTipoIdentificacion, formatted).error);
+    } else {
+      setBeneficiarioCedulaError("");
+    }
   };
   const autoFillPersonalData = () => {
     const randomNames = ["Juan", "María", "Carlos", "Ana", "Pedro", "Laura", "José", "Carmen"];
