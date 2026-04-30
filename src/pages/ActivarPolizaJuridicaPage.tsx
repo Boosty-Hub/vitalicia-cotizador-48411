@@ -1547,7 +1547,7 @@ const ActivarPolizaJuridicaPage = () => {
                         onClick={() => setCurrentStep(3)}
                         variant="hero"
                         className="flex-1"
-                        disabled={!formData.nombreEmpresa || formData.nombreEmpresa.trim().length < 5 || !formData.tipoIdentificacion || !formData.numeroRIF || formData.numeroRIF.replace(/[^0-9]/g, '').length < 7 || !!numeroRIFError}
+                        disabled={!formData.nombreEmpresa || formData.nombreEmpresa.trim().length < 5 || !formData.tipoIdentificacion || formData.numeroRIF.replace(/[^0-9]/g, '').length !== 9 || !!numeroRIFError}
                       >
                         Siguiente
                       </Button>
