@@ -215,7 +215,7 @@ const ActivarPolizaJuridicaPage = () => {
         const uniqueTlf = tlfData.filter((item, index, self) =>
           item.cd_valdet && index === self.findIndex((t) => t.cd_valdet === item.cd_valdet)
         );
-        setCodigosTelefonicos(uniqueTlf);
+        setCodigosTelefonicos(filterCodigosMoviles(uniqueTlf) as Array<{ cd_valdet: string; s_descripcion: string }>);
       }
     };
 
