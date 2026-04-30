@@ -32,6 +32,8 @@ import {
   filterSexosByDescripcion,
   filterEstadosCiviles,
   filterCodigosMoviles,
+  validateRIFJuridico,
+  sanitizeRazonSocial,
 } from "@/lib/formValidation";
 
 const ActivarPolizaJuridicaPage = () => {
@@ -123,8 +125,15 @@ const ActivarPolizaJuridicaPage = () => {
     docCertificadoMedico: null as File | null,
     docOrigenVehiculo: null as File | null,
     docFacturaCompra: null as File | null,
+    docTituloPropiedad: null as File | null,
     docRIF: null as File | null,
+    sinActaAsamblea: false,
   });
+
+  // Accionistas dinámicos: cada uno con su Cédula y RIF
+  const [accionistas, setAccionistas] = useState<Array<{ id: string; cedula: File | null; rif: File | null }>>([
+    { id: crypto.randomUUID(), cedula: null, rif: null }
+  ]);
 
   const [serialConfirmado, setSerialConfirmado] = useState<boolean | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -471,34 +480,31 @@ const ActivarPolizaJuridicaPage = () => {
   };
 
   const handleInputChange = (field: string, value: string | File | null) => {
-    // Si es el campo de número de identificación de la empresa
-    if (field === "numeroRIF" && typeof value === "string") {
-      const prefix = getPrefixForTipoIdentificacion(formData.tipoIdentificacion);
-      
-      if (prefix && !value.startsWith(prefix)) {
-        if (value.length === 0) {
-          value = prefix;
-        } else if (!value.startsWith(prefix)) {
-          value = prefix + value.replace(/^[A-Z]-?/, '');
-        }
-      }
-      
-      const error = validateNumeroRIF(value, formData.tipoIdentificacion);
-      setNumeroRIFError(error);
+    // Razón social: bloquear comas
+    if (field === "nombreEmpresa" && typeof value === "string") {
+      const clean = sanitizeRazonSocial(value);
+      setFormData(prev => ({ ...prev, nombreEmpresa: clean }));
+      return;
     }
-    
-    // Si es el campo de cédula del representante
+
+    // Número de identificación de la empresa (J/G/W: 9 dígitos sin guion)
+    if (field === "numeroRIF" && typeof value === "string") {
+      const tipo = formData.tipoIdentificacion;
+      let cleaned = value.replace(/[^0-9]/g, "").slice(0, 9);
+      const error = cleaned.length === 0
+        ? ""
+        : (validateRIFJuridico(cleaned).error || "");
+      setNumeroRIFError(error);
+      setFormData(prev => ({ ...prev, numeroRIF: cleaned }));
+      return;
+    }
+
+    // Cédula del representante (V/E/P)
     if (field === "cedulaRepresentante" && typeof value === "string") {
       const tipo = formData.tipoIdentificacionRepresentante;
-      // Use shared helper for V/E/P with numeric ranges
       let formatted = value;
       if (tipo === "Venezolano" || tipo === "Extranjero" || tipo === "Pasaporte") {
         formatted = formatCedulaInputHelper(tipo, value);
-      } else {
-        const prefix = getPrefixForTipoIdentificacion(tipo);
-        if (prefix && !value.startsWith(prefix)) {
-          formatted = value.length === 0 ? prefix : prefix + value.replace(/^[A-Z]-?/, '');
-        }
       }
       setFormData(prev => ({ ...prev, cedulaRepresentante: formatted }));
       const v = validateCedula(tipo, formatted);
@@ -519,7 +525,7 @@ const ActivarPolizaJuridicaPage = () => {
       return;
     }
 
-    // Email fields: validate format (errors handled by surrounding code)
+    // Email fields
     if ((field === "correoElectronico" || field === "correoAlternativo") && typeof value === "string") {
       setFormData(prev => ({ ...prev, [field]: value.trim() }));
       return;
@@ -541,91 +547,37 @@ const ActivarPolizaJuridicaPage = () => {
   };
 
   const fetchCiudadesYMunicipios = async (cdEstado: string) => {
-    // Esta función ya no es necesaria, pero la mantenemos por compatibilidad
-    // El filtrado ahora se hace con useEffect
+    // Mantener compatibilidad
   };
 
-  const validateNumeroRIF = (value: string, tipo: string): string => {
-    if (!value || !tipo) return "";
-    
-    switch (tipo) {
-      case "Jurídico":
-      case "Juridico":
-      case "Gobierno":
-        // Formato: J-12345678-9 (13 caracteres)
-        if (value.length > 13) {
-          return "El RIF no puede exceder 13 caracteres (J-12345678-9)";
-        }
-        if (value.length > 2 && !/^J-\d{0,8}(-\d?)?$/.test(value)) {
-          return "Formato inválido. Use: J-12345678-9";
-        }
-        break;
-      case "Venezolano":
-        // Formato: V-12345678 (11 caracteres)
-        if (value.length > 11) {
-          return "La cédula no puede exceder 11 caracteres (V-12345678)";
-        }
-        if (value.length > 2 && !/^V-\d{0,8}$/.test(value)) {
-          return "Formato inválido. Use: V-12345678";
-        }
-        break;
-      case "Extranjero":
-        // Formato: E-12345678 (11 caracteres)
-        if (value.length > 11) {
-          return "La cédula no puede exceder 11 caracteres (E-12345678)";
-        }
-        if (value.length > 2 && !/^E-\d{0,8}$/.test(value)) {
-          return "Formato inválido. Use: E-12345678";
-        }
-        break;
-      case "Pasaporte":
-        // Formato alfanumérico, 6-15 caracteres
-        if (value.length > 15) {
-          return "El pasaporte no puede exceder 15 caracteres";
-        }
-        if (value.length > 0 && !/^[A-Z0-9]{0,15}$/.test(value)) {
-          return "Solo se permiten letras y números";
-        }
-        break;
-    }
-    
-    return "";
-  };
-
+  // Para tipos jurídicos no se usa prefijo (sin guión).
   const getPrefixForTipoIdentificacion = (tipo: string): string => {
     switch (tipo) {
-      case "Jurídico":
-      case "Juridico":
-      case "Gobierno":
-        return "J-";
       case "Venezolano":
         return "V-";
       case "Extranjero":
         return "E-";
-      case "Pasaporte":
-        return "";
       default:
         return "";
     }
   };
 
   const handleTipoIdentificacionChange = (value: string) => {
-    const prefix = getPrefixForTipoIdentificacion(value);
     setNumeroRIFError("");
-    setFormData(prev => ({ 
-      ...prev, 
+    setFormData(prev => ({
+      ...prev,
       tipoIdentificacion: value,
-      numeroRIF: prefix
+      numeroRIF: ""
     }));
   };
 
   const handleTipoIdentificacionRepresentanteChange = (value: string) => {
     const prefix = getPrefixForTipoIdentificacion(value);
     setCedulaRepresentanteError("");
-    setFormData(prev => ({ 
-      ...prev, 
+    setFormData(prev => ({
+      ...prev,
       tipoIdentificacionRepresentante: value,
-      cedulaRepresentante: prefix
+      cedulaRepresentante: value === "Pasaporte" ? "" : prefix
     }));
   };
 
@@ -1029,40 +981,51 @@ const ActivarPolizaJuridicaPage = () => {
     
     try {
       const fd: any = formData;
-      // Upload all documents to Supabase storage (6 base + 7 jurídicos)
+
+      // Subir documentos de moto y empresa en paralelo
       const [
-        cedulaUrl,
-        licenciaUrl,
-        certificadoUrl,
         origenUrl,
+        tituloUrl,
         facturaUrl,
-        rifUrl,
         actaAsambleaUrl,
         actaConstitutivaUrl,
         declaracionIslrUrl,
         referenciaBancariaUrl,
-        cedulaAccionistasUrl,
-        rifAccionistasUrl,
         rifEmpresaUrl,
       ] = await Promise.all([
-        formData.docIdentidad ? uploadFileToStorage(formData.docIdentidad, 'cedulas') : null,
-        formData.docLicenciaConducir ? uploadFileToStorage(formData.docLicenciaConducir, 'licencias') : null,
-        formData.docCertificadoMedico ? uploadFileToStorage(formData.docCertificadoMedico, 'certificados') : null,
         formData.docOrigenVehiculo ? uploadFileToStorage(formData.docOrigenVehiculo, 'origenes') : null,
+        formData.docTituloPropiedad ? uploadFileToStorage(formData.docTituloPropiedad, 'titulos-propiedad') : null,
         formData.docFacturaCompra ? uploadFileToStorage(formData.docFacturaCompra, 'facturas') : null,
-        formData.docRIF ? uploadFileToStorage(formData.docRIF, 'rifs') : null,
         fd.docActaAsamblea ? uploadFileToStorage(fd.docActaAsamblea, 'actas-asamblea') : null,
         fd.docActaConstitutiva ? uploadFileToStorage(fd.docActaConstitutiva, 'actas-constitutivas') : null,
         fd.docDeclaracionISLR ? uploadFileToStorage(fd.docDeclaracionISLR, 'islr') : null,
         fd.docReferenciaBancaria ? uploadFileToStorage(fd.docReferenciaBancaria, 'referencias-bancarias') : null,
-        fd.docCedulaAccionistas ? uploadFileToStorage(fd.docCedulaAccionistas, 'cedulas-accionistas') : null,
-        fd.docRIFAccionistas ? uploadFileToStorage(fd.docRIFAccionistas, 'rifs-accionistas') : null,
         fd.docRIFEmpresa ? uploadFileToStorage(fd.docRIFEmpresa, 'rifs-empresa') : null,
       ]);
 
-      // Validate the 6 mandatory base documents were uploaded
-      if (!cedulaUrl || !licenciaUrl || !certificadoUrl || !origenUrl || !facturaUrl || !rifUrl) {
-        throw new Error('Error al subir uno o más documentos');
+      // Subir documentos de cada accionista
+      const accionistasUploads = await Promise.all(
+        accionistas.map(async (a) => ({
+          cedulaUrl: a.cedula ? await uploadFileToStorage(a.cedula, 'cedulas-accionistas') : null,
+          rifUrl: a.rif ? await uploadFileToStorage(a.rif, 'rifs-accionistas') : null,
+        }))
+      );
+
+      // URLs concatenadas (mantener compatibilidad con columnas existentes)
+      const cedulaAccionistasUrl = accionistasUploads.map(a => a.cedulaUrl).filter(Boolean).join("\n") || null;
+      const rifAccionistasUrl = accionistasUploads.map(a => a.rifUrl).filter(Boolean).join("\n") || null;
+
+      // Compatibilidad con flujo existente: usamos los mismos nombres
+      const cedulaUrl = cedulaAccionistasUrl;
+      const licenciaUrl = null;
+      const certificadoUrl = null;
+      const rifUrl = rifEmpresaUrl;
+      // Si no hay Cert. de Origen, usar Título de Propiedad como respaldo en la columna existente
+      const origenFinalUrl = origenUrl || tituloUrl;
+
+      // Validaciones mínimas
+      if (!facturaUrl || !origenFinalUrl || !rifEmpresaUrl) {
+        throw new Error('Error al subir uno o más documentos obligatorios');
       }
 
       // Fetch precio venta para EMPIRE
@@ -1223,7 +1186,7 @@ const ActivarPolizaJuridicaPage = () => {
         cedulaUrl,
         licenciaUrl,
         certificadoUrl,
-        origenUrl,
+        origenFinalUrl,
         facturaUrl,
         rifUrl,
         {
@@ -1357,7 +1320,7 @@ const ActivarPolizaJuridicaPage = () => {
             className="mb-6 sm:mb-8"
           >
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-2">
-              Activación Persona Jurídica
+              ACTIVACIÓN DE PÓLIZA PERSONA JURÍDICA
             </h1>
             <p className="text-muted-foreground">
               Paso {currentStep} de {totalSteps}
@@ -1474,7 +1437,7 @@ const ActivarPolizaJuridicaPage = () => {
                           <p className="text-foreground text-lg">{vehicleData.Color || "N/A"}</p>
                         </div>
                         <div className="col-span-2">
-                          <p className="text-muted-foreground font-medium">Carrocería:</p>
+                          <p className="text-muted-foreground font-medium">Serial de Carrocería:</p>
                           <p className="text-foreground text-lg">{vehicleData.Carroceria || "N/A"}</p>
                         </div>
                       </div>
@@ -1565,44 +1528,21 @@ const ActivarPolizaJuridicaPage = () => {
                             <SelectValue placeholder="Seleccione..." />
                           </SelectTrigger>
                           <SelectContent>
-                            {nacionalidades
-                              .filter((nac) => 
-                                nac.descripcion.toLowerCase() === 'jurídico' || 
-                                nac.descripcion.toLowerCase() === 'gobierno'
-                              )
-                              .map((nac) => (
-                                <SelectItem key={nac.descripcion} value={nac.descripcion}>
-                                  {nac.descripcion}
-                                </SelectItem>
-                              ))}
+                            <SelectItem value="Jurídico">Jurídico (J)</SelectItem>
+                            <SelectItem value="Gobierno">Gobierno (G)</SelectItem>
+                            <SelectItem value="Comuna">Comuna (W)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="numeroRIF">
-                          {formData.tipoIdentificacion === "Jurídico" || formData.tipoIdentificacion === "Juridico" || formData.tipoIdentificacion === "Gobierno"
-                            ? "Número de RIF" 
-                            : formData.tipoIdentificacion === "Venezolano"
-                            ? "Número de Cédula" 
-                            : formData.tipoIdentificacion === "Extranjero"
-                            ? "Número de Cédula"
-                            : formData.tipoIdentificacion === "Pasaporte"
-                            ? "Número de Pasaporte"
-                            : "Número de Identificación"} <span className="text-destructive">*</span>
+                          Número de Identificación (9 dígitos) <span className="text-destructive">*</span>
                         </Label>
                         <Input
                           id="numeroRIF"
-                          placeholder={
-                            formData.tipoIdentificacion === "Jurídico" || formData.tipoIdentificacion === "Juridico" || formData.tipoIdentificacion === "Gobierno"
-                              ? "J-12345678-9" 
-                            : formData.tipoIdentificacion === "Venezolano"
-                              ? "V-12345678" 
-                            : formData.tipoIdentificacion === "Extranjero"
-                              ? "E-12345678"
-                              : formData.tipoIdentificacion === "Pasaporte"
-                              ? "123456789"
-                              : "Ingrese el número"
-                          }
+                          placeholder="Ej: 012345678"
+                          inputMode="numeric"
+                          maxLength={9}
                           value={formData.numeroRIF}
                           onChange={(e) => handleInputChange("numeroRIF", e.target.value)}
                           className={numeroRIFError ? "border-destructive" : ""}
@@ -1625,7 +1565,7 @@ const ActivarPolizaJuridicaPage = () => {
                         onClick={() => setCurrentStep(3)}
                         variant="hero"
                         className="flex-1"
-                        disabled={!formData.nombreEmpresa || formData.nombreEmpresa.trim().length < 5 || !formData.tipoIdentificacion || !formData.numeroRIF || formData.numeroRIF.replace(/[^0-9]/g, '').length < 7 || !!numeroRIFError}
+                        disabled={!formData.nombreEmpresa || formData.nombreEmpresa.trim().length < 5 || !formData.tipoIdentificacion || formData.numeroRIF.replace(/[^0-9]/g, '').length !== 9 || !!numeroRIFError}
                       >
                         Siguiente
                       </Button>
@@ -2232,201 +2172,245 @@ const ActivarPolizaJuridicaPage = () => {
               >
                 <Card>
                   <CardHeader>
-                    <CardTitle>Carga de Documentos Personales</CardTitle>
+                    <CardTitle>Carga de Documentos</CardTitle>
                     <p className="text-sm text-muted-foreground mt-2">
-                      Por favor, cargue las fotos de los documentos que se indican a continuación:
+                      Por favor, cargue las fotos de los documentos agrupados a continuación.
                     </p>
                   </CardHeader>
-                  <CardContent className="space-y-6">
-                    <FileUploader
-                      id="docIdentidad"
-                      label="Cédula de Identidad"
-                      file={formData.docIdentidad}
-                      onFileChange={(file) => handleFileChange("docIdentidad", file)}
-                      required
-                      validationStatus={getValidation("docIdentidad").status}
-                      validationMessage={getValidation("docIdentidad").message}
-                      validationObservations={getValidation("docIdentidad").observations}
-                    />
+                  <CardContent className="space-y-8">
+                    {/* SECCIÓN 1: DOCUMENTOS DE LA EMPRESA */}
+                    <div>
+                      <div className="border-l-4 border-primary pl-3 mb-4">
+                        <h3 className="text-lg font-semibold text-foreground">Documentos de la Empresa</h3>
+                        <p className="text-sm text-muted-foreground">Documentación legal y fiscal de la empresa.</p>
+                      </div>
+                      <div className="space-y-6">
+                        <FileUploader
+                          id="docRIFEmpresa"
+                          label="RIF de la Empresa"
+                          file={(formData as any).docRIFEmpresa || null}
+                          onFileChange={(file) => handleFileChange("docRIFEmpresa", file)}
+                          required
+                          validationStatus={getValidation("docRIFEmpresa").status}
+                          validationMessage={getValidation("docRIFEmpresa").message}
+                          validationObservations={getValidation("docRIFEmpresa").observations}
+                        />
 
-                    <FileUploader
-                      id="docLicenciaConducir"
-                      label="Licencia de Conducir"
-                      file={formData.docLicenciaConducir}
-                      onFileChange={(file) => handleFileChange("docLicenciaConducir", file)}
-                      required
-                      validationStatus={getValidation("docLicenciaConducir").status}
-                      validationMessage={getValidation("docLicenciaConducir").message}
-                      validationObservations={getValidation("docLicenciaConducir").observations}
-                    />
+                        <FileUploader
+                          id="docActaConstitutiva"
+                          label="Registro Mercantil (Acta Constitutiva)"
+                          file={(formData as any).docActaConstitutiva || null}
+                          onFileChange={(file) => handleFileChange("docActaConstitutiva", file)}
+                          required
+                          validationStatus={getValidation("docActaConstitutiva").status}
+                          validationMessage={getValidation("docActaConstitutiva").message}
+                          validationObservations={getValidation("docActaConstitutiva").observations}
+                        />
 
-                    <FileUploader
-                      id="docCertificadoMedico"
-                      label="Certificado Médico"
-                      file={formData.docCertificadoMedico}
-                      onFileChange={(file) => handleFileChange("docCertificadoMedico", file)}
-                      required
-                      validationStatus={getValidation("docCertificadoMedico").status}
-                      validationMessage={getValidation("docCertificadoMedico").message}
-                      validationObservations={getValidation("docCertificadoMedico").observations}
-                    />
+                        <div className="space-y-2">
+                          <FileUploader
+                            id="docActaAsamblea"
+                            label="Acta de Asamblea (opcional)"
+                            file={(formData as any).docActaAsamblea || null}
+                            onFileChange={(file) => handleFileChange("docActaAsamblea", file)}
+                            validationStatus={getValidation("docActaAsamblea").status}
+                            validationMessage={getValidation("docActaAsamblea").message}
+                            validationObservations={getValidation("docActaAsamblea").observations}
+                          />
+                          {!((formData as any).docActaAsamblea) && (
+                            <label className="flex items-start gap-2 text-sm text-muted-foreground cursor-pointer p-2 rounded-md hover:bg-muted">
+                              <input
+                                type="checkbox"
+                                className="mt-1"
+                                checked={formData.sinActaAsamblea}
+                                onChange={(e) => setFormData(prev => ({ ...prev, sinActaAsamblea: e.target.checked }))}
+                              />
+                              <span>No hemos hecho asambleas (marcar para continuar sin cargar este documento).</span>
+                            </label>
+                          )}
+                        </div>
 
-                    <FileUploader
-                      id="docOrigenVehiculo"
-                      label="Certificado de Origen del Vehículo"
-                      file={formData.docOrigenVehiculo}
-                      onFileChange={(file) => handleFileChange("docOrigenVehiculo", file)}
-                      required
-                      validationStatus={getValidation("docOrigenVehiculo").status}
-                      validationMessage={getValidation("docOrigenVehiculo").message}
-                      validationObservations={getValidation("docOrigenVehiculo").observations}
-                    />
+                        <FileUploader
+                          id="docReferenciaBancaria"
+                          label="Referencia Bancaria (no mayor a 3 meses)"
+                          file={(formData as any).docReferenciaBancaria || null}
+                          onFileChange={(file) => handleFileChange("docReferenciaBancaria", file)}
+                          required
+                          validationStatus={getValidation("docReferenciaBancaria").status}
+                          validationMessage={getValidation("docReferenciaBancaria").message}
+                          validationObservations={getValidation("docReferenciaBancaria").observations}
+                        />
 
-                    <FileUploader
-                      id="docFacturaCompra"
-                      label="Factura de Compra del Vehículo"
-                      file={formData.docFacturaCompra}
-                      onFileChange={(file) => handleFileChange("docFacturaCompra", file)}
-                      required
-                      validationStatus={getValidation("docFacturaCompra").status}
-                      validationMessage={getValidation("docFacturaCompra").message}
-                      validationObservations={getValidation("docFacturaCompra").observations}
-                    />
-
-                    <FileUploader
-                      id="docRIF"
-                      label="RIF"
-                      file={formData.docRIF}
-                      onFileChange={(file) => handleFileChange("docRIF", file)}
-                      required
-                      validationStatus={getValidation("docRIF").status}
-                      validationMessage={getValidation("docRIF").message}
-                      validationObservations={getValidation("docRIF").observations}
-                    />
-
-                    <div className="border-t pt-6 mt-6">
-                      <h3 className="text-lg font-semibold text-foreground mb-1">Documentos de la Empresa</h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Documentos adicionales requeridos para la activación de póliza jurídica:
-                      </p>
+                        <FileUploader
+                          id="docDeclaracionISLR"
+                          label="Declaración del ISLR"
+                          file={(formData as any).docDeclaracionISLR || null}
+                          onFileChange={(file) => handleFileChange("docDeclaracionISLR", file)}
+                          required
+                          validationStatus={getValidation("docDeclaracionISLR").status}
+                          validationMessage={getValidation("docDeclaracionISLR").message}
+                          validationObservations={getValidation("docDeclaracionISLR").observations}
+                        />
+                      </div>
                     </div>
 
-                    <FileUploader
-                      id="docActaAsamblea"
-                      label="Acta de Asamblea"
-                      file={(formData as any).docActaAsamblea || null}
-                      onFileChange={(file) => handleFileChange("docActaAsamblea", file)}
-                      required
-                      validationStatus={getValidation("docActaAsamblea").status}
-                      validationMessage={getValidation("docActaAsamblea").message}
-                      validationObservations={getValidation("docActaAsamblea").observations}
-                    />
+                    {/* SECCIÓN 2: ACCIONISTAS (DINÁMICOS) */}
+                    <div>
+                      <div className="border-l-4 border-primary pl-3 mb-4 flex items-start justify-between gap-2">
+                        <div>
+                          <h3 className="text-lg font-semibold text-foreground">Documentos de los Accionistas</h3>
+                          <p className="text-sm text-muted-foreground">Por cada accionista, cargue su Cédula y RIF.</p>
+                        </div>
+                      </div>
 
-                    <FileUploader
-                      id="docActaConstitutiva"
-                      label="Acta Constitutiva o Registro Mercantil"
-                      file={(formData as any).docActaConstitutiva || null}
-                      onFileChange={(file) => handleFileChange("docActaConstitutiva", file)}
-                      required
-                      validationStatus={getValidation("docActaConstitutiva").status}
-                      validationMessage={getValidation("docActaConstitutiva").message}
-                      validationObservations={getValidation("docActaConstitutiva").observations}
-                    />
+                      <div className="space-y-4">
+                        {accionistas.map((acc, idx) => (
+                          <div key={acc.id} className="rounded-lg border bg-card p-4 space-y-4">
+                            <div className="flex items-center justify-between">
+                              <p className="font-semibold text-foreground">Accionista #{idx + 1}</p>
+                              {accionistas.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => setAccionistas(prev => prev.filter(a => a.id !== acc.id))}
+                                >
+                                  Eliminar
+                                </Button>
+                              )}
+                            </div>
+                            <FileUploader
+                              id={`acc-cedula-${acc.id}`}
+                              label="Cédula del accionista"
+                              file={acc.cedula}
+                              onFileChange={(file) => setAccionistas(prev => prev.map(a => a.id === acc.id ? { ...a, cedula: file } : a))}
+                              required
+                            />
+                            <FileUploader
+                              id={`acc-rif-${acc.id}`}
+                              label="RIF del accionista"
+                              file={acc.rif}
+                              onFileChange={(file) => setAccionistas(prev => prev.map(a => a.id === acc.id ? { ...a, rif: file } : a))}
+                              required
+                            />
+                          </div>
+                        ))}
 
-                    <FileUploader
-                      id="docDeclaracionISLR"
-                      label="Declaración de Impuesto Sobre la Renta (Planilla o Certificado)"
-                      file={(formData as any).docDeclaracionISLR || null}
-                      onFileChange={(file) => handleFileChange("docDeclaracionISLR", file)}
-                      required
-                      validationStatus={getValidation("docDeclaracionISLR").status}
-                      validationMessage={getValidation("docDeclaracionISLR").message}
-                      validationObservations={getValidation("docDeclaracionISLR").observations}
-                    />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => setAccionistas(prev => [...prev, { id: crypto.randomUUID(), cedula: null, rif: null }])}
+                        >
+                          + Agregar otro accionista
+                        </Button>
+                      </div>
+                    </div>
 
-                    <FileUploader
-                      id="docReferenciaBancaria"
-                      label="Referencia Bancaria (no mayor a 3 meses)"
-                      file={(formData as any).docReferenciaBancaria || null}
-                      onFileChange={(file) => handleFileChange("docReferenciaBancaria", file)}
-                      required
-                      validationStatus={getValidation("docReferenciaBancaria").status}
-                      validationMessage={getValidation("docReferenciaBancaria").message}
-                      validationObservations={getValidation("docReferenciaBancaria").observations}
-                    />
+                    {/* SECCIÓN 3: DOCUMENTOS DE LA MOTO */}
+                    <div>
+                      <div className="border-l-4 border-primary pl-3 mb-4">
+                        <h3 className="text-lg font-semibold text-foreground">Documentos de la Moto</h3>
+                        <p className="text-sm text-muted-foreground">
+                          La factura es obligatoria. Adicionalmente cargue Certificado de Origen <strong>o</strong> Título de Propiedad.
+                        </p>
+                      </div>
+                      <div className="space-y-6">
+                        <FileUploader
+                          id="docFacturaCompra"
+                          label="Factura de Compra del Vehículo"
+                          file={formData.docFacturaCompra}
+                          onFileChange={(file) => handleFileChange("docFacturaCompra", file)}
+                          required
+                          validationStatus={getValidation("docFacturaCompra").status}
+                          validationMessage={getValidation("docFacturaCompra").message}
+                          validationObservations={getValidation("docFacturaCompra").observations}
+                        />
 
-                    <FileUploader
-                      id="docCedulaAccionistas"
-                      label="Cédula de Accionistas"
-                      file={(formData as any).docCedulaAccionistas || null}
-                      onFileChange={(file) => handleFileChange("docCedulaAccionistas", file)}
-                      required
-                      validationStatus={getValidation("docCedulaAccionistas").status}
-                      validationMessage={getValidation("docCedulaAccionistas").message}
-                      validationObservations={getValidation("docCedulaAccionistas").observations}
-                    />
+                        <FileUploader
+                          id="docOrigenVehiculo"
+                          label="Certificado de Origen del Vehículo"
+                          file={formData.docOrigenVehiculo}
+                          onFileChange={(file) => handleFileChange("docOrigenVehiculo", file)}
+                          validationStatus={getValidation("docOrigenVehiculo").status}
+                          validationMessage={getValidation("docOrigenVehiculo").message}
+                          validationObservations={getValidation("docOrigenVehiculo").observations}
+                        />
 
-                    <FileUploader
-                      id="docRIFAccionistas"
-                      label="RIF de los Accionistas Actualizados"
-                      file={(formData as any).docRIFAccionistas || null}
-                      onFileChange={(file) => handleFileChange("docRIFAccionistas", file)}
-                      required
-                      validationStatus={getValidation("docRIFAccionistas").status}
-                      validationMessage={getValidation("docRIFAccionistas").message}
-                      validationObservations={getValidation("docRIFAccionistas").observations}
-                    />
-
-                    <FileUploader
-                      id="docRIFEmpresa"
-                      label="RIF de la Empresa"
-                      file={(formData as any).docRIFEmpresa || null}
-                      onFileChange={(file) => handleFileChange("docRIFEmpresa", file)}
-                      required
-                      validationStatus={getValidation("docRIFEmpresa").status}
-                      validationMessage={getValidation("docRIFEmpresa").message}
-                      validationObservations={getValidation("docRIFEmpresa").observations}
-                    />
+                        <FileUploader
+                          id="docTituloPropiedad"
+                          label="Título de Propiedad (alternativa al Cert. de Origen)"
+                          file={formData.docTituloPropiedad}
+                          onFileChange={(file) => handleFileChange("docTituloPropiedad", file)}
+                        />
+                        <p className="text-xs text-muted-foreground -mt-3">
+                          Debe cargar al menos uno: Certificado de Origen <strong>o</strong> Título de Propiedad.
+                        </p>
+                      </div>
+                    </div>
 
                     <div className="p-4 bg-muted rounded-lg">
                       <p className="text-xs text-muted-foreground leading-relaxed">
-                        El arriba identificado como asegurado propuesto, como solicitante de la póliza o en representación de este, 
-                        declaro que la información aquí suministrada es exacta, sin omisión alguna de detalle, hecho o circunstancia, 
+                        El arriba identificado como asegurado propuesto, como solicitante de la póliza o en representación de este,
+                        declaro que la información aquí suministrada es exacta, sin omisión alguna de detalle, hecho o circunstancia,
                         con el propósito de eliminar el riesgo, en el entendido que servirá de base para la emisión de la póliza.
                       </p>
                     </div>
 
                     <div className="flex gap-3 pt-4">
-                      <Button 
-                        onClick={() => setCurrentStep(5)} 
-                        variant="outline" 
-                        className="flex-1" 
+                      <Button
+                        onClick={() => setCurrentStep(5)}
+                        variant="outline"
+                        className="flex-1"
                         disabled={isSubmitting}
                       >
                         Anterior
                       </Button>
-                      <Button 
-                        onClick={handleSubmit} 
-                        variant="hero" 
-                        className="flex-1" 
-                        disabled={
-                          isSubmitting || 
-                          !formData.docIdentidad || 
-                          !formData.docLicenciaConducir || 
-                          !formData.docCertificadoMedico || 
-                          !formData.docOrigenVehiculo || 
-                          !formData.docFacturaCompra || 
-                          !formData.docRIF ||
-                          !(formData as any).docActaAsamblea ||
-                          !(formData as any).docActaConstitutiva ||
-                          !(formData as any).docDeclaracionISLR ||
-                          !(formData as any).docReferenciaBancaria ||
-                          !(formData as any).docCedulaAccionistas ||
-                          !(formData as any).docRIFAccionistas ||
-                          !(formData as any).docRIFEmpresa ||
-                          !allCriticalDocsValid() ||
-                          hasAnyValidating()
-                        }
+                      <Button
+                        onClick={() => {
+                          // Validación amigable: listar faltantes
+                          const missing: string[] = [];
+                          if (!(formData as any).docRIFEmpresa) missing.push("RIF de la Empresa");
+                          if (!(formData as any).docActaConstitutiva) missing.push("Registro Mercantil");
+                          if (!(formData as any).docActaAsamblea && !formData.sinActaAsamblea) {
+                            missing.push("Acta de Asamblea (o marque 'No hemos hecho asambleas')");
+                          }
+                          if (!(formData as any).docReferenciaBancaria) missing.push("Referencia Bancaria");
+                          if (!(formData as any).docDeclaracionISLR) missing.push("Declaración del ISLR");
+                          if (accionistas.length === 0) {
+                            missing.push("Al menos un accionista");
+                          } else {
+                            accionistas.forEach((a, i) => {
+                              if (!a.cedula) missing.push(`Cédula del accionista #${i + 1}`);
+                              if (!a.rif) missing.push(`RIF del accionista #${i + 1}`);
+                            });
+                          }
+                          if (!formData.docFacturaCompra) missing.push("Factura de Compra del Vehículo");
+                          if (!formData.docOrigenVehiculo && !formData.docTituloPropiedad) {
+                            missing.push("Certificado de Origen o Título de Propiedad");
+                          }
+                          if (missing.length > 0) {
+                            toast({
+                              title: "Faltan documentos por cargar",
+                              description: missing.join(" • "),
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          if (hasAnyValidating()) {
+                            toast({ title: "Validando documentos", description: "Espere a que termine la validación.", variant: "destructive" });
+                            return;
+                          }
+                          if (!allCriticalDocsValid()) {
+                            toast({ title: "Documentos no válidos", description: "Revise los documentos con errores.", variant: "destructive" });
+                            return;
+                          }
+                          handleSubmit();
+                        }}
+                        variant="hero"
+                        className="flex-1"
+                        disabled={isSubmitting}
                       >
                         {isSubmitting ? (
                           <>

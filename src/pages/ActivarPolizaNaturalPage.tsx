@@ -132,6 +132,7 @@ const ActivarPolizaNaturalPage = () => {
     docLicenciaConducir: null as File | null,
     docCertificadoMedico: null as File | null,
     docOrigenVehiculo: null as File | null,
+    docTituloPropiedad: null as File | null,
     docFacturaCompra: null as File | null,
     docRIF: null as File | null
   });
@@ -1426,7 +1427,7 @@ const ActivarPolizaNaturalPage = () => {
                           <p className="text-foreground text-lg">{vehicleData.Color || "N/A"}</p>
                         </div>
                         <div className="col-span-2">
-                          <p className="text-muted-foreground font-medium">Carrocería:</p>
+                          <p className="text-muted-foreground font-medium">Serial de Carrocería:</p>
                           <p className="text-foreground text-lg">{vehicleData.Carroceria || "N/A"}</p>
                         </div>
                       </div>
@@ -2119,89 +2120,140 @@ const ActivarPolizaNaturalPage = () => {
                   <CardHeader>
                     <CardTitle>Carga de Documentos</CardTitle>
                     <p className="text-sm text-muted-foreground mt-2">
-                      Por favor, cargue las fotos de los documentos que se indican a continuación:
+                      Por favor, cargue las fotos de los documentos agrupados a continuación.
                     </p>
                   </CardHeader>
-                  <CardContent className="space-y-6">
-                    <FileUploader
-                      id="docIdentidad"
-                      label="Cédula de Identidad"
-                      file={formData.docIdentidad}
-                      onFileChange={(file) => handleFileChange("docIdentidad", file)}
-                      required
-                      validationStatus={getValidation("docIdentidad").status}
-                      validationMessage={getValidation("docIdentidad").message}
-                      validationObservations={getValidation("docIdentidad").observations}
-                    />
+                  <CardContent className="space-y-8">
+                    {/* SECCIÓN 1: TITULAR */}
+                    <div>
+                      <div className="border-l-4 border-primary pl-3 mb-4">
+                        <h3 className="text-lg font-semibold text-foreground">Documentos del Titular de la Póliza</h3>
+                      </div>
+                      <div className="space-y-6">
+                        <FileUploader
+                          id="docIdentidad"
+                          label="Cédula de Identidad"
+                          file={formData.docIdentidad}
+                          onFileChange={(file) => handleFileChange("docIdentidad", file)}
+                          required
+                          validationStatus={getValidation("docIdentidad").status}
+                          validationMessage={getValidation("docIdentidad").message}
+                          validationObservations={getValidation("docIdentidad").observations}
+                        />
+                        <FileUploader
+                          id="docRIF"
+                          label="RIF"
+                          file={formData.docRIF}
+                          onFileChange={(file) => handleFileChange("docRIF", file)}
+                          required
+                          validationStatus={getValidation("docRIF").status}
+                          validationMessage={getValidation("docRIF").message}
+                          validationObservations={getValidation("docRIF").observations}
+                        />
+                        <FileUploader
+                          id="docLicenciaConducir"
+                          label="Licencia de Conducir"
+                          file={formData.docLicenciaConducir}
+                          onFileChange={(file) => handleFileChange("docLicenciaConducir", file)}
+                          required
+                          validationStatus={getValidation("docLicenciaConducir").status}
+                          validationMessage={getValidation("docLicenciaConducir").message}
+                          validationObservations={getValidation("docLicenciaConducir").observations}
+                        />
+                        <FileUploader
+                          id="docCertificadoMedico"
+                          label="Certificado Médico"
+                          file={formData.docCertificadoMedico}
+                          onFileChange={(file) => handleFileChange("docCertificadoMedico", file)}
+                          required
+                          validationStatus={getValidation("docCertificadoMedico").status}
+                          validationMessage={getValidation("docCertificadoMedico").message}
+                          validationObservations={getValidation("docCertificadoMedico").observations}
+                        />
+                      </div>
+                    </div>
 
-                    <FileUploader
-                      id="docLicenciaConducir"
-                      label="Licencia de Conducir"
-                      file={formData.docLicenciaConducir}
-                      onFileChange={(file) => handleFileChange("docLicenciaConducir", file)}
-                      required
-                      validationStatus={getValidation("docLicenciaConducir").status}
-                      validationMessage={getValidation("docLicenciaConducir").message}
-                      validationObservations={getValidation("docLicenciaConducir").observations}
-                    />
-
-                    <FileUploader
-                      id="docCertificadoMedico"
-                      label="Certificado Médico"
-                      file={formData.docCertificadoMedico}
-                      onFileChange={(file) => handleFileChange("docCertificadoMedico", file)}
-                      required
-                      validationStatus={getValidation("docCertificadoMedico").status}
-                      validationMessage={getValidation("docCertificadoMedico").message}
-                      validationObservations={getValidation("docCertificadoMedico").observations}
-                    />
-
-                    <FileUploader
-                      id="docOrigenVehiculo"
-                      label="Certificado de Origen del Vehículo"
-                      file={formData.docOrigenVehiculo}
-                      onFileChange={(file) => handleFileChange("docOrigenVehiculo", file)}
-                      required
-                      validationStatus={getValidation("docOrigenVehiculo").status}
-                      validationMessage={getValidation("docOrigenVehiculo").message}
-                      validationObservations={getValidation("docOrigenVehiculo").observations}
-                    />
-
-                    <FileUploader
-                      id="docFacturaCompra"
-                      label="Factura de Compra del Vehículo"
-                      file={formData.docFacturaCompra}
-                      onFileChange={(file) => handleFileChange("docFacturaCompra", file)}
-                      required
-                      validationStatus={getValidation("docFacturaCompra").status}
-                      validationMessage={getValidation("docFacturaCompra").message}
-                      validationObservations={getValidation("docFacturaCompra").observations}
-                    />
-
-                    <FileUploader
-                      id="docRIF"
-                      label="RIF"
-                      file={formData.docRIF}
-                      onFileChange={(file) => handleFileChange("docRIF", file)}
-                      required
-                      validationStatus={getValidation("docRIF").status}
-                      validationMessage={getValidation("docRIF").message}
-                      validationObservations={getValidation("docRIF").observations}
-                    />
+                    {/* SECCIÓN 2: MOTO */}
+                    <div>
+                      <div className="border-l-4 border-primary pl-3 mb-4">
+                        <h3 className="text-lg font-semibold text-foreground">Documentos de la Moto</h3>
+                        <p className="text-sm text-muted-foreground">
+                          La factura es obligatoria. Adicionalmente cargue Certificado de Origen <strong>o</strong> Título de Propiedad.
+                        </p>
+                      </div>
+                      <div className="space-y-6">
+                        <FileUploader
+                          id="docFacturaCompra"
+                          label="Factura de Compra del Vehículo"
+                          file={formData.docFacturaCompra}
+                          onFileChange={(file) => handleFileChange("docFacturaCompra", file)}
+                          required
+                          validationStatus={getValidation("docFacturaCompra").status}
+                          validationMessage={getValidation("docFacturaCompra").message}
+                          validationObservations={getValidation("docFacturaCompra").observations}
+                        />
+                        <FileUploader
+                          id="docOrigenVehiculo"
+                          label="Certificado de Origen del Vehículo"
+                          file={formData.docOrigenVehiculo}
+                          onFileChange={(file) => handleFileChange("docOrigenVehiculo", file)}
+                          validationStatus={getValidation("docOrigenVehiculo").status}
+                          validationMessage={getValidation("docOrigenVehiculo").message}
+                          validationObservations={getValidation("docOrigenVehiculo").observations}
+                        />
+                        <FileUploader
+                          id="docTituloPropiedad"
+                          label="Título de Propiedad (alternativa al Cert. de Origen)"
+                          file={formData.docTituloPropiedad}
+                          onFileChange={(file) => handleFileChange("docTituloPropiedad", file)}
+                        />
+                        <p className="text-xs text-muted-foreground -mt-3">
+                          Debe cargar al menos uno: Certificado de Origen <strong>o</strong> Título de Propiedad.
+                        </p>
+                      </div>
+                    </div>
 
                     <div className="p-4 bg-muted rounded-lg">
                       <p className="text-xs text-muted-foreground leading-relaxed">
-                        El arriba identificado como asegurado propuesto, como solicitante de la póliza o en representación de este, 
-                        declaro que la información aquí suministrada es exacta, sin omisión alguna de detalle, hecho o circunstancia, 
+                        El arriba identificado como asegurado propuesto, como solicitante de la póliza o en representación de este,
+                        declaro que la información aquí suministrada es exacta, sin omisión alguna de detalle, hecho o circunstancia,
                         con el propósito de eliminar el riesgo, en el entendido que servirá de base para la emisión de la póliza.
                       </p>
                     </div>
 
-                     <div className="flex gap-3 pt-4">
+                    <div className="flex gap-3 pt-4">
                       <Button onClick={() => setCurrentStep(4)} variant="outline" className="flex-1" disabled={isSubmitting}>
                         Anterior
                       </Button>
-                      <Button onClick={handleSubmit} variant="hero" className="flex-1" disabled={isSubmitting || !formData.docIdentidad || !formData.docLicenciaConducir || !formData.docCertificadoMedico || !formData.docOrigenVehiculo || !formData.docFacturaCompra || !formData.docRIF || !allCriticalDocsValid() || hasAnyValidating()}>
+                      <Button
+                        onClick={() => {
+                          const missing: string[] = [];
+                          if (!formData.docIdentidad) missing.push("Cédula de Identidad");
+                          if (!formData.docRIF) missing.push("RIF");
+                          if (!formData.docLicenciaConducir) missing.push("Licencia de Conducir");
+                          if (!formData.docCertificadoMedico) missing.push("Certificado Médico");
+                          if (!formData.docFacturaCompra) missing.push("Factura de Compra");
+                          if (!formData.docOrigenVehiculo && !formData.docTituloPropiedad) {
+                            missing.push("Certificado de Origen o Título de Propiedad");
+                          }
+                          if (missing.length > 0) {
+                            toast({ title: "Faltan documentos por cargar", description: missing.join(" • "), variant: "destructive" });
+                            return;
+                          }
+                          if (hasAnyValidating()) {
+                            toast({ title: "Validando documentos", description: "Espere a que termine la validación.", variant: "destructive" });
+                            return;
+                          }
+                          if (!allCriticalDocsValid()) {
+                            toast({ title: "Documentos no válidos", description: "Revise los documentos con errores.", variant: "destructive" });
+                            return;
+                          }
+                          handleSubmit();
+                        }}
+                        variant="hero"
+                        className="flex-1"
+                        disabled={isSubmitting}
+                      >
                         {isSubmitting ? (
                           <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />

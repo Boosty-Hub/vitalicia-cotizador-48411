@@ -47,13 +47,30 @@ export function formatCedulaInput(tipo: string, value: string): string {
     return `${prefix}-${numbersOnly.slice(0, 8)}`;
   }
 
-  if (tipo === "J" || tipo === "G") {
-    if (numbersOnly.length === 0) return `${tipo}-`;
-    if (numbersOnly.length <= 9) return `${tipo}-${numbersOnly}`;
-    return `${tipo}-${numbersOnly.slice(0, 9)}-${numbersOnly.slice(9, 10)}`;
+  // J (Jurídico), G (Gobierno), W (Comuna): 9 numeric digits, no dash, leading zeros allowed.
+  if (tipo === "J" || tipo === "G" || tipo === "W" || tipo === "Jurídico" || tipo === "Juridico" || tipo === "Gobierno" || tipo === "Comuna") {
+    return numbersOnly.slice(0, 9);
   }
 
   return value;
+}
+
+/**
+ * Validate juridical/government/comuna ID: exactly 9 numeric digits.
+ * Leading zeros are allowed.
+ */
+export function validateRIFJuridico(value: string): { valid: boolean; error: string } {
+  if (!value) return { valid: false, error: "Número de identificación requerido" };
+  const digits = value.replace(/[^0-9]/g, "");
+  if (digits.length !== 9) {
+    return { valid: false, error: `El número debe tener exactamente 9 dígitos (actual: ${digits.length})` };
+  }
+  return { valid: true, error: "" };
+}
+
+/** Sanitize Razón Social: strip commas. */
+export function sanitizeRazonSocial(value: string): string {
+  return value.replace(/,/g, "");
 }
 
 /**
