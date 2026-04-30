@@ -1232,59 +1232,8 @@ const ActivarPolizaJuridicaPage = () => {
     }
   };
 
-  const fillTestDataStep2 = () => {
-    setFormData(prev => ({
-      ...prev,
-      nombreEmpresa: "Inversiones El Roble C.A.",
-      tipoIdentificacion: "RIF",
-      numeroRIF: "J-12345678-9"
-    }));
-    toast({
-      title: "Datos de prueba cargados",
-      description: "Formulario llenado con datos aleatorios"
-    });
-  };
 
-  const fillTestDataStep3 = () => {
-    setFormData(prev => ({
-      ...prev,
-      nombresRepresentante: "Carlos Alberto",
-      apellidosRepresentante: "González Pérez",
-      tipoIdentificacionRepresentante: "Venezolano",
-      cedulaRepresentante: "V-12345678",
-      estadoCivilRepresentante: "Casado",
-      sexoRepresentante: "Masculino",
-      fechaNacimientoRepresentante: "1985-05-15"
-    }));
-    toast({
-      title: "Datos de prueba cargados",
-      description: "Formulario llenado con datos aleatorios"
-    });
-  };
 
-  const fillTestDataStep4 = () => {
-    setFormData(prev => ({
-      ...prev,
-      actividadEconomica: "Comercio",
-      direccion: "Av. Principal, Centro Empresarial Torre Norte, Piso 5",
-      estado: "Distrito Capital",
-      ciudad: "Caracas",
-      municipio: "Libertador",
-      codigoPostal: "1050",
-      codigoTelefonicoWhatsapp: "0412",
-      telefonoCelular: "9876543",
-      codigoTelefonicoResidencial: "0212",
-      telefonoOficina: "5551234",
-      correoElectronico: "contacto@empresa-test.com",
-      correoAlternativo: "info@empresa-test.com"
-    }));
-    toast({
-      title: "Datos de prueba cargados",
-      description: "Formulario llenado con datos aleatorios"
-    });
-  };
-
-  const pageVariants = {
     initial: { opacity: 0, x: 20 },
     in: { opacity: 1, x: 0 },
     out: { opacity: 0, x: -20 }
