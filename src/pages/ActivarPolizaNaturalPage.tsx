@@ -1343,7 +1343,7 @@ const ActivarPolizaNaturalPage = () => {
           duration: 0.5
         }} className="mb-6 sm:mb-8">
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-2">
-              Activación Persona Natural
+              ACTIVACIÓN DE PÓLIZA DE PERSONA NATURAL
             </h1>
             <p className="text-muted-foreground">
               Paso {currentStep} de {totalSteps}
@@ -2213,11 +2213,15 @@ const ActivarPolizaNaturalPage = () => {
                       </div>
                     </div>
 
-                    <div className="p-4 bg-muted rounded-lg">
+                    <div className="p-4 bg-muted rounded-lg space-y-3">
                       <p className="text-xs text-muted-foreground leading-relaxed">
-                        El arriba identificado como asegurado propuesto, como solicitante de la póliza o en representación de este,
-                        declaro que la información aquí suministrada es exacta, sin omisión alguna de detalle, hecho o circunstancia,
-                        con el propósito de eliminar el riesgo, en el entendido que servirá de base para la emisión de la póliza.
+                        El arriba identificado como asegurado propuesto, como solicitante de la póliza o en representación de este, declaro que la información aquí suministrada es exacta, sin omisión alguna de detalle, hecho o circunstancia, con el propósito de aminorar el riesgo, en el entendido que esta servirá de base a Seguros La Vitalicia, C.A. para la emisión de la póliza.
+                      </p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Doy fe de que el dinero utilizado para el pago de la prima, proviene de una fuente lícita y su origen no guarda relación alguna con capitales, bienes, haberes, valores, títulos u operaciones, producto de actividades ilícitas o que provenga de los delitos de Delincuencia Organizada u otras conductas tipificadas en la legislación venezolana.
+                      </p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Al presionar «ENVIAR», estoy manifestando mi consentimiento y aceptación de los términos y condiciones del contrato de seguros, así como las condiciones de la presente póliza.
                       </p>
                     </div>
 
