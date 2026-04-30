@@ -1186,7 +1186,7 @@ const ActivarPolizaJuridicaPage = () => {
         cedulaUrl,
         licenciaUrl,
         certificadoUrl,
-        origenUrl,
+        origenFinalUrl,
         facturaUrl,
         rifUrl,
         {
