@@ -1510,44 +1510,21 @@ const ActivarPolizaJuridicaPage = () => {
                             <SelectValue placeholder="Seleccione..." />
                           </SelectTrigger>
                           <SelectContent>
-                            {nacionalidades
-                              .filter((nac) => 
-                                nac.descripcion.toLowerCase() === 'jurídico' || 
-                                nac.descripcion.toLowerCase() === 'gobierno'
-                              )
-                              .map((nac) => (
-                                <SelectItem key={nac.descripcion} value={nac.descripcion}>
-                                  {nac.descripcion}
-                                </SelectItem>
-                              ))}
+                            <SelectItem value="Jurídico">Jurídico (J)</SelectItem>
+                            <SelectItem value="Gobierno">Gobierno (G)</SelectItem>
+                            <SelectItem value="Comuna">Comuna (W)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="numeroRIF">
-                          {formData.tipoIdentificacion === "Jurídico" || formData.tipoIdentificacion === "Juridico" || formData.tipoIdentificacion === "Gobierno"
-                            ? "Número de RIF" 
-                            : formData.tipoIdentificacion === "Venezolano"
-                            ? "Número de Cédula" 
-                            : formData.tipoIdentificacion === "Extranjero"
-                            ? "Número de Cédula"
-                            : formData.tipoIdentificacion === "Pasaporte"
-                            ? "Número de Pasaporte"
-                            : "Número de Identificación"} <span className="text-destructive">*</span>
+                          Número de Identificación (9 dígitos) <span className="text-destructive">*</span>
                         </Label>
                         <Input
                           id="numeroRIF"
-                          placeholder={
-                            formData.tipoIdentificacion === "Jurídico" || formData.tipoIdentificacion === "Juridico" || formData.tipoIdentificacion === "Gobierno"
-                              ? "J-12345678-9" 
-                            : formData.tipoIdentificacion === "Venezolano"
-                              ? "V-12345678" 
-                            : formData.tipoIdentificacion === "Extranjero"
-                              ? "E-12345678"
-                              : formData.tipoIdentificacion === "Pasaporte"
-                              ? "123456789"
-                              : "Ingrese el número"
-                          }
+                          placeholder="Ej: 012345678"
+                          inputMode="numeric"
+                          maxLength={9}
                           value={formData.numeroRIF}
                           onChange={(e) => handleInputChange("numeroRIF", e.target.value)}
                           className={numeroRIFError ? "border-destructive" : ""}
