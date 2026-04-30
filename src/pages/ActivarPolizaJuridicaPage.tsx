@@ -540,91 +540,37 @@ const ActivarPolizaJuridicaPage = () => {
   };
 
   const fetchCiudadesYMunicipios = async (cdEstado: string) => {
-    // Esta función ya no es necesaria, pero la mantenemos por compatibilidad
-    // El filtrado ahora se hace con useEffect
+    // Mantener compatibilidad
   };
 
-  const validateNumeroRIF = (value: string, tipo: string): string => {
-    if (!value || !tipo) return "";
-    
-    switch (tipo) {
-      case "Jurídico":
-      case "Juridico":
-      case "Gobierno":
-        // Formato: J-12345678-9 (13 caracteres)
-        if (value.length > 13) {
-          return "El RIF no puede exceder 13 caracteres (J-12345678-9)";
-        }
-        if (value.length > 2 && !/^J-\d{0,8}(-\d?)?$/.test(value)) {
-          return "Formato inválido. Use: J-12345678-9";
-        }
-        break;
-      case "Venezolano":
-        // Formato: V-12345678 (11 caracteres)
-        if (value.length > 11) {
-          return "La cédula no puede exceder 11 caracteres (V-12345678)";
-        }
-        if (value.length > 2 && !/^V-\d{0,8}$/.test(value)) {
-          return "Formato inválido. Use: V-12345678";
-        }
-        break;
-      case "Extranjero":
-        // Formato: E-12345678 (11 caracteres)
-        if (value.length > 11) {
-          return "La cédula no puede exceder 11 caracteres (E-12345678)";
-        }
-        if (value.length > 2 && !/^E-\d{0,8}$/.test(value)) {
-          return "Formato inválido. Use: E-12345678";
-        }
-        break;
-      case "Pasaporte":
-        // Formato alfanumérico, 6-15 caracteres
-        if (value.length > 15) {
-          return "El pasaporte no puede exceder 15 caracteres";
-        }
-        if (value.length > 0 && !/^[A-Z0-9]{0,15}$/.test(value)) {
-          return "Solo se permiten letras y números";
-        }
-        break;
-    }
-    
-    return "";
-  };
-
+  // Para tipos jurídicos no se usa prefijo (sin guión).
   const getPrefixForTipoIdentificacion = (tipo: string): string => {
     switch (tipo) {
-      case "Jurídico":
-      case "Juridico":
-      case "Gobierno":
-        return "J-";
       case "Venezolano":
         return "V-";
       case "Extranjero":
         return "E-";
-      case "Pasaporte":
-        return "";
       default:
         return "";
     }
   };
 
   const handleTipoIdentificacionChange = (value: string) => {
-    const prefix = getPrefixForTipoIdentificacion(value);
     setNumeroRIFError("");
-    setFormData(prev => ({ 
-      ...prev, 
+    setFormData(prev => ({
+      ...prev,
       tipoIdentificacion: value,
-      numeroRIF: prefix
+      numeroRIF: ""
     }));
   };
 
   const handleTipoIdentificacionRepresentanteChange = (value: string) => {
     const prefix = getPrefixForTipoIdentificacion(value);
     setCedulaRepresentanteError("");
-    setFormData(prev => ({ 
-      ...prev, 
+    setFormData(prev => ({
+      ...prev,
       tipoIdentificacionRepresentante: value,
-      cedulaRepresentante: prefix
+      cedulaRepresentante: value === "Pasaporte" ? "" : prefix
     }));
   };
 
