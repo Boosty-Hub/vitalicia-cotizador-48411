@@ -32,6 +32,8 @@ import {
   filterSexosByDescripcion,
   filterEstadosCiviles,
   filterCodigosMoviles,
+  validateRIFJuridico,
+  sanitizeRazonSocial,
 } from "@/lib/formValidation";
 
 const ActivarPolizaJuridicaPage = () => {
