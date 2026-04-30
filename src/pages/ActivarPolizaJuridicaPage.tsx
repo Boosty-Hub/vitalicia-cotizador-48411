@@ -489,18 +489,40 @@ const ActivarPolizaJuridicaPage = () => {
     
     // Si es el campo de cédula del representante
     if (field === "cedulaRepresentante" && typeof value === "string") {
-      const prefix = getPrefixForTipoIdentificacion(formData.tipoIdentificacionRepresentante);
-      
-      if (prefix && !value.startsWith(prefix)) {
-        if (value.length === 0) {
-          value = prefix;
-        } else if (!value.startsWith(prefix)) {
-          value = prefix + value.replace(/^[A-Z]-?/, '');
+      const tipo = formData.tipoIdentificacionRepresentante;
+      // Use shared helper for V/E/P with numeric ranges
+      let formatted = value;
+      if (tipo === "Venezolano" || tipo === "Extranjero" || tipo === "Pasaporte") {
+        formatted = formatCedulaInputHelper(tipo, value);
+      } else {
+        const prefix = getPrefixForTipoIdentificacion(tipo);
+        if (prefix && !value.startsWith(prefix)) {
+          formatted = value.length === 0 ? prefix : prefix + value.replace(/^[A-Z]-?/, '');
         }
       }
-      
-      const error = validateNumeroRIF(value, formData.tipoIdentificacionRepresentante);
-      setCedulaRepresentanteError(error);
+      setFormData(prev => ({ ...prev, cedulaRepresentante: formatted }));
+      const v = validateCedula(tipo, formatted);
+      setCedulaRepresentanteError(formatted ? v.error : "");
+      return;
+    }
+
+    // Address: strip commas + validate
+    if (field === "direccion" && typeof value === "string") {
+      const clean = sanitizeDireccion(value);
+      setFormData(prev => ({ ...prev, direccion: clean }));
+      return;
+    }
+
+    // Birthdate of representative: must be adult
+    if (field === "fechaNacimientoRepresentante" && typeof value === "string") {
+      setFormData(prev => ({ ...prev, fechaNacimientoRepresentante: value }));
+      return;
+    }
+
+    // Email fields: validate format (errors handled by surrounding code)
+    if ((field === "correoElectronico" || field === "correoAlternativo") && typeof value === "string") {
+      setFormData(prev => ({ ...prev, [field]: value.trim() }));
+      return;
     }
 
     // Si cambia el estado, resetear ciudad y municipio
