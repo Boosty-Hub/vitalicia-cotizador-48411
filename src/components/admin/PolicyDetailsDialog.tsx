@@ -710,63 +710,127 @@ export function PolicyDetailsDialog({
 
             {/* Documentos */}
             <TabsContent value="documentos" className="space-y-6 mt-4">
-              <Card className="overflow-hidden">
-                <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-transparent border-b">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <FileCheck className="h-5 w-5 text-primary" />
-                    Documentos del Titular
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {renderDocumentLink("Cédula de Identidad", selectedPoliza.cedula_identidad_url)}
-                    {renderDocumentLink("Licencia de Conducir", selectedPoliza.licencia_conducir_url)}
-                    {renderDocumentLink("Certificado Médico", selectedPoliza.certificado_medico_url)}
-                    {renderDocumentLink("RIF", selectedPoliza.rif_url)}
-                  </div>
-                </CardContent>
-              </Card>
+              {(() => {
+                const isJuridico = selectedPoliza.formulario === 'juridico';
+                const splitMulti = (val: string | null | undefined): string[] => {
+                  if (!val) return [];
+                  return String(val)
+                    .split(/\r?\n/)
+                    .map(s => s.trim())
+                    .filter(s => s.length > 0 && /^https?:\/\//i.test(s));
+                };
+                const cedulasAcc = splitMulti((selectedPoliza as any).cedula_accionistas_url);
+                const rifsAcc = splitMulti((selectedPoliza as any).rif_accionistas_url);
+                const totalAccionistas = Math.max(cedulasAcc.length, rifsAcc.length);
 
-              <Card className="overflow-hidden">
-                <CardHeader className="pb-4 bg-gradient-to-r from-emerald-500/5 to-transparent border-b">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-emerald-600" />
-                    Documentos del Vehículo
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {renderDocumentLink("Certificado Origen Vehículo", selectedPoliza.certificado_origen_vehiculo_url)}
-                    {renderDocumentLink("Factura Compra Vehículo", selectedPoliza.factura_compra_vehiculo_url)}
-                    {selectedPoliza.formulario === 'juridico' && (
-                      <>
-                        {renderDocumentLink("Acta de Asamblea", (selectedPoliza as any).acta_asamblea_url)}
-                        {renderDocumentLink("Acta Constitutiva", (selectedPoliza as any).acta_constitutiva_url)}
-                        {renderDocumentLink("Declaración ISLR", (selectedPoliza as any).declaracion_islr_url)}
-                        {renderDocumentLink("Referencia Bancaria", (selectedPoliza as any).referencia_bancaria_url)}
-                        {renderDocumentLink("Cédula de Accionistas", (selectedPoliza as any).cedula_accionistas_url)}
-                        {renderDocumentLink("RIF de Accionistas", (selectedPoliza as any).rif_accionistas_url)}
-                        {renderDocumentLink("RIF de la Empresa", (selectedPoliza as any).rif_empresa_url)}
-                      </>
+                return (
+                  <>
+                    {/* TITULAR — solo Natural/RCV */}
+                    {!isJuridico && (
+                      <Card className="overflow-hidden">
+                        <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-transparent border-b">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <FileCheck className="h-5 w-5 text-primary" />
+                            Documentos del Titular
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {renderDocumentLink("Cédula de Identidad", selectedPoliza.cedula_identidad_url)}
+                            {renderDocumentLink("Licencia de Conducir", selectedPoliza.licencia_conducir_url)}
+                            {renderDocumentLink("Certificado Médico", selectedPoliza.certificado_medico_url)}
+                            {renderDocumentLink("RIF", selectedPoliza.rif_url)}
+                          </div>
+                        </CardContent>
+                      </Card>
                     )}
-                  </div>
-                </CardContent>
-              </Card>
 
-              <Card className="overflow-hidden">
-                <CardHeader className="pb-4 bg-gradient-to-r from-blue-500/5 to-transparent border-b">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-blue-600" />
-                    Documentos de Póliza
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {renderDocumentLink("Póliza Emitida", selectedPoliza.url_poliza_monday)}
-                    {renderDocumentLink("Carnet de Asegurado", selectedPoliza.url_carnet_monday)}
-                  </div>
-                </CardContent>
-              </Card>
+                    {/* EMPRESA — solo Jurídico */}
+                    {isJuridico && (
+                      <Card className="overflow-hidden">
+                        <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-transparent border-b">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <FileCheck className="h-5 w-5 text-primary" />
+                            Documentos de la Empresa
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {renderDocumentLink("RIF de la Empresa", (selectedPoliza as any).rif_empresa_url)}
+                            {renderDocumentLink("Acta Constitutiva", (selectedPoliza as any).acta_constitutiva_url)}
+                            {renderDocumentLink("Acta de Asamblea", (selectedPoliza as any).acta_asamblea_url)}
+                            {renderDocumentLink("Declaración ISLR", (selectedPoliza as any).declaracion_islr_url)}
+                            {renderDocumentLink("Referencia Bancaria", (selectedPoliza as any).referencia_bancaria_url)}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* ACCIONISTAS — solo Jurídico, un bloque por accionista */}
+                    {isJuridico && totalAccionistas > 0 && (
+                      <Card className="overflow-hidden">
+                        <CardHeader className="pb-4 bg-gradient-to-r from-amber-500/5 to-transparent border-b">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <FileCheck className="h-5 w-5 text-amber-600" />
+                            Documentos de Accionistas ({totalAccionistas})
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 space-y-4">
+                          {Array.from({ length: totalAccionistas }).map((_, i) => (
+                            <div key={i} className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                              <p className="text-sm font-semibold text-foreground">
+                                Accionista #{i + 1}
+                              </p>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {renderDocumentLink(
+                                  `Cédula del Accionista #${i + 1}`,
+                                  cedulasAcc[i] || null,
+                                )}
+                                {renderDocumentLink(
+                                  `RIF del Accionista #${i + 1}`,
+                                  rifsAcc[i] || null,
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* VEHÍCULO */}
+                    <Card className="overflow-hidden">
+                      <CardHeader className="pb-4 bg-gradient-to-r from-emerald-500/5 to-transparent border-b">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-emerald-600" />
+                          Documentos del Vehículo
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {renderDocumentLink("Factura Compra Vehículo", selectedPoliza.factura_compra_vehiculo_url)}
+                          {renderDocumentLink("Certificado Origen / Título de Propiedad", selectedPoliza.certificado_origen_vehiculo_url)}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* PÓLIZA */}
+                    <Card className="overflow-hidden">
+                      <CardHeader className="pb-4 bg-gradient-to-r from-blue-500/5 to-transparent border-b">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-blue-600" />
+                          Documentos de Póliza
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {renderDocumentLink("Póliza Emitida", selectedPoliza.url_poliza_monday)}
+                          {renderDocumentLink("Carnet de Asegurado", selectedPoliza.url_carnet_monday)}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </>
+                );
+              })()}
 
               {isEditing && (
                 <Card className="border-dashed">
