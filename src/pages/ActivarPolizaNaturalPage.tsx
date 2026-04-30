@@ -88,6 +88,12 @@ const ActivarPolizaNaturalPage = () => {
     cd_valdet: string | null;
     s_descripcion: string | null;
   }>>([]);
+  const [actividadesEconomicas, setActividadesEconomicas] = useState<Array<{ descripcion: string }>>([]);
+  const [cedulaError, setCedulaError] = useState("");
+  const [beneficiarioCedulaError, setBeneficiarioCedulaError] = useState("");
+  const [direccionError, setDireccionError] = useState("");
+  const [fechaCompraError, setFechaCompraError] = useState("");
+  const [fechaNacimientoError, setFechaNacimientoError] = useState("");
   const [formData, setFormData] = useState({
     nombre: "",
     apellidos: "",
@@ -107,9 +113,13 @@ const ActivarPolizaNaturalPage = () => {
     numeroTelefonico: "",
     email: "",
     email2: "",
+    actividadEconomica: "",
     serialCarroceria: "",
     fechaCompra: "",
     // Beneficiary data
+    beneficiarioRelacion: "",
+    beneficiarioRelacionOtro: "",
+    beneficiarioTieneCedula: "si" as "si" | "no",
     beneficiarioNombre: "",
     beneficiarioApellidos: "",
     beneficiarioTipoIdentificacion: "",
