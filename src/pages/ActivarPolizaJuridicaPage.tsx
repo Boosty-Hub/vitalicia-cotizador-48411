@@ -125,8 +125,15 @@ const ActivarPolizaJuridicaPage = () => {
     docCertificadoMedico: null as File | null,
     docOrigenVehiculo: null as File | null,
     docFacturaCompra: null as File | null,
+    docTituloPropiedad: null as File | null,
     docRIF: null as File | null,
+    sinActaAsamblea: false,
   });
+
+  // Accionistas dinámicos: cada uno con su Cédula y RIF
+  const [accionistas, setAccionistas] = useState<Array<{ id: string; cedula: File | null; rif: File | null }>>([
+    { id: crypto.randomUUID(), cedula: null, rif: null }
+  ]);
 
   const [serialConfirmado, setSerialConfirmado] = useState<boolean | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
