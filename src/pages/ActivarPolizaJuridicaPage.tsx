@@ -154,7 +154,7 @@ const ActivarPolizaJuridicaPage = () => {
       if (civilError) {
         console.error('Error fetching estados civiles:', civilError);
       } else if (civilData) {
-        setEstadosCiviles(civilData);
+        setEstadosCiviles(filterEstadosCiviles(civilData));
       }
 
       // Fetch sexos
@@ -166,7 +166,7 @@ const ActivarPolizaJuridicaPage = () => {
       if (sexoError) {
         console.error('Error fetching sexos:', sexoError);
       } else if (sexoData) {
-        setSexos(sexoData);
+        setSexos(filterSexosByDescripcion(sexoData));
       }
 
       // Fetch actividades económicas
