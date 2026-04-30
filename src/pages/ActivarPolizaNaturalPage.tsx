@@ -16,6 +16,22 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { fetchVersionApi } from "@/utils/versionApi";
 import { formatPriceToTwoDecimals } from "@/lib/priceUtils";
 import { useDocumentValidation } from "@/hooks/useDocumentValidation";
+import {
+  formatCedulaInput as formatCedulaInputHelper,
+  validateCedula,
+  validateEmailFormat,
+  validateFechaCompra as validateFechaCompraHelper,
+  validateDireccion,
+  sanitizeDireccion,
+  isAdult,
+  maxBirthDateForAdult,
+  todayISO,
+  MIN_FECHA_COMPRA,
+  filterSexos,
+  filterEstadosCiviles,
+  filterCodigosMoviles,
+  BENEFICIARY_RELATIONSHIPS,
+} from "@/lib/formValidation";
 
 const ActivarPolizaNaturalPage = () => {
   const navigate = useNavigate();
@@ -72,6 +88,12 @@ const ActivarPolizaNaturalPage = () => {
     cd_valdet: string | null;
     s_descripcion: string | null;
   }>>([]);
+  const [actividadesEconomicas, setActividadesEconomicas] = useState<Array<{ descripcion: string }>>([]);
+  const [cedulaError, setCedulaError] = useState("");
+  const [beneficiarioCedulaError, setBeneficiarioCedulaError] = useState("");
+  const [direccionError, setDireccionError] = useState("");
+  const [fechaCompraError, setFechaCompraError] = useState("");
+  const [fechaNacimientoError, setFechaNacimientoError] = useState("");
   const [formData, setFormData] = useState({
     nombre: "",
     apellidos: "",
@@ -91,9 +113,13 @@ const ActivarPolizaNaturalPage = () => {
     numeroTelefonico: "",
     email: "",
     email2: "",
+    actividadEconomica: "",
     serialCarroceria: "",
     fechaCompra: "",
     // Beneficiary data
+    beneficiarioRelacion: "",
+    beneficiarioRelacionOtro: "",
+    beneficiarioTieneCedula: "si" as "si" | "no",
     beneficiarioNombre: "",
     beneficiarioApellidos: "",
     beneficiarioTipoIdentificacion: "",
@@ -169,7 +195,7 @@ const ActivarPolizaNaturalPage = () => {
       if (error) {
         console.error('Error loading sexos:', error);
       } else if (data) {
-        setSexos(data);
+        setSexos(filterSexos(data));
       }
     };
     fetchSexos();
@@ -183,7 +209,7 @@ const ActivarPolizaNaturalPage = () => {
       if (error) {
         console.error('Error loading estados civiles:', error);
       } else if (data) {
-        setEstadosCiviles(data);
+        setEstadosCiviles(filterEstadosCiviles(data));
       }
     };
     fetchEstadosCiviles();
@@ -215,10 +241,27 @@ const ActivarPolizaNaturalPage = () => {
       if (error) {
         console.error('Error loading códigos telefónicos:', error);
       } else if (data) {
-        setCodigosTelefonicos(data);
+        setCodigosTelefonicos(filterCodigosMoviles(data));
       }
     };
     fetchCodigosTelefonicos();
+  }, []);
+  useEffect(() => {
+    const fetchActividades = async () => {
+      const { data, error } = await supabase
+        .from('cod_act_economica')
+        .select('descripcion')
+        .order('descripcion');
+      if (error) {
+        console.error('Error loading actividades:', error);
+      } else if (data) {
+        const fixed = data
+          .map((a: { descripcion: string | null }) => ({ descripcion: fixSpecialCharacters(a.descripcion) || "" }))
+          .filter((a) => a.descripcion);
+        setActividadesEconomicas(fixed);
+      }
+    };
+    fetchActividades();
   }, []);
 
   // Fetch ciudades when estado changes
@@ -453,106 +496,64 @@ const ActivarPolizaNaturalPage = () => {
       setIsValidating(false);
     }
   };
-  const formatCedulaInput = (tipo: string, value: string) => {
-    // Remover caracteres no numéricos y guiones
-    const numbersOnly = value.replace(/[^0-9]/g, '');
+  const formatCedulaInput = (tipo: string, value: string) =>
+    formatCedulaInputHelper(tipo, value);
 
-    // Obtener el prefijo según el tipo
-    const prefix = tipo || '';
-    if (!prefix) return value;
+  const validateEmail = validateEmailFormat;
 
-    // Formatear según el tipo
-    switch (prefix) {
-      case 'V':
-      case 'E':
-        // Formato: V-12345678 (hasta 8 dígitos)
-        if (numbersOnly.length === 0) return `${prefix}-`;
-        return `${prefix}-${numbersOnly.slice(0, 8)}`;
-      case 'J':
-      case 'G':
-        // Formato: J-123456789-0 (hasta 9 dígitos + 1 dígito verificador)
-        if (numbersOnly.length === 0) return `${prefix}-`;
-        if (numbersOnly.length <= 9) {
-          return `${prefix}-${numbersOnly}`;
-        }
-        return `${prefix}-${numbersOnly.slice(0, 9)}-${numbersOnly.slice(9, 10)}`;
-      case 'P':
-        // Pasaporte: texto libre
-        return value;
-      default:
-        return value;
-    }
-  };
-  const validateEmail = (email: string): { valid: boolean; error: string } => {
-    if (!email) return { valid: true, error: "" };
-    
-    // Verificar que no contenga acentos o caracteres especiales latinos
-    const hasAccents = /[áéíóúÁÉÍÓÚñÑüÜ]/.test(email);
-    if (hasAccents) {
-      return { valid: false, error: "El correo no debe contener acentos o tildes" };
-    }
-    
-    // Verificar longitud máxima (API RMS requiere máximo 70 caracteres)
-    if (email.length > 70) {
-      return { valid: false, error: `El correo no puede tener más de 70 caracteres (actual: ${email.length})` };
-    }
-    
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return { valid: false, error: "Por favor ingrese un correo electrónico válido" };
-    }
-    
-    return { valid: true, error: "" };
-  };
-  
   const removeAccents = (str: string): string => {
     return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[ñÑ]/g, (match) => match === 'ñ' ? 'n' : 'N');
   };
 
   const handleInputChange = (field: string, value: string | File | null) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    // Email handling (sanitize + validate)
+    if ((field === "email" || field === "email2") && typeof value === "string") {
+      const cleanValue = removeAccents(value.trim());
+      setFormData(prev => ({ ...prev, [field]: cleanValue }));
+      const validation = validateEmail(cleanValue);
+      if (field === "email") setEmailError(validation.error);
+      else setEmail2Error(validation.error);
+      return;
+    }
 
-    // Validate and sanitize email fields
-    if (field === "email" && typeof value === "string") {
-      // Remover acentos automáticamente
-      const cleanValue = removeAccents(value.trim());
-      setFormData(prev => ({
-        ...prev,
-        [field]: cleanValue
-      }));
-      
-      const validation = validateEmail(cleanValue);
-      setEmailError(validation.error);
+    // Address: strip commas as the user types and validate
+    if (field === "direccion" && typeof value === "string") {
+      const clean = sanitizeDireccion(value);
+      setFormData(prev => ({ ...prev, direccion: clean }));
+      setDireccionError(clean ? validateDireccion(clean).error : "");
       return;
     }
-    if (field === "email2" && typeof value === "string") {
-      // Remover acentos automáticamente
-      const cleanValue = removeAccents(value.trim());
-      setFormData(prev => ({
-        ...prev,
-        [field]: cleanValue
-      }));
-      
-      const validation = validateEmail(cleanValue);
-      setEmail2Error(validation.error);
+
+    // Birthdate: must be adult
+    if (field === "fechaNacimiento" && typeof value === "string") {
+      setFormData(prev => ({ ...prev, fechaNacimiento: value }));
+      if (value && !isAdult(value)) {
+        setFechaNacimientoError("El titular debe ser mayor de edad (18 años o más)");
+      } else {
+        setFechaNacimientoError("");
+      }
       return;
     }
+
+    // Purchase date: in range
+    if (field === "fechaCompra" && typeof value === "string") {
+      setFormData(prev => ({ ...prev, fechaCompra: value }));
+      setFechaCompraError(value ? validateFechaCompraHelper(value).error : "");
+      return;
+    }
+
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
+
   const handleTipoIdentificacionChange = (value: string) => {
     setFormData(prev => {
-      // Si hay un número de cédula existente, reformatearlo con el nuevo tipo
       const currentNumero = prev.numeroCedula;
       let newNumero = '';
       if (currentNumero) {
-        // Extraer solo los números del valor actual
         const numbersOnly = currentNumero.replace(/[^0-9]/g, '');
         newNumero = formatCedulaInput(value, numbersOnly);
       } else {
-        // Si no hay número, solo poner el prefijo
-        newNumero = value ? `${value}-` : '';
+        newNumero = value === "P" ? "" : value ? `${value}-` : '';
       }
       return {
         ...prev,
@@ -560,6 +561,7 @@ const ActivarPolizaNaturalPage = () => {
         numeroCedula: newNumero
       };
     });
+    setCedulaError("");
   };
   const handleCedulaChange = (value: string) => {
     const formatted = formatCedulaInput(formData.tipoIdentificacion, value);
@@ -567,6 +569,11 @@ const ActivarPolizaNaturalPage = () => {
       ...prev,
       numeroCedula: formatted
     }));
+    if (formatted) {
+      setCedulaError(validateCedula(formData.tipoIdentificacion, formatted).error);
+    } else {
+      setCedulaError("");
+    }
   };
   const handleBeneficiarioTipoIdentificacionChange = (value: string) => {
     setFormData(prev => {
@@ -576,7 +583,7 @@ const ActivarPolizaNaturalPage = () => {
         const numbersOnly = currentNumero.replace(/[^0-9]/g, '');
         newNumero = formatCedulaInput(value, numbersOnly);
       } else {
-        newNumero = value ? `${value}-` : '';
+        newNumero = value === "P" ? "" : value ? `${value}-` : '';
       }
       return {
         ...prev,
@@ -584,6 +591,7 @@ const ActivarPolizaNaturalPage = () => {
         beneficiarioNumeroCedula: newNumero
       };
     });
+    setBeneficiarioCedulaError("");
   };
   const handleBeneficiarioCedulaChange = (value: string) => {
     const formatted = formatCedulaInput(formData.beneficiarioTipoIdentificacion, value);
@@ -591,6 +599,11 @@ const ActivarPolizaNaturalPage = () => {
       ...prev,
       beneficiarioNumeroCedula: formatted
     }));
+    if (formatted) {
+      setBeneficiarioCedulaError(validateCedula(formData.beneficiarioTipoIdentificacion, formatted).error);
+    } else {
+      setBeneficiarioCedulaError("");
+    }
   };
   const autoFillPersonalData = () => {
     const randomNames = ["Juan", "María", "Carlos", "Ana", "Pedro", "Laura", "José", "Carmen"];
@@ -1489,10 +1502,27 @@ const ActivarPolizaNaturalPage = () => {
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="numeroCedula">Número de Cédula o RIF *</Label>
-                        <Input id="numeroCedula" value={formData.numeroCedula} onChange={e => handleCedulaChange(e.target.value)} placeholder={formData.tipoIdentificacion ? `Ej: ${formData.tipoIdentificacion}-12345678` : "Seleccione tipo primero"} disabled={!formData.tipoIdentificacion} />
-                        {formData.numeroCedula && formData.numeroCedula.replace(/[^0-9]/g, '').length < 7 && formData.numeroCedula.replace(/[^0-9]/g, '').length > 0 && (
-                          <p className="text-sm text-destructive">La cédula debe tener al menos 7 dígitos</p>
+                        <Label htmlFor="numeroCedula">Número de {formData.tipoIdentificacion === "P" ? "Pasaporte" : "Cédula o RIF"} *</Label>
+                        <Input
+                          id="numeroCedula"
+                          value={formData.numeroCedula}
+                          onChange={e => handleCedulaChange(e.target.value)}
+                          placeholder={
+                            formData.tipoIdentificacion === "P"
+                              ? "Ej: AB123456 (alfanumérico)"
+                              : formData.tipoIdentificacion === "V"
+                              ? "Ej: V-12345678 (entre 2.000.000 y 45.000.000)"
+                              : formData.tipoIdentificacion === "E"
+                              ? "Ej: E-85123456 (entre 80.000.000 y 99.999.999)"
+                              : formData.tipoIdentificacion
+                              ? `Ej: ${formData.tipoIdentificacion}-12345678`
+                              : "Seleccione tipo primero"
+                          }
+                          disabled={!formData.tipoIdentificacion}
+                          className={cedulaError ? "border-destructive" : ""}
+                        />
+                        {cedulaError && (
+                          <p className="text-sm text-destructive">{cedulaError}</p>
                         )}
                       </div>
                     </div>
@@ -1513,8 +1543,18 @@ const ActivarPolizaNaturalPage = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="fechaNacimiento">Fecha de Nacimiento *</Label>
-                        <Input id="fechaNacimiento" type="date" value={formData.fechaNacimiento} onChange={e => handleInputChange("fechaNacimiento", e.target.value)} />
+                        <Label htmlFor="fechaNacimiento">Fecha de Nacimiento * (mayor de edad)</Label>
+                        <Input
+                          id="fechaNacimiento"
+                          type="date"
+                          value={formData.fechaNacimiento}
+                          max={maxBirthDateForAdult()}
+                          onChange={e => handleInputChange("fechaNacimiento", e.target.value)}
+                          className={fechaNacimientoError ? "border-destructive" : ""}
+                        />
+                        {fechaNacimientoError && (
+                          <p className="text-sm text-destructive">{fechaNacimientoError}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="estadoCivil">Estado Civil *</Label>
@@ -1532,10 +1572,35 @@ const ActivarPolizaNaturalPage = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="direccion">Dirección * (mín. 5 caracteres)</Label>
-                      <Input id="direccion" value={formData.direccion} onChange={e => handleInputChange("direccion", e.target.value)} />
-                      {formData.direccion && formData.direccion.trim().length < 5 && (
-                        <p className="text-sm text-destructive">Mínimo 5 caracteres</p>
+                      <Label htmlFor="actividadEconomica">Actividad Económica *</Label>
+                      <Select
+                        value={formData.actividadEconomica}
+                        onValueChange={value => handleInputChange("actividadEconomica", value)}
+                      >
+                        <SelectTrigger id="actividadEconomica">
+                          <SelectValue placeholder="Seleccione una actividad" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {actividadesEconomicas.map((act) => (
+                            <SelectItem key={act.descripcion} value={act.descripcion}>
+                              {act.descripcion}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="direccion">Dirección * (mín. 5 caracteres, sin comas)</Label>
+                      <Input
+                        id="direccion"
+                        value={formData.direccion}
+                        onChange={e => handleInputChange("direccion", e.target.value)}
+                        placeholder="Ej: Av. Principal Edificio Vista Piso 3 Apto 5"
+                        className={direccionError ? "border-destructive" : ""}
+                      />
+                      {direccionError && (
+                        <p className="text-sm text-destructive">{direccionError}</p>
                       )}
                     </div>
 
@@ -1617,9 +1682,15 @@ const ActivarPolizaNaturalPage = () => {
                       </div>
                     </div>
 
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">
+                        📱 Ingresa un número celular con WhatsApp (lo usaremos para contactarte).
+                      </p>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="codigoTelefonico">Código Telefónico *</Label>
+                        <Label htmlFor="codigoTelefonico">Código de Celular (WhatsApp) *</Label>
                         <Select value={formData.codigoTelefonico} onValueChange={value => handleInputChange("codigoTelefonico", value)}>
                           <SelectTrigger>
                             <SelectValue placeholder="Seleccione un código" />
@@ -1632,7 +1703,7 @@ const ActivarPolizaNaturalPage = () => {
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="numeroTelefonico">Número Telefónico * (7 dígitos)</Label>
+                        <Label htmlFor="numeroTelefonico">Número de Celular (WhatsApp) * (7 dígitos)</Label>
                         <Input id="numeroTelefonico" type="tel" value={formData.numeroTelefonico} onChange={e => {
                           const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 7);
                           handleInputChange("numeroTelefonico", val);
@@ -1676,7 +1747,43 @@ const ActivarPolizaNaturalPage = () => {
                       <Button onClick={() => setCurrentStep(1)} variant="outline" className="flex-1">
                         Anterior
                       </Button>
-                      <Button onClick={() => setCurrentStep(3)} variant="hero" className="flex-1" disabled={!formData.nombre || formData.nombre.trim().length < 2 || !formData.apellidos || formData.apellidos.trim().length < 2 || !formData.numeroCedula || formData.numeroCedula.replace(/[^0-9]/g, '').length < 7 || !formData.sexo || !formData.fechaNacimiento || !formData.estadoCivil || !formData.direccion || formData.direccion.trim().length < 5 || !formData.estado || !formData.ciudad || !formData.municipio || !formData.codigoTelefonico || !formData.numeroTelefonico || formData.numeroTelefonico.length !== 7 || !formData.email || emailError !== "" || (formData.email2 && email2Error !== "")}>
+                      <Button
+                        onClick={() => {
+                          const missing: string[] = [];
+                          if (!formData.nombre || formData.nombre.trim().length < 2) missing.push("Nombre");
+                          if (!formData.apellidos || formData.apellidos.trim().length < 2) missing.push("Apellidos");
+                          if (!formData.tipoIdentificacion) missing.push("Tipo de identificación");
+                          if (!formData.numeroCedula) missing.push("Número de cédula/pasaporte");
+                          else if (validateCedula(formData.tipoIdentificacion, formData.numeroCedula).error) {
+                            missing.push("Número de cédula/pasaporte (formato inválido)");
+                          }
+                          if (!formData.sexo) missing.push("Sexo");
+                          if (!formData.fechaNacimiento) missing.push("Fecha de nacimiento");
+                          else if (!isAdult(formData.fechaNacimiento)) missing.push("Fecha de nacimiento (debe ser mayor de edad)");
+                          if (!formData.estadoCivil) missing.push("Estado civil");
+                          if (!formData.actividadEconomica) missing.push("Actividad económica");
+                          if (!formData.direccion || validateDireccion(formData.direccion).error) missing.push("Dirección");
+                          if (!formData.estado) missing.push("Estado");
+                          if (!formData.ciudad) missing.push("Ciudad");
+                          if (!formData.municipio) missing.push("Municipio");
+                          if (!formData.codigoTelefonico) missing.push("Código de celular");
+                          if (!formData.numeroTelefonico || formData.numeroTelefonico.length !== 7) missing.push("Número de celular (7 dígitos)");
+                          if (!formData.email || validateEmailFormat(formData.email).error) missing.push("Correo electrónico");
+                          if (formData.email2 && validateEmailFormat(formData.email2).error) missing.push("Correo electrónico 2 (formato inválido)");
+
+                          if (missing.length > 0) {
+                            toast({
+                              title: "Faltan campos por completar",
+                              description: missing.join(" • "),
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          setCurrentStep(3);
+                        }}
+                        variant="hero"
+                        className="flex-1"
+                      >
                         Siguiente
                       </Button>
                     </div>
@@ -1733,15 +1840,52 @@ const ActivarPolizaNaturalPage = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="fechaCompra">Fecha de Compra en la Factura *</Label>
-                      <Input id="fechaCompra" type="date" value={formData.fechaCompra} onChange={e => handleInputChange("fechaCompra", e.target.value)} />
+                      <Label htmlFor="fechaCompra">Fecha de Compra (según la factura) *</Label>
+                      <Input
+                        id="fechaCompra"
+                        type="date"
+                        value={formData.fechaCompra}
+                        min={MIN_FECHA_COMPRA}
+                        max={todayISO()}
+                        onChange={e => handleInputChange("fechaCompra", e.target.value)}
+                        className={fechaCompraError ? "border-destructive" : ""}
+                      />
+                      {fechaCompraError && (
+                        <p className="text-sm text-destructive">{fechaCompraError}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Debe ser anterior o igual a hoy y no puede ser anterior al {MIN_FECHA_COMPRA}.
+                      </p>
                     </div>
 
                     <div className="flex gap-3 pt-4">
                       <Button onClick={() => setCurrentStep(2)} variant="outline" className="flex-1">
                         Anterior
                       </Button>
-                      <Button onClick={() => setCurrentStep(4)} variant="hero" className="flex-1" disabled={!placa || !formData.serialCarroceria || !formData.fechaCompra || serialConfirmado !== true}>
+                      <Button
+                        onClick={() => {
+                          const missing: string[] = [];
+                          if (!placa) missing.push("Placa");
+                          if (!formData.serialCarroceria) missing.push("Serial de carrocería");
+                          if (!formData.fechaCompra) missing.push("Fecha de compra");
+                          else {
+                            const fc = validateFechaCompraHelper(formData.fechaCompra);
+                            if (!fc.valid) missing.push(`Fecha de compra (${fc.error})`);
+                          }
+                          if (serialConfirmado !== true) missing.push("Confirmación del serial");
+                          if (missing.length > 0) {
+                            toast({
+                              title: "Faltan campos por completar",
+                              description: missing.join(" • "),
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          setCurrentStep(4);
+                        }}
+                        variant="hero"
+                        className="flex-1"
+                      >
                         Siguiente
                       </Button>
                     </div>
@@ -1765,6 +1909,36 @@ const ActivarPolizaNaturalPage = () => {
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
+                        <Label htmlFor="beneficiarioRelacion">Relación con el asegurado *</Label>
+                        <Select
+                          value={formData.beneficiarioRelacion}
+                          onValueChange={value => handleInputChange("beneficiarioRelacion", value)}
+                        >
+                          <SelectTrigger id="beneficiarioRelacion">
+                            <SelectValue placeholder="Seleccione una opción" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {BENEFICIARY_RELATIONSHIPS.map(r => (
+                              <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {formData.beneficiarioRelacion === "otro" && (
+                        <div className="space-y-2">
+                          <Label htmlFor="beneficiarioRelacionOtro">Especifique relación *</Label>
+                          <Input
+                            id="beneficiarioRelacionOtro"
+                            value={formData.beneficiarioRelacionOtro}
+                            onChange={e => handleInputChange("beneficiarioRelacionOtro", e.target.value)}
+                            placeholder="Ej: Hermano(a), Tío(a)..."
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
                         <Label htmlFor="beneficiarioNombre">Nombre *</Label>
                         <Input id="beneficiarioNombre" value={formData.beneficiarioNombre} onChange={e => handleInputChange("beneficiarioNombre", e.target.value)} />
                       </div>
@@ -1774,28 +1948,71 @@ const ActivarPolizaNaturalPage = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="beneficiarioTipoIdentificacion">Tipo de Identificación *</Label>
-                        <Select value={formData.beneficiarioTipoIdentificacion} onValueChange={handleBeneficiarioTipoIdentificacionChange}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccione una opción" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {nacionalidades.filter(nac => nac.cd_valdet !== "G" && nac.cd_valdet !== "J").map(nac => <SelectItem key={nac.cd_valdet} value={nac.cd_valdet || ""}>
-                                  {nac.descripcion || ""}
-                                </SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="beneficiarioNumeroCedula">Número de Cédula o RIF *</Label>
-                        <Input id="beneficiarioNumeroCedula" value={formData.beneficiarioNumeroCedula} onChange={e => handleBeneficiarioCedulaChange(e.target.value)} placeholder={formData.beneficiarioTipoIdentificacion ? `Ej: ${formData.beneficiarioTipoIdentificacion}-12345678` : "Seleccione tipo primero"} disabled={!formData.beneficiarioTipoIdentificacion} />
-                        {formData.beneficiarioNumeroCedula && formData.beneficiarioNumeroCedula.replace(/[^0-9]/g, '').length < 7 && formData.beneficiarioNumeroCedula.replace(/[^0-9]/g, '').length > 0 && (
-                          <p className="text-sm text-destructive">La cédula debe tener al menos 7 dígitos</p>
-                        )}
+                    <div className="space-y-2">
+                      <Label>¿El beneficiario tiene cédula? *</Label>
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="beneficiarioTieneCedula"
+                            value="si"
+                            checked={formData.beneficiarioTieneCedula === "si"}
+                            onChange={() => handleInputChange("beneficiarioTieneCedula", "si")}
+                          />
+                          <span>Sí</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="beneficiarioTieneCedula"
+                            value="no"
+                            checked={formData.beneficiarioTieneCedula === "no"}
+                            onChange={() => {
+                              handleInputChange("beneficiarioTieneCedula", "no");
+                              setFormData(prev => ({
+                                ...prev,
+                                beneficiarioTipoIdentificacion: "",
+                                beneficiarioNumeroCedula: "",
+                              }));
+                              setBeneficiarioCedulaError("");
+                            }}
+                          />
+                          <span>No (menor de edad / sin documento)</span>
+                        </label>
                       </div>
                     </div>
+
+                    {formData.beneficiarioTieneCedula === "si" && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="beneficiarioTipoIdentificacion">Tipo de Identificación *</Label>
+                          <Select value={formData.beneficiarioTipoIdentificacion} onValueChange={handleBeneficiarioTipoIdentificacionChange}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccione una opción" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {nacionalidades.filter(nac => nac.cd_valdet !== "G" && nac.cd_valdet !== "J").map(nac => <SelectItem key={nac.cd_valdet} value={nac.cd_valdet || ""}>
+                                    {nac.descripcion || ""}
+                                  </SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="beneficiarioNumeroCedula">Número de {formData.beneficiarioTipoIdentificacion === "P" ? "Pasaporte" : "Cédula"} *</Label>
+                          <Input
+                            id="beneficiarioNumeroCedula"
+                            value={formData.beneficiarioNumeroCedula}
+                            onChange={e => handleBeneficiarioCedulaChange(e.target.value)}
+                            placeholder={formData.beneficiarioTipoIdentificacion === "P" ? "Ej: AB123456" : formData.beneficiarioTipoIdentificacion ? `Ej: ${formData.beneficiarioTipoIdentificacion}-12345678` : "Seleccione tipo primero"}
+                            disabled={!formData.beneficiarioTipoIdentificacion}
+                            className={beneficiarioCedulaError ? "border-destructive" : ""}
+                          />
+                          {beneficiarioCedulaError && (
+                            <p className="text-sm text-destructive">{beneficiarioCedulaError}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
@@ -1813,29 +2030,81 @@ const ActivarPolizaNaturalPage = () => {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="beneficiarioFechaNacimiento">Fecha de Nacimiento *</Label>
-                        <Input id="beneficiarioFechaNacimiento" type="date" value={formData.beneficiarioFechaNacimiento} onChange={e => handleInputChange("beneficiarioFechaNacimiento", e.target.value)} />
+                        <Input
+                          id="beneficiarioFechaNacimiento"
+                          type="date"
+                          value={formData.beneficiarioFechaNacimiento}
+                          max={todayISO()}
+                          onChange={e => handleInputChange("beneficiarioFechaNacimiento", e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">Puede ser menor de edad.</p>
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="beneficiarioEstadoCivil">Estado Civil *</Label>
-                      <Select value={formData.beneficiarioEstadoCivil} onValueChange={value => handleInputChange("beneficiarioEstadoCivil", value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccione una opción" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {estadosCiviles.map(estado => <SelectItem key={estado.cd_valdet} value={estado.cd_valdet || ""}>
-                              {estado.descripcion || ""}
-                            </SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    {formData.beneficiarioTieneCedula === "si" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="beneficiarioEstadoCivil">Estado Civil</Label>
+                        <Select value={formData.beneficiarioEstadoCivil} onValueChange={value => handleInputChange("beneficiarioEstadoCivil", value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccione una opción" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {estadosCiviles.map(estado => <SelectItem key={estado.cd_valdet} value={estado.cd_valdet || ""}>
+                                {estado.descripcion || ""}
+                              </SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
 
                     <div className="flex gap-3 pt-4">
                       <Button onClick={() => setCurrentStep(3)} variant="outline" className="flex-1">
                         Anterior
                       </Button>
-                      <Button onClick={() => setCurrentStep(5)} variant="hero" className="flex-1" disabled={!formData.beneficiarioNombre || !formData.beneficiarioApellidos || !formData.beneficiarioNumeroCedula || !formData.beneficiarioSexo || !formData.beneficiarioFechaNacimiento || !formData.beneficiarioEstadoCivil}>
+                      <Button
+                        onClick={() => {
+                          const missing: string[] = [];
+                          if (!formData.beneficiarioRelacion) missing.push("Relación con el asegurado");
+                          if (formData.beneficiarioRelacion === "otro" && !formData.beneficiarioRelacionOtro.trim()) {
+                            missing.push("Especificación de relación");
+                          }
+                          if (!formData.beneficiarioNombre) missing.push("Nombre del beneficiario");
+                          if (!formData.beneficiarioApellidos) missing.push("Apellidos del beneficiario");
+                          if (formData.beneficiarioTieneCedula === "si") {
+                            if (!formData.beneficiarioTipoIdentificacion) missing.push("Tipo de identificación del beneficiario");
+                            if (!formData.beneficiarioNumeroCedula) missing.push("Número de cédula del beneficiario");
+                            else {
+                              const v = validateCedula(formData.beneficiarioTipoIdentificacion, formData.beneficiarioNumeroCedula);
+                              if (!v.valid) missing.push(`Cédula del beneficiario (${v.error})`);
+                            }
+                            // Beneficiary cannot be the same as the insured
+                            const benDigits = formData.beneficiarioNumeroCedula.replace(/[^0-9A-Z]/gi, "");
+                            const titDigits = formData.numeroCedula.replace(/[^0-9A-Z]/gi, "");
+                            if (
+                              benDigits &&
+                              titDigits &&
+                              benDigits === titDigits &&
+                              formData.beneficiarioTipoIdentificacion === formData.tipoIdentificacion
+                            ) {
+                              missing.push("El beneficiario no puede ser el mismo asegurado");
+                            }
+                          }
+                          if (!formData.beneficiarioSexo) missing.push("Sexo del beneficiario");
+                          if (!formData.beneficiarioFechaNacimiento) missing.push("Fecha de nacimiento del beneficiario");
+
+                          if (missing.length > 0) {
+                            toast({
+                              title: "Faltan campos por completar",
+                              description: missing.join(" • "),
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          setCurrentStep(5);
+                        }}
+                        variant="hero"
+                        className="flex-1"
+                      >
                         Siguiente
                       </Button>
                     </div>

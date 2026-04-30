@@ -18,6 +18,21 @@ import { FileUploader } from "@/components/ui/file-uploader";
 import { fetchVersionApi } from "@/utils/versionApi";
 import { formatPriceToTwoDecimals } from "@/lib/priceUtils";
 import { useDocumentValidation } from "@/hooks/useDocumentValidation";
+import {
+  formatCedulaInput as formatCedulaInputHelper,
+  validateCedula,
+  validateEmailFormat,
+  validateFechaCompra as validateFechaCompraHelper,
+  validateDireccion,
+  sanitizeDireccion,
+  isAdult,
+  maxBirthDateForAdult,
+  todayISO,
+  MIN_FECHA_COMPRA,
+  filterSexosByDescripcion,
+  filterEstadosCiviles,
+  filterCodigosMoviles,
+} from "@/lib/formValidation";
 
 const ActivarPolizaJuridicaPage = () => {
   const navigate = useNavigate();
@@ -139,7 +154,7 @@ const ActivarPolizaJuridicaPage = () => {
       if (civilError) {
         console.error('Error fetching estados civiles:', civilError);
       } else if (civilData) {
-        setEstadosCiviles(civilData);
+        setEstadosCiviles(filterEstadosCiviles(civilData));
       }
 
       // Fetch sexos
@@ -151,7 +166,7 @@ const ActivarPolizaJuridicaPage = () => {
       if (sexoError) {
         console.error('Error fetching sexos:', sexoError);
       } else if (sexoData) {
-        setSexos(sexoData);
+        setSexos(filterSexosByDescripcion(sexoData));
       }
 
       // Fetch actividades económicas
@@ -200,7 +215,7 @@ const ActivarPolizaJuridicaPage = () => {
         const uniqueTlf = tlfData.filter((item, index, self) =>
           item.cd_valdet && index === self.findIndex((t) => t.cd_valdet === item.cd_valdet)
         );
-        setCodigosTelefonicos(uniqueTlf);
+        setCodigosTelefonicos(filterCodigosMoviles(uniqueTlf) as Array<{ cd_valdet: string; s_descripcion: string }>);
       }
     };
 
@@ -474,18 +489,40 @@ const ActivarPolizaJuridicaPage = () => {
     
     // Si es el campo de cédula del representante
     if (field === "cedulaRepresentante" && typeof value === "string") {
-      const prefix = getPrefixForTipoIdentificacion(formData.tipoIdentificacionRepresentante);
-      
-      if (prefix && !value.startsWith(prefix)) {
-        if (value.length === 0) {
-          value = prefix;
-        } else if (!value.startsWith(prefix)) {
-          value = prefix + value.replace(/^[A-Z]-?/, '');
+      const tipo = formData.tipoIdentificacionRepresentante;
+      // Use shared helper for V/E/P with numeric ranges
+      let formatted = value;
+      if (tipo === "Venezolano" || tipo === "Extranjero" || tipo === "Pasaporte") {
+        formatted = formatCedulaInputHelper(tipo, value);
+      } else {
+        const prefix = getPrefixForTipoIdentificacion(tipo);
+        if (prefix && !value.startsWith(prefix)) {
+          formatted = value.length === 0 ? prefix : prefix + value.replace(/^[A-Z]-?/, '');
         }
       }
-      
-      const error = validateNumeroRIF(value, formData.tipoIdentificacionRepresentante);
-      setCedulaRepresentanteError(error);
+      setFormData(prev => ({ ...prev, cedulaRepresentante: formatted }));
+      const v = validateCedula(tipo, formatted);
+      setCedulaRepresentanteError(formatted ? v.error : "");
+      return;
+    }
+
+    // Address: strip commas + validate
+    if (field === "direccion" && typeof value === "string") {
+      const clean = sanitizeDireccion(value);
+      setFormData(prev => ({ ...prev, direccion: clean }));
+      return;
+    }
+
+    // Birthdate of representative: must be adult
+    if (field === "fechaNacimientoRepresentante" && typeof value === "string") {
+      setFormData(prev => ({ ...prev, fechaNacimientoRepresentante: value }));
+      return;
+    }
+
+    // Email fields: validate format (errors handled by surrounding code)
+    if ((field === "correoElectronico" || field === "correoAlternativo") && typeof value === "string") {
+      setFormData(prev => ({ ...prev, [field]: value.trim() }));
+      return;
     }
 
     // Si cambia el estado, resetear ciudad y municipio
