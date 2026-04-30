@@ -1822,13 +1822,7 @@ const ActivarPolizaNaturalPage = () => {
           }}>
                 <Card>
                   <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-primary">BENEFICIARIO PREFERENCIAL EN CASO DE MUERTE </CardTitle>
-                      <Button onClick={autoFillBeneficiaryData} variant="outline" size="sm" className="gap-2">
-                        <Zap className="w-4 h-4" />
-                        Auto-rellenar
-                      </Button>
-                    </div>
+                    <CardTitle className="text-primary">BENEFICIARIO PREFERENCIAL EN CASO DE MUERTE </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
