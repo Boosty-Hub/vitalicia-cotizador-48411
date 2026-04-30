@@ -1302,7 +1302,7 @@ const ActivarPolizaJuridicaPage = () => {
             className="mb-6 sm:mb-8"
           >
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-2">
-              Activación Persona Jurídica
+              ACTIVACIÓN DE PÓLIZA PERSONA JURÍDICA
             </h1>
             <p className="text-muted-foreground">
               Paso {currentStep} de {totalSteps}
@@ -1419,7 +1419,7 @@ const ActivarPolizaJuridicaPage = () => {
                           <p className="text-foreground text-lg">{vehicleData.Color || "N/A"}</p>
                         </div>
                         <div className="col-span-2">
-                          <p className="text-muted-foreground font-medium">Carrocería:</p>
+                          <p className="text-muted-foreground font-medium">Serial de Carrocería:</p>
                           <p className="text-foreground text-lg">{vehicleData.Carroceria || "N/A"}</p>
                         </div>
                       </div>
