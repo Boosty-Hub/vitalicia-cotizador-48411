@@ -473,34 +473,31 @@ const ActivarPolizaJuridicaPage = () => {
   };
 
   const handleInputChange = (field: string, value: string | File | null) => {
-    // Si es el campo de número de identificación de la empresa
-    if (field === "numeroRIF" && typeof value === "string") {
-      const prefix = getPrefixForTipoIdentificacion(formData.tipoIdentificacion);
-      
-      if (prefix && !value.startsWith(prefix)) {
-        if (value.length === 0) {
-          value = prefix;
-        } else if (!value.startsWith(prefix)) {
-          value = prefix + value.replace(/^[A-Z]-?/, '');
-        }
-      }
-      
-      const error = validateNumeroRIF(value, formData.tipoIdentificacion);
-      setNumeroRIFError(error);
+    // Razón social: bloquear comas
+    if (field === "nombreEmpresa" && typeof value === "string") {
+      const clean = sanitizeRazonSocial(value);
+      setFormData(prev => ({ ...prev, nombreEmpresa: clean }));
+      return;
     }
-    
-    // Si es el campo de cédula del representante
+
+    // Número de identificación de la empresa (J/G/W: 9 dígitos sin guion)
+    if (field === "numeroRIF" && typeof value === "string") {
+      const tipo = formData.tipoIdentificacion;
+      let cleaned = value.replace(/[^0-9]/g, "").slice(0, 9);
+      const error = cleaned.length === 0
+        ? ""
+        : (validateRIFJuridico(cleaned).error || "");
+      setNumeroRIFError(error);
+      setFormData(prev => ({ ...prev, numeroRIF: cleaned }));
+      return;
+    }
+
+    // Cédula del representante (V/E/P)
     if (field === "cedulaRepresentante" && typeof value === "string") {
       const tipo = formData.tipoIdentificacionRepresentante;
-      // Use shared helper for V/E/P with numeric ranges
       let formatted = value;
       if (tipo === "Venezolano" || tipo === "Extranjero" || tipo === "Pasaporte") {
         formatted = formatCedulaInputHelper(tipo, value);
-      } else {
-        const prefix = getPrefixForTipoIdentificacion(tipo);
-        if (prefix && !value.startsWith(prefix)) {
-          formatted = value.length === 0 ? prefix : prefix + value.replace(/^[A-Z]-?/, '');
-        }
       }
       setFormData(prev => ({ ...prev, cedulaRepresentante: formatted }));
       const v = validateCedula(tipo, formatted);
@@ -521,7 +518,7 @@ const ActivarPolizaJuridicaPage = () => {
       return;
     }
 
-    // Email fields: validate format (errors handled by surrounding code)
+    // Email fields
     if ((field === "correoElectronico" || field === "correoAlternativo") && typeof value === "string") {
       setFormData(prev => ({ ...prev, [field]: value.trim() }));
       return;
