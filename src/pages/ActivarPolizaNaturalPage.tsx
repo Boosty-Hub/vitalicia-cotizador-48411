@@ -1840,15 +1840,52 @@ const ActivarPolizaNaturalPage = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="fechaCompra">Fecha de Compra en la Factura *</Label>
-                      <Input id="fechaCompra" type="date" value={formData.fechaCompra} onChange={e => handleInputChange("fechaCompra", e.target.value)} />
+                      <Label htmlFor="fechaCompra">Fecha de Compra (según la factura) *</Label>
+                      <Input
+                        id="fechaCompra"
+                        type="date"
+                        value={formData.fechaCompra}
+                        min={MIN_FECHA_COMPRA}
+                        max={todayISO()}
+                        onChange={e => handleInputChange("fechaCompra", e.target.value)}
+                        className={fechaCompraError ? "border-destructive" : ""}
+                      />
+                      {fechaCompraError && (
+                        <p className="text-sm text-destructive">{fechaCompraError}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Debe ser anterior o igual a hoy y no puede ser anterior al {MIN_FECHA_COMPRA}.
+                      </p>
                     </div>
 
                     <div className="flex gap-3 pt-4">
                       <Button onClick={() => setCurrentStep(2)} variant="outline" className="flex-1">
                         Anterior
                       </Button>
-                      <Button onClick={() => setCurrentStep(4)} variant="hero" className="flex-1" disabled={!placa || !formData.serialCarroceria || !formData.fechaCompra || serialConfirmado !== true}>
+                      <Button
+                        onClick={() => {
+                          const missing: string[] = [];
+                          if (!placa) missing.push("Placa");
+                          if (!formData.serialCarroceria) missing.push("Serial de carrocería");
+                          if (!formData.fechaCompra) missing.push("Fecha de compra");
+                          else {
+                            const fc = validateFechaCompraHelper(formData.fechaCompra);
+                            if (!fc.valid) missing.push(`Fecha de compra (${fc.error})`);
+                          }
+                          if (serialConfirmado !== true) missing.push("Confirmación del serial");
+                          if (missing.length > 0) {
+                            toast({
+                              title: "Faltan campos por completar",
+                              description: missing.join(" • "),
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          setCurrentStep(4);
+                        }}
+                        variant="hero"
+                        className="flex-1"
+                      >
                         Siguiente
                       </Button>
                     </div>
