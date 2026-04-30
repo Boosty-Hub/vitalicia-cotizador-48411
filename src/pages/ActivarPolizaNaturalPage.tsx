@@ -2212,6 +2212,61 @@ const ActivarPolizaNaturalPage = () => {
                         </p>
                       </div>
                     </div>
+
+                    <div className="p-4 bg-muted rounded-lg">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        El arriba identificado como asegurado propuesto, como solicitante de la póliza o en representación de este,
+                        declaro que la información aquí suministrada es exacta, sin omisión alguna de detalle, hecho o circunstancia,
+                        con el propósito de eliminar el riesgo, en el entendido que servirá de base para la emisión de la póliza.
+                      </p>
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                      <Button onClick={() => setCurrentStep(4)} variant="outline" className="flex-1" disabled={isSubmitting}>
+                        Anterior
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          const missing: string[] = [];
+                          if (!formData.docIdentidad) missing.push("Cédula de Identidad");
+                          if (!formData.docRIF) missing.push("RIF");
+                          if (!formData.docLicenciaConducir) missing.push("Licencia de Conducir");
+                          if (!formData.docCertificadoMedico) missing.push("Certificado Médico");
+                          if (!formData.docFacturaCompra) missing.push("Factura de Compra");
+                          if (!formData.docOrigenVehiculo && !formData.docTituloPropiedad) {
+                            missing.push("Certificado de Origen o Título de Propiedad");
+                          }
+                          if (missing.length > 0) {
+                            toast({ title: "Faltan documentos por cargar", description: missing.join(" • "), variant: "destructive" });
+                            return;
+                          }
+                          if (hasAnyValidating()) {
+                            toast({ title: "Validando documentos", description: "Espere a que termine la validación.", variant: "destructive" });
+                            return;
+                          }
+                          if (!allCriticalDocsValid()) {
+                            toast({ title: "Documentos no válidos", description: "Revise los documentos con errores.", variant: "destructive" });
+                            return;
+                          }
+                          handleSubmit();
+                        }}
+                        variant="hero"
+                        className="flex-1"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Enviando...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-4 h-4 mr-2" />
+                            Finalizar
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               </motion.div>}
