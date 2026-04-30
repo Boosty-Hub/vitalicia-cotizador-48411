@@ -1909,6 +1909,36 @@ const ActivarPolizaNaturalPage = () => {
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
+                        <Label htmlFor="beneficiarioRelacion">Relación con el asegurado *</Label>
+                        <Select
+                          value={formData.beneficiarioRelacion}
+                          onValueChange={value => handleInputChange("beneficiarioRelacion", value)}
+                        >
+                          <SelectTrigger id="beneficiarioRelacion">
+                            <SelectValue placeholder="Seleccione una opción" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {BENEFICIARY_RELATIONSHIPS.map(r => (
+                              <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {formData.beneficiarioRelacion === "otro" && (
+                        <div className="space-y-2">
+                          <Label htmlFor="beneficiarioRelacionOtro">Especifique relación *</Label>
+                          <Input
+                            id="beneficiarioRelacionOtro"
+                            value={formData.beneficiarioRelacionOtro}
+                            onChange={e => handleInputChange("beneficiarioRelacionOtro", e.target.value)}
+                            placeholder="Ej: Hermano(a), Tío(a)..."
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
                         <Label htmlFor="beneficiarioNombre">Nombre *</Label>
                         <Input id="beneficiarioNombre" value={formData.beneficiarioNombre} onChange={e => handleInputChange("beneficiarioNombre", e.target.value)} />
                       </div>
@@ -1918,28 +1948,71 @@ const ActivarPolizaNaturalPage = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="beneficiarioTipoIdentificacion">Tipo de Identificación *</Label>
-                        <Select value={formData.beneficiarioTipoIdentificacion} onValueChange={handleBeneficiarioTipoIdentificacionChange}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccione una opción" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {nacionalidades.filter(nac => nac.cd_valdet !== "G" && nac.cd_valdet !== "J").map(nac => <SelectItem key={nac.cd_valdet} value={nac.cd_valdet || ""}>
-                                  {nac.descripcion || ""}
-                                </SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="beneficiarioNumeroCedula">Número de Cédula o RIF *</Label>
-                        <Input id="beneficiarioNumeroCedula" value={formData.beneficiarioNumeroCedula} onChange={e => handleBeneficiarioCedulaChange(e.target.value)} placeholder={formData.beneficiarioTipoIdentificacion ? `Ej: ${formData.beneficiarioTipoIdentificacion}-12345678` : "Seleccione tipo primero"} disabled={!formData.beneficiarioTipoIdentificacion} />
-                        {formData.beneficiarioNumeroCedula && formData.beneficiarioNumeroCedula.replace(/[^0-9]/g, '').length < 7 && formData.beneficiarioNumeroCedula.replace(/[^0-9]/g, '').length > 0 && (
-                          <p className="text-sm text-destructive">La cédula debe tener al menos 7 dígitos</p>
-                        )}
+                    <div className="space-y-2">
+                      <Label>¿El beneficiario tiene cédula? *</Label>
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="beneficiarioTieneCedula"
+                            value="si"
+                            checked={formData.beneficiarioTieneCedula === "si"}
+                            onChange={() => handleInputChange("beneficiarioTieneCedula", "si")}
+                          />
+                          <span>Sí</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="beneficiarioTieneCedula"
+                            value="no"
+                            checked={formData.beneficiarioTieneCedula === "no"}
+                            onChange={() => {
+                              handleInputChange("beneficiarioTieneCedula", "no");
+                              setFormData(prev => ({
+                                ...prev,
+                                beneficiarioTipoIdentificacion: "",
+                                beneficiarioNumeroCedula: "",
+                              }));
+                              setBeneficiarioCedulaError("");
+                            }}
+                          />
+                          <span>No (menor de edad / sin documento)</span>
+                        </label>
                       </div>
                     </div>
+
+                    {formData.beneficiarioTieneCedula === "si" && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="beneficiarioTipoIdentificacion">Tipo de Identificación *</Label>
+                          <Select value={formData.beneficiarioTipoIdentificacion} onValueChange={handleBeneficiarioTipoIdentificacionChange}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccione una opción" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {nacionalidades.filter(nac => nac.cd_valdet !== "G" && nac.cd_valdet !== "J").map(nac => <SelectItem key={nac.cd_valdet} value={nac.cd_valdet || ""}>
+                                    {nac.descripcion || ""}
+                                  </SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="beneficiarioNumeroCedula">Número de {formData.beneficiarioTipoIdentificacion === "P" ? "Pasaporte" : "Cédula"} *</Label>
+                          <Input
+                            id="beneficiarioNumeroCedula"
+                            value={formData.beneficiarioNumeroCedula}
+                            onChange={e => handleBeneficiarioCedulaChange(e.target.value)}
+                            placeholder={formData.beneficiarioTipoIdentificacion === "P" ? "Ej: AB123456" : formData.beneficiarioTipoIdentificacion ? `Ej: ${formData.beneficiarioTipoIdentificacion}-12345678` : "Seleccione tipo primero"}
+                            disabled={!formData.beneficiarioTipoIdentificacion}
+                            className={beneficiarioCedulaError ? "border-destructive" : ""}
+                          />
+                          {beneficiarioCedulaError && (
+                            <p className="text-sm text-destructive">{beneficiarioCedulaError}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
@@ -1957,29 +2030,81 @@ const ActivarPolizaNaturalPage = () => {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="beneficiarioFechaNacimiento">Fecha de Nacimiento *</Label>
-                        <Input id="beneficiarioFechaNacimiento" type="date" value={formData.beneficiarioFechaNacimiento} onChange={e => handleInputChange("beneficiarioFechaNacimiento", e.target.value)} />
+                        <Input
+                          id="beneficiarioFechaNacimiento"
+                          type="date"
+                          value={formData.beneficiarioFechaNacimiento}
+                          max={todayISO()}
+                          onChange={e => handleInputChange("beneficiarioFechaNacimiento", e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">Puede ser menor de edad.</p>
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="beneficiarioEstadoCivil">Estado Civil *</Label>
-                      <Select value={formData.beneficiarioEstadoCivil} onValueChange={value => handleInputChange("beneficiarioEstadoCivil", value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccione una opción" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {estadosCiviles.map(estado => <SelectItem key={estado.cd_valdet} value={estado.cd_valdet || ""}>
-                              {estado.descripcion || ""}
-                            </SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    {formData.beneficiarioTieneCedula === "si" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="beneficiarioEstadoCivil">Estado Civil</Label>
+                        <Select value={formData.beneficiarioEstadoCivil} onValueChange={value => handleInputChange("beneficiarioEstadoCivil", value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccione una opción" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {estadosCiviles.map(estado => <SelectItem key={estado.cd_valdet} value={estado.cd_valdet || ""}>
+                                {estado.descripcion || ""}
+                              </SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
 
                     <div className="flex gap-3 pt-4">
                       <Button onClick={() => setCurrentStep(3)} variant="outline" className="flex-1">
                         Anterior
                       </Button>
-                      <Button onClick={() => setCurrentStep(5)} variant="hero" className="flex-1" disabled={!formData.beneficiarioNombre || !formData.beneficiarioApellidos || !formData.beneficiarioNumeroCedula || !formData.beneficiarioSexo || !formData.beneficiarioFechaNacimiento || !formData.beneficiarioEstadoCivil}>
+                      <Button
+                        onClick={() => {
+                          const missing: string[] = [];
+                          if (!formData.beneficiarioRelacion) missing.push("Relación con el asegurado");
+                          if (formData.beneficiarioRelacion === "otro" && !formData.beneficiarioRelacionOtro.trim()) {
+                            missing.push("Especificación de relación");
+                          }
+                          if (!formData.beneficiarioNombre) missing.push("Nombre del beneficiario");
+                          if (!formData.beneficiarioApellidos) missing.push("Apellidos del beneficiario");
+                          if (formData.beneficiarioTieneCedula === "si") {
+                            if (!formData.beneficiarioTipoIdentificacion) missing.push("Tipo de identificación del beneficiario");
+                            if (!formData.beneficiarioNumeroCedula) missing.push("Número de cédula del beneficiario");
+                            else {
+                              const v = validateCedula(formData.beneficiarioTipoIdentificacion, formData.beneficiarioNumeroCedula);
+                              if (!v.valid) missing.push(`Cédula del beneficiario (${v.error})`);
+                            }
+                            // Beneficiary cannot be the same as the insured
+                            const benDigits = formData.beneficiarioNumeroCedula.replace(/[^0-9A-Z]/gi, "");
+                            const titDigits = formData.numeroCedula.replace(/[^0-9A-Z]/gi, "");
+                            if (
+                              benDigits &&
+                              titDigits &&
+                              benDigits === titDigits &&
+                              formData.beneficiarioTipoIdentificacion === formData.tipoIdentificacion
+                            ) {
+                              missing.push("El beneficiario no puede ser el mismo asegurado");
+                            }
+                          }
+                          if (!formData.beneficiarioSexo) missing.push("Sexo del beneficiario");
+                          if (!formData.beneficiarioFechaNacimiento) missing.push("Fecha de nacimiento del beneficiario");
+
+                          if (missing.length > 0) {
+                            toast({
+                              title: "Faltan campos por completar",
+                              description: missing.join(" • "),
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          setCurrentStep(5);
+                        }}
+                        variant="hero"
+                        className="flex-1"
+                      >
                         Siguiente
                       </Button>
                     </div>
