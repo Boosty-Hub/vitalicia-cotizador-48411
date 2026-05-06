@@ -738,6 +738,11 @@ const ActivarPolizaJuridicaPage = () => {
     try {
       const empresaId = formData.numeroRIF.match(/^([A-Z])-(\d+)(-\d+)?$/);
       const representanteId = formData.cedulaRepresentante.match(/^([A-Z])-(\d+)(-\d+)?$/);
+      const tipoEmpresaCodigo =
+        formData.tipoIdentificacion === "Jurídico" || formData.tipoIdentificacion === "Juridico" ? "J"
+        : formData.tipoIdentificacion === "Gobierno" ? "G"
+        : formData.tipoIdentificacion === "Comuna" ? "C"
+        : (empresaId?.[1] || "J");
       
       const hoy = new Date().toISOString().split('T')[0];
       const vencimiento = new Date();
