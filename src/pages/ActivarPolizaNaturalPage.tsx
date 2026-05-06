@@ -1873,14 +1873,7 @@ const ActivarPolizaNaturalPage = () => {
                             if (!fc.valid) missing.push(`Fecha de compra (${fc.error})`);
                           }
                           if (serialConfirmado !== true) missing.push("Confirmación del serial");
-                          if (missing.length > 0) {
-                            toast({
-                              title: "Faltan campos por completar",
-                              description: missing.join(" • "),
-                              variant: "destructive",
-                            });
-                            return;
-                          }
+                          if (missing.length > 0) return;
                           setCurrentStep(4);
                         }}
                         variant="hero"
