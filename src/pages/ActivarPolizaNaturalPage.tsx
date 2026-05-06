@@ -2230,6 +2230,7 @@ const ActivarPolizaNaturalPage = () => {
                       </Button>
                       <Button
                         onClick={() => {
+                          setTriedStep5(true);
                           const missing: string[] = [];
                           if (!formData.docIdentidad) missing.push("Cédula de Identidad");
                           if (!formData.docRIF) missing.push("RIF");
