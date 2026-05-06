@@ -2165,9 +2165,10 @@ const ActivarPolizaNaturalPage = () => {
                           if (!formData.docRIF) missing.push("RIF");
                           if (!formData.docLicenciaConducir) missing.push("Licencia de Conducir");
                           if (!formData.docCertificadoMedico) missing.push("Certificado Médico");
-                          if (!formData.docFacturaCompra) missing.push("Factura de Compra");
-                          if (!formData.docOrigenVehiculo && !formData.docTituloPropiedad) {
-                            missing.push("Certificado de Origen o Título de Propiedad");
+                          const tieneTitulo = !!formData.docTituloPropiedad;
+                          const tieneFacturaYOrigen = !!formData.docFacturaCompra && !!formData.docOrigenVehiculo;
+                          if (!tieneTitulo && !tieneFacturaYOrigen) {
+                            missing.push("Título de Propiedad, o bien Factura + Certificado de Origen");
                           }
                           if (missing.length > 0) {
                             toast({ title: "Faltan documentos por cargar", description: missing.join(" • "), variant: "destructive" });
