@@ -50,6 +50,11 @@ const ActivarPolizaJuridicaPage = () => {
   const [correoError, setCorreoError] = useState("");
   const [correoAltError, setCorreoAltError] = useState("");
   const [fechaAdquisicionError, setFechaAdquisicionError] = useState("");
+  const [triedStep2, setTriedStep2] = useState(false);
+  const [triedStep3, setTriedStep3] = useState(false);
+  const [triedStep4, setTriedStep4] = useState(false);
+  const [triedStep5, setTriedStep5] = useState(false);
+  const [triedStep6, setTriedStep6] = useState(false);
   const [estadosCiviles, setEstadosCiviles] = useState<Array<{ descripcion: string }>>([]);
   const [sexos, setSexos] = useState<Array<{ descripcion: string }>>([]);
   const [actividadesEconomicas, setActividadesEconomicas] = useState<Array<{ descripcion: string }>>([]);
