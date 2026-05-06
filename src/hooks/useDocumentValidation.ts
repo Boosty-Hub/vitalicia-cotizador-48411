@@ -41,7 +41,15 @@ const DOCUMENT_TYPE_MAP: Record<string, string> = {
 };
 
 // Documents that require cross-validation with form data when present
-const CROSS_VALIDATED_DOCUMENTS = ["docIdentidad", "docOrigenVehiculo", "docFacturaCompra", "docTituloPropiedad"];
+const CROSS_VALIDATED_DOCUMENTS = [
+  "docIdentidad",
+  "docOrigenVehiculo",
+  "docFacturaCompra",
+  "docTituloPropiedad",
+  "docRIFEmpresa",
+  "docDeclaracionISLR",
+  "docReferenciaBancaria",
+];
 
 async function resizeImageToBase64(file: File, maxSize = 1024): Promise<string> {
   return new Promise((resolve, reject) => {
