@@ -2096,8 +2096,17 @@ const ActivarPolizaJuridicaPage = () => {
                         id="fechaAdquisicion"
                         type="date"
                         value={formData.fechaAdquisicion}
+                        min={MIN_FECHA_COMPRA}
+                        max={todayISO()}
                         onChange={(e) => handleInputChange("fechaAdquisicion", e.target.value)}
+                        className={fechaAdquisicionError ? "border-destructive" : ""}
                       />
+                      {fechaAdquisicionError && (
+                        <p className="text-sm text-destructive">{fechaAdquisicionError}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Debe ser anterior o igual a hoy y no puede ser anterior al {MIN_FECHA_COMPRA}.
+                      </p>
                     </div>
 
                     <div className="flex gap-3 pt-4">
@@ -2109,15 +2118,24 @@ const ActivarPolizaJuridicaPage = () => {
                         Anterior
                       </Button>
                       <Button
-                        onClick={() => setCurrentStep(6)}
+                        onClick={() => {
+                          const missing: string[] = [];
+                          if (!placa) missing.push("Placa");
+                          if (!formData.serialCarroceria) missing.push("Serial de carrocería");
+                          if (serialConfirmado !== true) missing.push("Confirmación del serial");
+                          if (!formData.fechaAdquisicion) missing.push("Fecha de compra");
+                          else {
+                            const fc = validateFechaCompraHelper(formData.fechaAdquisicion);
+                            if (!fc.valid) missing.push(`Fecha de compra (${fc.error})`);
+                          }
+                          if (missing.length > 0) {
+                            toast({ title: "Faltan campos por completar", description: missing.join(" • "), variant: "destructive" });
+                            return;
+                          }
+                          setCurrentStep(6);
+                        }}
                         variant="hero"
                         className="flex-1"
-                        disabled={
-                          !placa ||
-                          !formData.serialCarroceria ||
-                          serialConfirmado !== true ||
-                          !formData.fechaAdquisicion
-                        }
                       >
                         Siguiente
                       </Button>
