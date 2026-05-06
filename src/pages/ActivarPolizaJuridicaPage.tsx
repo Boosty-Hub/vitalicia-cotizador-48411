@@ -1020,11 +1020,10 @@ const ActivarPolizaJuridicaPage = () => {
       const licenciaUrl = null;
       const certificadoUrl = null;
       const rifUrl = rifEmpresaUrl;
-      // Si no hay Cert. de Origen, usar Título de Propiedad como respaldo en la columna existente
-      const origenFinalUrl = origenUrl || tituloUrl;
-
-      // Validaciones mínimas
-      if (!facturaUrl || !origenFinalUrl || !rifEmpresaUrl) {
+      // Validaciones mínimas: Título OR (Factura + Cert. Origen) + RIF empresa
+      const tieneTitulo = !!tituloUrl;
+      const tieneFacturaYOrigen = !!facturaUrl && !!origenUrl;
+      if ((!tieneTitulo && !tieneFacturaYOrigen) || !rifEmpresaUrl) {
         throw new Error('Error al subir uno o más documentos obligatorios');
       }
 
