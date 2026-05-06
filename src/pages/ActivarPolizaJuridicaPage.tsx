@@ -47,6 +47,9 @@ const ActivarPolizaJuridicaPage = () => {
   const [isValidating, setIsValidating] = useState(false);
   const [numeroRIFError, setNumeroRIFError] = useState("");
   const [cedulaRepresentanteError, setCedulaRepresentanteError] = useState("");
+  const [correoError, setCorreoError] = useState("");
+  const [correoAltError, setCorreoAltError] = useState("");
+  const [fechaAdquisicionError, setFechaAdquisicionError] = useState("");
   const [estadosCiviles, setEstadosCiviles] = useState<Array<{ descripcion: string }>>([]);
   const [sexos, setSexos] = useState<Array<{ descripcion: string }>>([]);
   const [actividadesEconomicas, setActividadesEconomicas] = useState<Array<{ descripcion: string }>>([]);
@@ -528,7 +531,16 @@ const ActivarPolizaJuridicaPage = () => {
 
     // Email fields
     if ((field === "correoElectronico" || field === "correoAlternativo") && typeof value === "string") {
-      setFormData(prev => ({ ...prev, [field]: value.trim() }));
+      const v = value.trim();
+      setFormData(prev => ({ ...prev, [field]: v }));
+      if (field === "correoElectronico") setCorreoError(v ? validateEmailFormat(v).error : "");
+      else setCorreoAltError(v ? validateEmailFormat(v).error : "");
+      return;
+    }
+
+    if (field === "fechaAdquisicion" && typeof value === "string") {
+      setFormData(prev => ({ ...prev, fechaAdquisicion: value }));
+      setFechaAdquisicionError(value ? validateFechaCompraHelper(value).error : "");
       return;
     }
 
@@ -738,6 +750,11 @@ const ActivarPolizaJuridicaPage = () => {
     try {
       const empresaId = formData.numeroRIF.match(/^([A-Z])-(\d+)(-\d+)?$/);
       const representanteId = formData.cedulaRepresentante.match(/^([A-Z])-(\d+)(-\d+)?$/);
+      const tipoEmpresaCodigo =
+        formData.tipoIdentificacion === "Jurídico" || formData.tipoIdentificacion === "Juridico" ? "J"
+        : formData.tipoIdentificacion === "Gobierno" ? "G"
+        : formData.tipoIdentificacion === "Comuna" ? "C"
+        : (empresaId?.[1] || "J");
       
       const hoy = new Date().toISOString().split('T')[0];
       const vencimiento = new Date();
@@ -821,7 +838,7 @@ const ActivarPolizaJuridicaPage = () => {
         n_anio: vehicleData?.Año || new Date().getFullYear().toString(),
         c_placa: placa,
         c_carroceria: formData.serialCarroceria,
-        c_cd_nacionalidad: empresaId?.[1] || "J",
+        c_cd_nacionalidad: tipoEmpresaCodigo,
         s_nacionalidad: formData.tipoIdentificacion,
         n_cedrif: empresaId?.[2] || "",
         n_correlativo: "0",
@@ -1474,7 +1491,7 @@ const ActivarPolizaJuridicaPage = () => {
                           <SelectContent>
                             <SelectItem value="Jurídico">Jurídico (J)</SelectItem>
                             <SelectItem value="Gobierno">Gobierno (G)</SelectItem>
-                            <SelectItem value="Comuna">Comuna (W)</SelectItem>
+                            <SelectItem value="Comuna">Comuna (C)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -1506,10 +1523,20 @@ const ActivarPolizaJuridicaPage = () => {
                         Anterior
                       </Button>
                        <Button
-                        onClick={() => setCurrentStep(3)}
+                        onClick={() => {
+                          const missing: string[] = [];
+                          if (!formData.nombreEmpresa || formData.nombreEmpresa.trim().length < 5) missing.push("Razón social (mínimo 5 caracteres)");
+                          if (!formData.tipoIdentificacion) missing.push("Tipo de identificación");
+                          if (formData.numeroRIF.replace(/[^0-9]/g, '').length !== 9) missing.push("Número de identificación (9 dígitos)");
+                          if (numeroRIFError) missing.push(`RIF (${numeroRIFError})`);
+                          if (missing.length > 0) {
+                            toast({ title: "Faltan campos por completar", description: missing.join(" • "), variant: "destructive" });
+                            return;
+                          }
+                          setCurrentStep(3);
+                        }}
                         variant="hero"
                         className="flex-1"
-                        disabled={!formData.nombreEmpresa || formData.nombreEmpresa.trim().length < 5 || !formData.tipoIdentificacion || formData.numeroRIF.replace(/[^0-9]/g, '').length !== 9 || !!numeroRIFError}
                       >
                         Siguiente
                       </Button>
@@ -1690,19 +1717,25 @@ const ActivarPolizaJuridicaPage = () => {
                         Anterior
                       </Button>
                        <Button
-                        onClick={() => setCurrentStep(4)}
+                        onClick={() => {
+                          const missing: string[] = [];
+                          if (!formData.nombresRepresentante || formData.nombresRepresentante.trim().length < 2) missing.push("Nombre del representante");
+                          if (!formData.apellidosRepresentante || formData.apellidosRepresentante.trim().length < 2) missing.push("Apellidos del representante");
+                          if (!formData.tipoIdentificacionRepresentante) missing.push("Tipo de identificación");
+                          if (!formData.cedulaRepresentante || formData.cedulaRepresentante.replace(/[^0-9]/g, '').length < 7) missing.push("Número de cédula/pasaporte");
+                          if (cedulaRepresentanteError) missing.push(`Cédula (${cedulaRepresentanteError})`);
+                          if (!formData.estadoCivilRepresentante) missing.push("Estado civil");
+                          if (!formData.sexoRepresentante) missing.push("Sexo");
+                          if (!formData.fechaNacimientoRepresentante) missing.push("Fecha de nacimiento");
+                          else if (!isAdult(formData.fechaNacimientoRepresentante)) missing.push("Fecha de nacimiento (debe ser mayor de edad)");
+                          if (missing.length > 0) {
+                            toast({ title: "Faltan campos por completar", description: missing.join(" • "), variant: "destructive" });
+                            return;
+                          }
+                          setCurrentStep(4);
+                        }}
                         variant="hero"
                         className="flex-1"
-                        disabled={
-                          !formData.nombresRepresentante || formData.nombresRepresentante.trim().length < 2 ||
-                          !formData.apellidosRepresentante || formData.apellidosRepresentante.trim().length < 2 ||
-                          !formData.tipoIdentificacionRepresentante || 
-                          !formData.cedulaRepresentante || formData.cedulaRepresentante.replace(/[^0-9]/g, '').length < 7 ||
-                          !formData.estadoCivilRepresentante ||
-                          !formData.sexoRepresentante ||
-                          !formData.fechaNacimientoRepresentante ||
-                          !!cedulaRepresentanteError
-                        }
                       >
                         Siguiente
                       </Button>
@@ -1938,7 +1971,9 @@ const ActivarPolizaJuridicaPage = () => {
                           type="email"
                           value={formData.correoElectronico}
                           onChange={(e) => handleInputChange("correoElectronico", e.target.value)}
+                          className={correoError ? "border-destructive" : ""}
                         />
+                        {correoError && <p className="text-sm text-destructive">{correoError}</p>}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="correoAlternativo">
@@ -1949,7 +1984,9 @@ const ActivarPolizaJuridicaPage = () => {
                           type="email"
                           value={formData.correoAlternativo}
                           onChange={(e) => handleInputChange("correoAlternativo", e.target.value)}
+                          className={correoAltError ? "border-destructive" : ""}
                         />
+                        {correoAltError && <p className="text-sm text-destructive">{correoAltError}</p>}
                       </div>
                     </div>
 
@@ -1962,21 +1999,28 @@ const ActivarPolizaJuridicaPage = () => {
                         Anterior
                       </Button>
                       <Button
-                        onClick={() => setCurrentStep(5)}
+                        onClick={() => {
+                          const missing: string[] = [];
+                          if (!formData.direccion || validateDireccion(formData.direccion).error) missing.push("Dirección (mínimo 5 caracteres, sin comas)");
+                          if (!formData.estado) missing.push("Estado");
+                          if (!formData.ciudad) missing.push("Ciudad");
+                          if (!formData.municipio) missing.push("Municipio");
+                          if (!formData.codigoTelefonicoWhatsapp) missing.push("Código de celular");
+                          if (!formData.telefonoCelular || formData.telefonoCelular.length !== 7) missing.push("Número celular (7 dígitos)");
+                          if (!formData.codigoTelefonicoResidencial) missing.push("Código residencial");
+                          if (!formData.telefonoOficina || formData.telefonoOficina.length !== 7) missing.push("Número residencial (7 dígitos)");
+                          if (!formData.correoElectronico) missing.push("Correo electrónico");
+                          else if (validateEmailFormat(formData.correoElectronico).error) missing.push(`Correo electrónico (${validateEmailFormat(formData.correoElectronico).error})`);
+                          if (!formData.correoAlternativo) missing.push("Correo alternativo");
+                          else if (validateEmailFormat(formData.correoAlternativo).error) missing.push(`Correo alternativo (${validateEmailFormat(formData.correoAlternativo).error})`);
+                          if (missing.length > 0) {
+                            toast({ title: "Faltan campos por completar", description: missing.join(" • "), variant: "destructive" });
+                            return;
+                          }
+                          setCurrentStep(5);
+                        }}
                         variant="hero"
                         className="flex-1"
-                        disabled={
-                          !formData.direccion || formData.direccion.trim().length < 5 ||
-                          !formData.estado ||
-                          !formData.ciudad ||
-                          !formData.municipio ||
-                          !formData.codigoTelefonicoWhatsapp ||
-                          !formData.telefonoCelular || formData.telefonoCelular.length !== 7 ||
-                          !formData.codigoTelefonicoResidencial ||
-                          !formData.telefonoOficina || formData.telefonoOficina.length !== 7 ||
-                          !formData.correoElectronico ||
-                          !formData.correoAlternativo
-                        }
                       >
                         Siguiente
                       </Button>
@@ -2068,8 +2112,17 @@ const ActivarPolizaJuridicaPage = () => {
                         id="fechaAdquisicion"
                         type="date"
                         value={formData.fechaAdquisicion}
+                        min={MIN_FECHA_COMPRA}
+                        max={todayISO()}
                         onChange={(e) => handleInputChange("fechaAdquisicion", e.target.value)}
+                        className={fechaAdquisicionError ? "border-destructive" : ""}
                       />
+                      {fechaAdquisicionError && (
+                        <p className="text-sm text-destructive">{fechaAdquisicionError}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Debe ser anterior o igual a hoy y no puede ser anterior al {MIN_FECHA_COMPRA}.
+                      </p>
                     </div>
 
                     <div className="flex gap-3 pt-4">
@@ -2081,15 +2134,24 @@ const ActivarPolizaJuridicaPage = () => {
                         Anterior
                       </Button>
                       <Button
-                        onClick={() => setCurrentStep(6)}
+                        onClick={() => {
+                          const missing: string[] = [];
+                          if (!placa) missing.push("Placa");
+                          if (!formData.serialCarroceria) missing.push("Serial de carrocería");
+                          if (serialConfirmado !== true) missing.push("Confirmación del serial");
+                          if (!formData.fechaAdquisicion) missing.push("Fecha de compra");
+                          else {
+                            const fc = validateFechaCompraHelper(formData.fechaAdquisicion);
+                            if (!fc.valid) missing.push(`Fecha de compra (${fc.error})`);
+                          }
+                          if (missing.length > 0) {
+                            toast({ title: "Faltan campos por completar", description: missing.join(" • "), variant: "destructive" });
+                            return;
+                          }
+                          setCurrentStep(6);
+                        }}
                         variant="hero"
                         className="flex-1"
-                        disabled={
-                          !placa ||
-                          !formData.serialCarroceria ||
-                          serialConfirmado !== true ||
-                          !formData.fechaAdquisicion
-                        }
                       >
                         Siguiente
                       </Button>
