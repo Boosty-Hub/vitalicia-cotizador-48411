@@ -1532,15 +1532,11 @@ const ActivarPolizaJuridicaPage = () => {
                       </Button>
                        <Button
                         onClick={() => {
-                          const missing: string[] = [];
-                          if (!formData.nombreEmpresa || formData.nombreEmpresa.trim().length < 5) missing.push("Razón social (mínimo 5 caracteres)");
-                          if (!formData.tipoIdentificacion) missing.push("Tipo de identificación");
-                          if (formData.numeroRIF.replace(/[^0-9]/g, '').length !== 9) missing.push("Número de identificación (9 dígitos)");
-                          if (numeroRIFError) missing.push(`RIF (${numeroRIFError})`);
-                          if (missing.length > 0) {
-                            toast({ title: "Faltan campos por completar", description: missing.join(" • "), variant: "destructive" });
-                            return;
-                          }
+                          setTriedStep2(true);
+                          if (!formData.nombreEmpresa || formData.nombreEmpresa.trim().length < 5) return;
+                          if (!formData.tipoIdentificacion) return;
+                          if (formData.numeroRIF.replace(/[^0-9]/g, '').length !== 9) return;
+                          if (numeroRIFError) return;
                           setCurrentStep(3);
                         }}
                         variant="hero"
