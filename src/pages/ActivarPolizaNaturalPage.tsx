@@ -2110,14 +2110,7 @@ const ActivarPolizaNaturalPage = () => {
                           if (!formData.beneficiarioSexo) missing.push("Sexo del beneficiario");
                           if (!formData.beneficiarioFechaNacimiento) missing.push("Fecha de nacimiento del beneficiario");
 
-                          if (missing.length > 0) {
-                            toast({
-                              title: "Faltan campos por completar",
-                              description: missing.join(" • "),
-                              variant: "destructive",
-                            });
-                            return;
-                          }
+                          if (missing.length > 0) return;
                           setCurrentStep(5);
                         }}
                         variant="hero"
