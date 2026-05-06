@@ -2052,6 +2052,7 @@ const ActivarPolizaNaturalPage = () => {
                       </Button>
                       <Button
                         onClick={() => {
+                          setTriedStep4(true);
                           const missing: string[] = [];
                           if (!formData.beneficiarioRelacion) missing.push("Relación con el asegurado");
                           if (formData.beneficiarioRelacion === "otro" && !formData.beneficiarioRelacionOtro.trim()) {
