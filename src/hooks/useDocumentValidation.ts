@@ -106,8 +106,8 @@ export function useDocumentValidation() {
         return;
       }
 
-      // For non-critical documents, still validate document type but skip form data cross-check
-      const isCritical = CRITICAL_DOCUMENTS.includes(docKey);
+      // For documents in the cross-validated list, also check form data match
+      const isCritical = CROSS_VALIDATED_DOCUMENTS.includes(docKey);
 
       setValidations((prev) => ({
         ...prev,
@@ -217,9 +217,11 @@ export function useDocumentValidation() {
   );
 
   const allCriticalDocsValid = useCallback((): boolean => {
-    return CRITICAL_DOCUMENTS.every((key) => {
+    // All cross-validated documents that were actually uploaded must be valid
+    return CROSS_VALIDATED_DOCUMENTS.every((key) => {
       const v = validations[key];
-      return v && v.status === "valid";
+      // If not uploaded (no validation entry), skip; if uploaded, must be valid
+      return !v || v.status === "valid";
     });
   }, [validations]);
 
@@ -247,6 +249,7 @@ function getDocumentLabel(docKey: string): string {
     docIdentidad: "una cédula de identidad",
     docOrigenVehiculo: "un certificado de origen de vehículo",
     docFacturaCompra: "una factura de compra",
+    docTituloPropiedad: "un título de propiedad de vehículo",
     docLicenciaConducir: "una licencia de conducir",
     docCertificadoMedico: "un certificado médico",
     docRIF: "un RIF",
