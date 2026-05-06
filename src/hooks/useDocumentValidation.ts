@@ -26,6 +26,7 @@ const DOCUMENT_TYPE_MAP: Record<string, string> = {
   docIdentidad: "cedula_identidad",
   docOrigenVehiculo: "certificado_origen",
   docFacturaCompra: "factura_compra",
+  docTituloPropiedad: "titulo_propiedad",
   docLicenciaConducir: "licencia_conducir",
   docCertificadoMedico: "certificado_medico",
   docRIF: "rif",
@@ -39,8 +40,8 @@ const DOCUMENT_TYPE_MAP: Record<string, string> = {
   docRIFEmpresa: "rif_empresa",
 };
 
-// Documents that require cross-validation with form data
-const CRITICAL_DOCUMENTS = ["docIdentidad", "docOrigenVehiculo", "docFacturaCompra"];
+// Documents that require cross-validation with form data when present
+const CROSS_VALIDATED_DOCUMENTS = ["docIdentidad", "docOrigenVehiculo", "docFacturaCompra", "docTituloPropiedad"];
 
 async function resizeImageToBase64(file: File, maxSize = 1024): Promise<string> {
   return new Promise((resolve, reject) => {
