@@ -16,6 +16,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { fetchVersionApi } from "@/utils/versionApi";
 import { formatPriceToTwoDecimals } from "@/lib/priceUtils";
 import { useDocumentValidation } from "@/hooks/useDocumentValidation";
+import { useWhatsappSoporte } from "@/hooks/useWhatsappSoporte";
 import {
   formatCedulaInput as formatCedulaInputHelper,
   validateCedula,
