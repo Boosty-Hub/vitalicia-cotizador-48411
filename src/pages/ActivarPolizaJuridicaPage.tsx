@@ -82,7 +82,7 @@ const ActivarPolizaJuridicaPage = () => {
     telefonoOficina: "",
     correoElectronico: "",
     correoAlternativo: "",
-    actividadEconomica: "",
+    actividadEconomica: "Otras actividades de servicios",
     paginaWeb: "",
     // Datos del representante legal
     nombresRepresentante: "",
