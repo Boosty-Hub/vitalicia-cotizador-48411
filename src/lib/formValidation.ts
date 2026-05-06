@@ -47,8 +47,8 @@ export function formatCedulaInput(tipo: string, value: string): string {
     return `${prefix}-${numbersOnly.slice(0, 8)}`;
   }
 
-  // J (Jurídico), G (Gobierno), W (Comuna): 9 numeric digits, no dash, leading zeros allowed.
-  if (tipo === "J" || tipo === "G" || tipo === "W" || tipo === "Jurídico" || tipo === "Juridico" || tipo === "Gobierno" || tipo === "Comuna") {
+  // J (Jurídico), G (Gobierno), C (Comuna): 9 numeric digits, no dash, leading zeros allowed.
+  if (tipo === "J" || tipo === "G" || tipo === "C" || tipo === "W" || tipo === "Jurídico" || tipo === "Juridico" || tipo === "Gobierno" || tipo === "Comuna") {
     return numbersOnly.slice(0, 9);
   }
 
