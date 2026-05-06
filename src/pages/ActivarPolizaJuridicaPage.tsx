@@ -528,7 +528,16 @@ const ActivarPolizaJuridicaPage = () => {
 
     // Email fields
     if ((field === "correoElectronico" || field === "correoAlternativo") && typeof value === "string") {
-      setFormData(prev => ({ ...prev, [field]: value.trim() }));
+      const v = value.trim();
+      setFormData(prev => ({ ...prev, [field]: v }));
+      if (field === "correoElectronico") setCorreoError(v ? validateEmailFormat(v).error : "");
+      else setCorreoAltError(v ? validateEmailFormat(v).error : "");
+      return;
+    }
+
+    if (field === "fechaAdquisicion" && typeof value === "string") {
+      setFormData(prev => ({ ...prev, fechaAdquisicion: value }));
+      setFechaAdquisicionError(value ? validateFechaCompraHelper(value).error : "");
       return;
     }
 
