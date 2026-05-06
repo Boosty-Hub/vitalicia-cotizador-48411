@@ -2451,6 +2451,7 @@ const ActivarPolizaJuridicaPage = () => {
                       </Button>
                       <Button
                         onClick={() => {
+                          setTriedStep6(true);
                           // Validación amigable: listar faltantes
                           const missing: string[] = [];
                           if (!(formData as any).docRIFEmpresa) missing.push("RIF de la Empresa");
@@ -2475,14 +2476,7 @@ const ActivarPolizaJuridicaPage = () => {
                               missing.push("Título de Propiedad, o bien Factura + Certificado de Origen");
                             }
                           }
-                          if (missing.length > 0) {
-                            toast({
-                              title: "Faltan documentos por cargar",
-                              description: missing.join(" • "),
-                              variant: "destructive",
-                            });
-                            return;
-                          }
+                          if (missing.length > 0) return;
                           if (hasAnyValidating()) {
                             toast({ title: "Validando documentos", description: "Espere a que termine la validación.", variant: "destructive" });
                             return;
