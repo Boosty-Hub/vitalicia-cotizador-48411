@@ -1785,7 +1785,12 @@ const ActivarPolizaNaturalPage = () => {
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="placaMoto">Placa de la Moto *</Label>
-                      <Input id="placaMoto" value={placa} onChange={e => setPlaca(e.target.value.toUpperCase())} placeholder="Ej: ABC123" />
+                      <Input id="placaMoto" value={placa} onChange={e => setPlaca(e.target.value.toUpperCase())} placeholder="Ej: ABC123"
+                        className={triedStep3 && !placa ? "border-destructive" : ""}
+                      />
+                      {triedStep3 && !placa && (
+                        <p className="text-sm text-destructive">Este campo es requerido</p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
