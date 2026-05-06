@@ -1732,6 +1732,7 @@ const ActivarPolizaNaturalPage = () => {
                       </Button>
                       <Button
                         onClick={() => {
+                          setTriedStep2(true);
                           const missing: string[] = [];
                           if (!formData.nombre || formData.nombre.trim().length < 2) missing.push("Nombre");
                           if (!formData.apellidos || formData.apellidos.trim().length < 2) missing.push("Apellidos");
