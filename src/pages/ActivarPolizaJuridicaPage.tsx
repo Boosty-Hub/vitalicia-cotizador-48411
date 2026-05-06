@@ -583,6 +583,7 @@ const ActivarPolizaJuridicaPage = () => {
   };
 
   const { validateDocument, clearValidation, getValidation, allCriticalDocsValid, hasAnyValidating, hasAnyInvalid } = useDocumentValidation();
+  const { buildLink: buildWhatsappLink } = useWhatsappSoporte();
 
   const getFormDataForValidation = useCallback(() => {
     const cedulaDigits = formData.cedulaRepresentante.replace(/[^0-9]/g, '');
