@@ -1806,15 +1806,18 @@ const ActivarPolizaNaturalPage = () => {
                           Sí es
                         </Button>
                         <Button
-                          onClick={() => {
-                            setSerialConfirmado(false);
-                            const url = buildWhatsappLink(`Hola, el serial de carrocería de mi moto no coincide. Placa: ${placa || "N/A"}`);
-                            window.open(url, "_blank", "noopener,noreferrer");
-                          }}
+                          asChild
                           variant={serialConfirmado === false ? "destructive" : "outline"}
                         >
-                          <MessageCircle className="w-4 h-4 mr-2" />
-                          No es
+                          <a
+                            href={buildWhatsappLink(`Hola, el serial de carrocería de mi moto no coincide. Placa: ${placa || "N/A"}`)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => setSerialConfirmado(false)}
+                          >
+                            <MessageCircle className="w-4 h-4 mr-2" />
+                            No es
+                          </a>
                         </Button>
                       </div>
                       <p className="text-xs text-blue-900/80 dark:text-blue-100/80 pt-2 border-t border-blue-200 dark:border-blue-900">
