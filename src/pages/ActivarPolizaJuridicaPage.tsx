@@ -2115,7 +2115,11 @@ const ActivarPolizaJuridicaPage = () => {
                         value={placa.toUpperCase()}
                         onChange={(e) => setPlaca(e.target.value.toUpperCase())}
                         placeholder="Ingrese la placa"
+                        className={triedStep5 && !placa ? "border-destructive" : ""}
                       />
+                      {triedStep5 && !placa && (
+                        <p className="text-sm text-destructive">Este campo es requerido</p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
