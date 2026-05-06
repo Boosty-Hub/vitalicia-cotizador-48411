@@ -2083,7 +2083,11 @@ const ActivarPolizaJuridicaPage = () => {
                           Sí es
                         </Button>
                         <Button
-                          onClick={() => setSerialConfirmado(false)}
+                          onClick={() => {
+                            setSerialConfirmado(false);
+                            const url = buildWhatsappLink(`Hola, el serial de carrocería de mi moto no coincide. Placa: ${placa || "N/A"}`);
+                            window.open(url, "_blank", "noopener,noreferrer");
+                          }}
                           variant={serialConfirmado === false ? "destructive" : "outline"}
                         >
                           <MessageCircle className="w-4 h-4 mr-2" />
