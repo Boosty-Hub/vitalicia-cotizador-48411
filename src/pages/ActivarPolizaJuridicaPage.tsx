@@ -826,7 +826,7 @@ const ActivarPolizaJuridicaPage = () => {
         n_anio: vehicleData?.Año || new Date().getFullYear().toString(),
         c_placa: placa,
         c_carroceria: formData.serialCarroceria,
-        c_cd_nacionalidad: empresaId?.[1] || "J",
+        c_cd_nacionalidad: tipoEmpresaCodigo,
         s_nacionalidad: formData.tipoIdentificacion,
         n_cedrif: empresaId?.[2] || "",
         n_correlativo: "0",
