@@ -1847,15 +1847,22 @@ const ActivarPolizaNaturalPage = () => {
                         min={MIN_FECHA_COMPRA}
                         max={todayISO()}
                         onChange={e => handleInputChange("fechaCompra", e.target.value)}
-                        className={fechaCompraError ? "border-destructive" : ""}
+                        className={fechaCompraError || (triedStep3 && !formData.fechaCompra) ? "border-destructive" : ""}
                       />
                       {fechaCompraError && (
                         <p className="text-sm text-destructive">{fechaCompraError}</p>
+                      )}
+                      {triedStep3 && !fechaCompraError && !formData.fechaCompra && (
+                        <p className="text-sm text-destructive">Este campo es requerido</p>
                       )}
                       <p className="text-xs text-muted-foreground">
                         Debe ser anterior o igual a hoy y no puede ser anterior al {MIN_FECHA_COMPRA}.
                       </p>
                     </div>
+
+                    {triedStep3 && serialConfirmado !== true && (
+                      <p className="text-sm text-destructive">Confirme que el serial corresponde a su moto</p>
+                    )}
 
                     <div className="flex gap-3 pt-4">
                       <Button onClick={() => setCurrentStep(2)} variant="outline" className="flex-1">
