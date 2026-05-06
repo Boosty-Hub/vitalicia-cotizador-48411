@@ -608,6 +608,7 @@ const ActivarPolizaNaturalPage = () => {
     }
   };
   const { validateDocument, clearValidation, getValidation, allCriticalDocsValid, hasAnyValidating, hasAnyInvalid } = useDocumentValidation();
+  const { buildLink: buildWhatsappLink } = useWhatsappSoporte();
 
   const getFormDataForValidation = useCallback(() => {
     const cedulaDigits = formData.numeroCedula.replace(/[^0-9]/g, '');
