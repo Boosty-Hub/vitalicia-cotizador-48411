@@ -2046,7 +2046,19 @@ const ActivarPolizaJuridicaPage = () => {
                           No es
                         </Button>
                       </div>
+                      <p className="text-xs text-blue-900/80 dark:text-blue-100/80 pt-2 border-t border-blue-200 dark:border-blue-900">
+                        De haber alguna diferencia con algún dato de la moto, comuníquese con nosotros por{" "}
+                        <a
+                          href={buildWhatsappLink(`Hola, tengo una diferencia en los datos de mi moto. Placa: ${placa || "N/A"}`)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold underline hover:text-blue-700 dark:hover:text-blue-300"
+                        >
+                          WhatsApp
+                        </a>.
+                      </p>
                     </div>
+
 
                     <div className="space-y-2">
                       <Label htmlFor="fechaAdquisicion">
