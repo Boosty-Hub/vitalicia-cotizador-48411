@@ -711,6 +711,7 @@ const ActivarPolizaJuridicaPage = () => {
       cedulaAccionistasUrl: string | null,
       rifAccionistasUrl: string | null,
       rifEmpresaUrl: string | null,
+      tituloPropiedadUrl?: string | null,
     },
     codigosData: {
       marcaCodigo: string,
@@ -810,6 +811,7 @@ const ActivarPolizaJuridicaPage = () => {
         cedula_accionistas_url: extraDocs.cedulaAccionistasUrl,
         rif_accionistas_url: extraDocs.rifAccionistasUrl,
         rif_empresa_url: extraDocs.rifEmpresaUrl,
+        titulo_propiedad_url: extraDocs.tituloPropiedadUrl || null,
         
         // Campos de API (formato del webhook anterior)
         f_fchdesde: hoy,
@@ -1198,6 +1200,7 @@ const ActivarPolizaJuridicaPage = () => {
           cedulaAccionistasUrl,
           rifAccionistasUrl,
           rifEmpresaUrl,
+          tituloPropiedadUrl: tituloUrl,
         },
         codigosData,
         versionApiData
