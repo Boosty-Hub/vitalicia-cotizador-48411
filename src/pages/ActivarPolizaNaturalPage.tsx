@@ -1755,14 +1755,7 @@ const ActivarPolizaNaturalPage = () => {
                           if (!formData.email || validateEmailFormat(formData.email).error) missing.push("Correo electrónico");
                           if (formData.email2 && validateEmailFormat(formData.email2).error) missing.push("Correo electrónico 2 (formato inválido)");
 
-                          if (missing.length > 0) {
-                            toast({
-                              title: "Faltan campos por completar",
-                              description: missing.join(" • "),
-                              variant: "destructive",
-                            });
-                            return;
-                          }
+                          if (missing.length > 0) return;
                           setCurrentStep(3);
                         }}
                         variant="hero"
