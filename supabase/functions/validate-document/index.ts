@@ -60,13 +60,15 @@ Si NO es un acta constitutiva o registro mercantil, indica que no es válido.`,
   },
   declaracion_islr: {
     prompt: `Analiza esta imagen. Determina si es una Declaración de Impuesto Sobre la Renta (ISLR) o su certificado/planilla.
+Extrae el nombre del contribuyente/titular (razón social si es empresa) y su número de RIF o cédula (solo dígitos, sin prefijo) si aparece.
 Si NO es una declaración de ISLR o documento fiscal relacionado, indica que no es válido.`,
-    validFields: [],
+    validFields: ["razon_social", "cedula", "nombre"],
   },
   referencia_bancaria: {
     prompt: `Analiza esta imagen. Determina si es una Referencia Bancaria emitida por una institución financiera.
+Extrae el nombre del titular de la cuenta (razón social si es empresa) y su número de RIF o cédula (solo dígitos, sin prefijo) si aparece.
 Si NO es una referencia bancaria, indica que no es válida.`,
-    validFields: [],
+    validFields: ["razon_social", "cedula", "nombre"],
   },
   cedula_accionistas: {
     prompt: `Analiza esta imagen. Determina si es una cédula de identidad venezolana (puede ser de un accionista).
@@ -80,8 +82,9 @@ Si NO es un RIF, indica que no es válido.`,
   },
   rif_empresa: {
     prompt: `Analiza esta imagen. Determina si es un RIF (Registro de Información Fiscal) de una empresa venezolana.
+Extrae la razón social y el número de RIF (solo dígitos, sin prefijo J/G/C).
 Si NO es un RIF empresarial, indica que no es válido.`,
-    validFields: [],
+    validFields: ["razon_social", "cedula"],
   },
 };
 
