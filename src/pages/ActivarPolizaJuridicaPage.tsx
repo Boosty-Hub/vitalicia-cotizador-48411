@@ -50,6 +50,11 @@ const ActivarPolizaJuridicaPage = () => {
   const [correoError, setCorreoError] = useState("");
   const [correoAltError, setCorreoAltError] = useState("");
   const [fechaAdquisicionError, setFechaAdquisicionError] = useState("");
+  const [triedStep2, setTriedStep2] = useState(false);
+  const [triedStep3, setTriedStep3] = useState(false);
+  const [triedStep4, setTriedStep4] = useState(false);
+  const [triedStep5, setTriedStep5] = useState(false);
+  const [triedStep6, setTriedStep6] = useState(false);
   const [estadosCiviles, setEstadosCiviles] = useState<Array<{ descripcion: string }>>([]);
   const [sexos, setSexos] = useState<Array<{ descripcion: string }>>([]);
   const [actividadesEconomicas, setActividadesEconomicas] = useState<Array<{ descripcion: string }>>([]);
@@ -1463,7 +1468,11 @@ const ActivarPolizaJuridicaPage = () => {
                         id="nombreEmpresa"
                         value={formData.nombreEmpresa}
                         onChange={(e) => handleInputChange("nombreEmpresa", e.target.value)}
+                        className={triedStep2 && (!formData.nombreEmpresa || formData.nombreEmpresa.trim().length < 5) ? "border-destructive" : ""}
                       />
+                      {triedStep2 && !formData.nombreEmpresa && (
+                        <p className="text-sm text-destructive">Este campo es requerido</p>
+                      )}
                       {formData.nombreEmpresa && formData.nombreEmpresa.trim().length < 5 && (
                         <p className="text-sm text-destructive">Mínimo 5 caracteres</p>
                       )}
@@ -1478,7 +1487,7 @@ const ActivarPolizaJuridicaPage = () => {
                           value={formData.tipoIdentificacion}
                           onValueChange={handleTipoIdentificacionChange}
                         >
-                          <SelectTrigger id="tipoIdentificacion">
+                          <SelectTrigger id="tipoIdentificacion" className={triedStep2 && !formData.tipoIdentificacion ? "border-destructive" : ""}>
                             <SelectValue placeholder="Seleccione..." />
                           </SelectTrigger>
                           <SelectContent>
@@ -1487,6 +1496,9 @@ const ActivarPolizaJuridicaPage = () => {
                             <SelectItem value="Comuna">Comuna (C)</SelectItem>
                           </SelectContent>
                         </Select>
+                        {triedStep2 && !formData.tipoIdentificacion && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="numeroRIF">
@@ -1499,10 +1511,13 @@ const ActivarPolizaJuridicaPage = () => {
                           maxLength={9}
                           value={formData.numeroRIF}
                           onChange={(e) => handleInputChange("numeroRIF", e.target.value)}
-                          className={numeroRIFError ? "border-destructive" : ""}
+                          className={(numeroRIFError || (triedStep2 && formData.numeroRIF.replace(/[^0-9]/g, '').length !== 9)) ? "border-destructive" : ""}
                         />
                         {numeroRIFError && (
                           <p className="text-sm text-destructive">{numeroRIFError}</p>
+                        )}
+                        {!numeroRIFError && triedStep2 && formData.numeroRIF.replace(/[^0-9]/g, '').length !== 9 && (
+                          <p className="text-sm text-destructive">Debe tener exactamente 9 dígitos</p>
                         )}
                       </div>
                     </div>
@@ -1517,15 +1532,11 @@ const ActivarPolizaJuridicaPage = () => {
                       </Button>
                        <Button
                         onClick={() => {
-                          const missing: string[] = [];
-                          if (!formData.nombreEmpresa || formData.nombreEmpresa.trim().length < 5) missing.push("Razón social (mínimo 5 caracteres)");
-                          if (!formData.tipoIdentificacion) missing.push("Tipo de identificación");
-                          if (formData.numeroRIF.replace(/[^0-9]/g, '').length !== 9) missing.push("Número de identificación (9 dígitos)");
-                          if (numeroRIFError) missing.push(`RIF (${numeroRIFError})`);
-                          if (missing.length > 0) {
-                            toast({ title: "Faltan campos por completar", description: missing.join(" • "), variant: "destructive" });
-                            return;
-                          }
+                          setTriedStep2(true);
+                          if (!formData.nombreEmpresa || formData.nombreEmpresa.trim().length < 5) return;
+                          if (!formData.tipoIdentificacion) return;
+                          if (formData.numeroRIF.replace(/[^0-9]/g, '').length !== 9) return;
+                          if (numeroRIFError) return;
                           setCurrentStep(3);
                         }}
                         variant="hero"
@@ -1564,7 +1575,11 @@ const ActivarPolizaJuridicaPage = () => {
                           id="nombresRepresentante"
                           value={formData.nombresRepresentante}
                           onChange={(e) => handleInputChange("nombresRepresentante", e.target.value)}
+                          className={triedStep3 && (!formData.nombresRepresentante || formData.nombresRepresentante.trim().length < 2) ? "border-destructive" : ""}
                         />
+                        {triedStep3 && !formData.nombresRepresentante && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                         {formData.nombresRepresentante && formData.nombresRepresentante.trim().length < 2 && (
                           <p className="text-sm text-destructive">Mínimo 2 caracteres</p>
                         )}
@@ -1577,7 +1592,11 @@ const ActivarPolizaJuridicaPage = () => {
                           id="apellidosRepresentante"
                           value={formData.apellidosRepresentante}
                           onChange={(e) => handleInputChange("apellidosRepresentante", e.target.value)}
+                          className={triedStep3 && (!formData.apellidosRepresentante || formData.apellidosRepresentante.trim().length < 2) ? "border-destructive" : ""}
                         />
+                        {triedStep3 && !formData.apellidosRepresentante && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                         {formData.apellidosRepresentante && formData.apellidosRepresentante.trim().length < 2 && (
                           <p className="text-sm text-destructive">Mínimo 2 caracteres</p>
                         )}
@@ -1593,7 +1612,7 @@ const ActivarPolizaJuridicaPage = () => {
                           value={formData.tipoIdentificacionRepresentante}
                           onValueChange={handleTipoIdentificacionRepresentanteChange}
                         >
-                          <SelectTrigger id="tipoIdentificacionRepresentante">
+                          <SelectTrigger id="tipoIdentificacionRepresentante" className={triedStep3 && !formData.tipoIdentificacionRepresentante ? "border-destructive" : ""}>
                             <SelectValue placeholder="Seleccione..." />
                           </SelectTrigger>
                           <SelectContent>
@@ -1610,6 +1629,9 @@ const ActivarPolizaJuridicaPage = () => {
                               ))}
                           </SelectContent>
                         </Select>
+                        {triedStep3 && !formData.tipoIdentificacionRepresentante && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="cedulaRepresentante">
@@ -1638,10 +1660,13 @@ const ActivarPolizaJuridicaPage = () => {
                           }
                           value={formData.cedulaRepresentante}
                           onChange={(e) => handleInputChange("cedulaRepresentante", e.target.value)}
-                          className={cedulaRepresentanteError ? "border-destructive" : ""}
+                          className={(cedulaRepresentanteError || (triedStep3 && (!formData.cedulaRepresentante || formData.cedulaRepresentante.replace(/[^0-9]/g, '').length < 7))) ? "border-destructive" : ""}
                         />
                         {cedulaRepresentanteError && (
                           <p className="text-sm text-destructive">{cedulaRepresentanteError}</p>
+                        )}
+                        {!cedulaRepresentanteError && triedStep3 && (!formData.cedulaRepresentante || formData.cedulaRepresentante.replace(/[^0-9]/g, '').length < 7) && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
                         )}
                       </div>
                     </div>
@@ -1654,7 +1679,7 @@ const ActivarPolizaJuridicaPage = () => {
                         value={formData.estadoCivilRepresentante}
                         onValueChange={(value) => handleInputChange("estadoCivilRepresentante", value)}
                       >
-                        <SelectTrigger id="estadoCivilRepresentante">
+                        <SelectTrigger id="estadoCivilRepresentante" className={triedStep3 && !formData.estadoCivilRepresentante ? "border-destructive" : ""}>
                           <SelectValue placeholder="Seleccione..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -1665,6 +1690,9 @@ const ActivarPolizaJuridicaPage = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                      {triedStep3 && !formData.estadoCivilRepresentante && (
+                        <p className="text-sm text-destructive">Este campo es requerido</p>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1676,7 +1704,7 @@ const ActivarPolizaJuridicaPage = () => {
                           value={formData.sexoRepresentante}
                           onValueChange={(value) => handleInputChange("sexoRepresentante", value)}
                         >
-                          <SelectTrigger id="sexoRepresentante">
+                          <SelectTrigger id="sexoRepresentante" className={triedStep3 && !formData.sexoRepresentante ? "border-destructive" : ""}>
                             <SelectValue placeholder="Seleccione..." />
                           </SelectTrigger>
                           <SelectContent>
@@ -1687,6 +1715,9 @@ const ActivarPolizaJuridicaPage = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                        {triedStep3 && !formData.sexoRepresentante && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="fechaNacimientoRepresentante">
@@ -1697,7 +1728,14 @@ const ActivarPolizaJuridicaPage = () => {
                           type="date"
                           value={formData.fechaNacimientoRepresentante}
                           onChange={(e) => handleInputChange("fechaNacimientoRepresentante", e.target.value)}
+                          className={triedStep3 && (!formData.fechaNacimientoRepresentante || !isAdult(formData.fechaNacimientoRepresentante)) ? "border-destructive" : ""}
                         />
+                        {triedStep3 && !formData.fechaNacimientoRepresentante && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
+                        {triedStep3 && formData.fechaNacimientoRepresentante && !isAdult(formData.fechaNacimientoRepresentante) && (
+                          <p className="text-sm text-destructive">Debe ser mayor de edad</p>
+                        )}
                       </div>
                     </div>
 
@@ -1711,20 +1749,15 @@ const ActivarPolizaJuridicaPage = () => {
                       </Button>
                        <Button
                         onClick={() => {
-                          const missing: string[] = [];
-                          if (!formData.nombresRepresentante || formData.nombresRepresentante.trim().length < 2) missing.push("Nombre del representante");
-                          if (!formData.apellidosRepresentante || formData.apellidosRepresentante.trim().length < 2) missing.push("Apellidos del representante");
-                          if (!formData.tipoIdentificacionRepresentante) missing.push("Tipo de identificación");
-                          if (!formData.cedulaRepresentante || formData.cedulaRepresentante.replace(/[^0-9]/g, '').length < 7) missing.push("Número de cédula/pasaporte");
-                          if (cedulaRepresentanteError) missing.push(`Cédula (${cedulaRepresentanteError})`);
-                          if (!formData.estadoCivilRepresentante) missing.push("Estado civil");
-                          if (!formData.sexoRepresentante) missing.push("Sexo");
-                          if (!formData.fechaNacimientoRepresentante) missing.push("Fecha de nacimiento");
-                          else if (!isAdult(formData.fechaNacimientoRepresentante)) missing.push("Fecha de nacimiento (debe ser mayor de edad)");
-                          if (missing.length > 0) {
-                            toast({ title: "Faltan campos por completar", description: missing.join(" • "), variant: "destructive" });
-                            return;
-                          }
+                          setTriedStep3(true);
+                          if (!formData.nombresRepresentante || formData.nombresRepresentante.trim().length < 2) return;
+                          if (!formData.apellidosRepresentante || formData.apellidosRepresentante.trim().length < 2) return;
+                          if (!formData.tipoIdentificacionRepresentante) return;
+                          if (!formData.cedulaRepresentante || formData.cedulaRepresentante.replace(/[^0-9]/g, '').length < 7) return;
+                          if (cedulaRepresentanteError) return;
+                          if (!formData.estadoCivilRepresentante) return;
+                          if (!formData.sexoRepresentante) return;
+                          if (!formData.fechaNacimientoRepresentante || !isAdult(formData.fechaNacimientoRepresentante)) return;
                           setCurrentStep(4);
                         }}
                         variant="hero"
@@ -1793,7 +1826,14 @@ const ActivarPolizaJuridicaPage = () => {
                         id="direccion"
                         value={formData.direccion}
                         onChange={(e) => handleInputChange("direccion", e.target.value)}
+                        className={triedStep4 && (!formData.direccion || !!validateDireccion(formData.direccion).error) ? "border-destructive" : ""}
                       />
+                      {triedStep4 && !formData.direccion && (
+                        <p className="text-sm text-destructive">Este campo es requerido</p>
+                      )}
+                      {triedStep4 && formData.direccion && validateDireccion(formData.direccion).error && (
+                        <p className="text-sm text-destructive">{validateDireccion(formData.direccion).error}</p>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1805,7 +1845,7 @@ const ActivarPolizaJuridicaPage = () => {
                           value={formData.estado}
                           onValueChange={(value) => handleInputChange("estado", value)}
                         >
-                          <SelectTrigger id="estado">
+                          <SelectTrigger id="estado" className={triedStep4 && !formData.estado ? "border-destructive" : ""}>
                             <SelectValue placeholder="Seleccione..." />
                           </SelectTrigger>
                           <SelectContent>
@@ -1816,6 +1856,9 @@ const ActivarPolizaJuridicaPage = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                        {triedStep4 && !formData.estado && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="ciudad">
@@ -1826,7 +1869,7 @@ const ActivarPolizaJuridicaPage = () => {
                           onValueChange={(value) => handleInputChange("ciudad", value)}
                           disabled={!formData.estado}
                         >
-                          <SelectTrigger id="ciudad">
+                          <SelectTrigger id="ciudad" className={triedStep4 && !formData.ciudad ? "border-destructive" : ""}>
                             <SelectValue placeholder={formData.estado ? "Seleccione una ciudad" : "Seleccione estado primero"} />
                           </SelectTrigger>
                           <SelectContent>
@@ -1837,6 +1880,9 @@ const ActivarPolizaJuridicaPage = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                        {triedStep4 && !formData.ciudad && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                       </div>
                     </div>
 
@@ -1850,7 +1896,7 @@ const ActivarPolizaJuridicaPage = () => {
                           onValueChange={(value) => handleInputChange("municipio", value)}
                           disabled={!formData.ciudad}
                         >
-                          <SelectTrigger id="municipio">
+                          <SelectTrigger id="municipio" className={triedStep4 && !formData.municipio ? "border-destructive" : ""}>
                             <SelectValue placeholder={formData.ciudad ? "Seleccione un municipio" : "Seleccione ciudad primero"} />
                           </SelectTrigger>
                           <SelectContent>
@@ -1861,6 +1907,9 @@ const ActivarPolizaJuridicaPage = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                        {triedStep4 && !formData.municipio && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="codigoPostal">Código Postal</Label>
@@ -1881,7 +1930,7 @@ const ActivarPolizaJuridicaPage = () => {
                           value={formData.codigoTelefonicoWhatsapp}
                           onValueChange={(value) => handleInputChange("codigoTelefonicoWhatsapp", value)}
                         >
-                          <SelectTrigger id="codigoTelefonicoWhatsapp">
+                          <SelectTrigger id="codigoTelefonicoWhatsapp" className={triedStep4 && !formData.codigoTelefonicoWhatsapp ? "border-destructive" : ""}>
                             <SelectValue placeholder="Seleccione..." />
                           </SelectTrigger>
                           <SelectContent>
@@ -1892,6 +1941,9 @@ const ActivarPolizaJuridicaPage = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                        {triedStep4 && !formData.codigoTelefonicoWhatsapp && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                       </div>
                        <div className="space-y-2">
                         <Label htmlFor="telefonoCelular">
@@ -1906,7 +1958,11 @@ const ActivarPolizaJuridicaPage = () => {
                           }}
                           maxLength={7}
                           placeholder="1234567"
+                          className={triedStep4 && (!formData.telefonoCelular || formData.telefonoCelular.length !== 7) ? "border-destructive" : ""}
                         />
+                        {triedStep4 && !formData.telefonoCelular && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                         {formData.telefonoCelular && formData.telefonoCelular.length < 7 && formData.telefonoCelular.length > 0 && (
                           <p className="text-sm text-destructive">El teléfono debe tener exactamente 7 dígitos</p>
                         )}
@@ -1922,7 +1978,7 @@ const ActivarPolizaJuridicaPage = () => {
                           value={formData.codigoTelefonicoResidencial}
                           onValueChange={(value) => handleInputChange("codigoTelefonicoResidencial", value)}
                         >
-                          <SelectTrigger id="codigoTelefonicoResidencial">
+                          <SelectTrigger id="codigoTelefonicoResidencial" className={triedStep4 && !formData.codigoTelefonicoResidencial ? "border-destructive" : ""}>
                             <SelectValue placeholder="Seleccione..." />
                           </SelectTrigger>
                           <SelectContent>
@@ -1933,6 +1989,9 @@ const ActivarPolizaJuridicaPage = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                        {triedStep4 && !formData.codigoTelefonicoResidencial && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                       </div>
                        <div className="space-y-2">
                         <Label htmlFor="telefonoOficina">
@@ -1947,7 +2006,11 @@ const ActivarPolizaJuridicaPage = () => {
                           }}
                           maxLength={7}
                           placeholder="1234567"
+                          className={triedStep4 && (!formData.telefonoOficina || formData.telefonoOficina.length !== 7) ? "border-destructive" : ""}
                         />
+                        {triedStep4 && !formData.telefonoOficina && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                         {formData.telefonoOficina && formData.telefonoOficina.length < 7 && formData.telefonoOficina.length > 0 && (
                           <p className="text-sm text-destructive">El teléfono debe tener exactamente 7 dígitos</p>
                         )}
@@ -1964,9 +2027,15 @@ const ActivarPolizaJuridicaPage = () => {
                           type="email"
                           value={formData.correoElectronico}
                           onChange={(e) => handleInputChange("correoElectronico", e.target.value)}
-                          className={correoError ? "border-destructive" : ""}
+                          className={(correoError || (triedStep4 && (!formData.correoElectronico || !!validateEmailFormat(formData.correoElectronico).error))) ? "border-destructive" : ""}
                         />
                         {correoError && <p className="text-sm text-destructive">{correoError}</p>}
+                        {!correoError && triedStep4 && !formData.correoElectronico && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
+                        {!correoError && triedStep4 && formData.correoElectronico && validateEmailFormat(formData.correoElectronico).error && (
+                          <p className="text-sm text-destructive">{validateEmailFormat(formData.correoElectronico).error}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="correoAlternativo">
@@ -1977,9 +2046,15 @@ const ActivarPolizaJuridicaPage = () => {
                           type="email"
                           value={formData.correoAlternativo}
                           onChange={(e) => handleInputChange("correoAlternativo", e.target.value)}
-                          className={correoAltError ? "border-destructive" : ""}
+                          className={(correoAltError || (triedStep4 && (!formData.correoAlternativo || !!validateEmailFormat(formData.correoAlternativo).error))) ? "border-destructive" : ""}
                         />
                         {correoAltError && <p className="text-sm text-destructive">{correoAltError}</p>}
+                        {!correoAltError && triedStep4 && !formData.correoAlternativo && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
+                        {!correoAltError && triedStep4 && formData.correoAlternativo && validateEmailFormat(formData.correoAlternativo).error && (
+                          <p className="text-sm text-destructive">{validateEmailFormat(formData.correoAlternativo).error}</p>
+                        )}
                       </div>
                     </div>
 
@@ -1993,23 +2068,17 @@ const ActivarPolizaJuridicaPage = () => {
                       </Button>
                       <Button
                         onClick={() => {
-                          const missing: string[] = [];
-                          if (!formData.direccion || validateDireccion(formData.direccion).error) missing.push("Dirección (mínimo 5 caracteres, sin comas)");
-                          if (!formData.estado) missing.push("Estado");
-                          if (!formData.ciudad) missing.push("Ciudad");
-                          if (!formData.municipio) missing.push("Municipio");
-                          if (!formData.codigoTelefonicoWhatsapp) missing.push("Código de celular");
-                          if (!formData.telefonoCelular || formData.telefonoCelular.length !== 7) missing.push("Número celular (7 dígitos)");
-                          if (!formData.codigoTelefonicoResidencial) missing.push("Código residencial");
-                          if (!formData.telefonoOficina || formData.telefonoOficina.length !== 7) missing.push("Número residencial (7 dígitos)");
-                          if (!formData.correoElectronico) missing.push("Correo electrónico");
-                          else if (validateEmailFormat(formData.correoElectronico).error) missing.push(`Correo electrónico (${validateEmailFormat(formData.correoElectronico).error})`);
-                          if (!formData.correoAlternativo) missing.push("Correo alternativo");
-                          else if (validateEmailFormat(formData.correoAlternativo).error) missing.push(`Correo alternativo (${validateEmailFormat(formData.correoAlternativo).error})`);
-                          if (missing.length > 0) {
-                            toast({ title: "Faltan campos por completar", description: missing.join(" • "), variant: "destructive" });
-                            return;
-                          }
+                          setTriedStep4(true);
+                          if (!formData.direccion || validateDireccion(formData.direccion).error) return;
+                          if (!formData.estado) return;
+                          if (!formData.ciudad) return;
+                          if (!formData.municipio) return;
+                          if (!formData.codigoTelefonicoWhatsapp) return;
+                          if (!formData.telefonoCelular || formData.telefonoCelular.length !== 7) return;
+                          if (!formData.codigoTelefonicoResidencial) return;
+                          if (!formData.telefonoOficina || formData.telefonoOficina.length !== 7) return;
+                          if (!formData.correoElectronico || validateEmailFormat(formData.correoElectronico).error) return;
+                          if (!formData.correoAlternativo || validateEmailFormat(formData.correoAlternativo).error) return;
                           setCurrentStep(5);
                         }}
                         variant="hero"
@@ -2046,7 +2115,11 @@ const ActivarPolizaJuridicaPage = () => {
                         value={placa.toUpperCase()}
                         onChange={(e) => setPlaca(e.target.value.toUpperCase())}
                         placeholder="Ingrese la placa"
+                        className={triedStep5 && !placa ? "border-destructive" : ""}
                       />
+                      {triedStep5 && !placa && (
+                        <p className="text-sm text-destructive">Este campo es requerido</p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -2087,6 +2160,9 @@ const ActivarPolizaJuridicaPage = () => {
                           No es
                         </Button>
                       </div>
+                      {triedStep5 && serialConfirmado !== true && (
+                        <p className="text-sm text-destructive">Debe confirmar el serial de carrocería</p>
+                      )}
                       <p className="text-xs text-blue-900/80 dark:text-blue-100/80 pt-2 border-t border-blue-200 dark:border-blue-900">
                         De haber alguna diferencia con algún dato de la moto, comuníquese con nosotros por{" "}
                         <a
@@ -2112,10 +2188,13 @@ const ActivarPolizaJuridicaPage = () => {
                         min={MIN_FECHA_COMPRA}
                         max={todayISO()}
                         onChange={(e) => handleInputChange("fechaAdquisicion", e.target.value)}
-                        className={fechaAdquisicionError ? "border-destructive" : ""}
+                        className={(fechaAdquisicionError || (triedStep5 && !formData.fechaAdquisicion)) ? "border-destructive" : ""}
                       />
                       {fechaAdquisicionError && (
                         <p className="text-sm text-destructive">{fechaAdquisicionError}</p>
+                      )}
+                      {!fechaAdquisicionError && triedStep5 && !formData.fechaAdquisicion && (
+                        <p className="text-sm text-destructive">Este campo es requerido</p>
                       )}
                       <p className="text-xs text-muted-foreground">
                         Debe ser anterior o igual a hoy y no puede ser anterior al {MIN_FECHA_COMPRA}.
@@ -2132,19 +2211,13 @@ const ActivarPolizaJuridicaPage = () => {
                       </Button>
                       <Button
                         onClick={() => {
-                          const missing: string[] = [];
-                          if (!placa) missing.push("Placa");
-                          if (!formData.serialCarroceria) missing.push("Serial de carrocería");
-                          if (serialConfirmado !== true) missing.push("Confirmación del serial");
-                          if (!formData.fechaAdquisicion) missing.push("Fecha de compra");
-                          else {
-                            const fc = validateFechaCompraHelper(formData.fechaAdquisicion);
-                            if (!fc.valid) missing.push(`Fecha de compra (${fc.error})`);
-                          }
-                          if (missing.length > 0) {
-                            toast({ title: "Faltan campos por completar", description: missing.join(" • "), variant: "destructive" });
-                            return;
-                          }
+                          setTriedStep5(true);
+                          if (!placa) return;
+                          if (!formData.serialCarroceria) return;
+                          if (serialConfirmado !== true) return;
+                          if (!formData.fechaAdquisicion) return;
+                          const fc = validateFechaCompraHelper(formData.fechaAdquisicion);
+                          if (!fc.valid) return;
                           setCurrentStep(6);
                         }}
                         variant="hero"
@@ -2378,6 +2451,7 @@ const ActivarPolizaJuridicaPage = () => {
                       </Button>
                       <Button
                         onClick={() => {
+                          setTriedStep6(true);
                           // Validación amigable: listar faltantes
                           const missing: string[] = [];
                           if (!(formData as any).docRIFEmpresa) missing.push("RIF de la Empresa");
@@ -2402,14 +2476,7 @@ const ActivarPolizaJuridicaPage = () => {
                               missing.push("Título de Propiedad, o bien Factura + Certificado de Origen");
                             }
                           }
-                          if (missing.length > 0) {
-                            toast({
-                              title: "Faltan documentos por cargar",
-                              description: missing.join(" • "),
-                              variant: "destructive",
-                            });
-                            return;
-                          }
+                          if (missing.length > 0) return;
                           if (hasAnyValidating()) {
                             toast({ title: "Validando documentos", description: "Espere a que termine la validación.", variant: "destructive" });
                             return;

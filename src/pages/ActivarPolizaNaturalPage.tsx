@@ -1755,14 +1755,7 @@ const ActivarPolizaNaturalPage = () => {
                           if (!formData.email || validateEmailFormat(formData.email).error) missing.push("Correo electrónico");
                           if (formData.email2 && validateEmailFormat(formData.email2).error) missing.push("Correo electrónico 2 (formato inválido)");
 
-                          if (missing.length > 0) {
-                            toast({
-                              title: "Faltan campos por completar",
-                              description: missing.join(" • "),
-                              variant: "destructive",
-                            });
-                            return;
-                          }
+                          if (missing.length > 0) return;
                           setCurrentStep(3);
                         }}
                         variant="hero"
@@ -1880,14 +1873,7 @@ const ActivarPolizaNaturalPage = () => {
                             if (!fc.valid) missing.push(`Fecha de compra (${fc.error})`);
                           }
                           if (serialConfirmado !== true) missing.push("Confirmación del serial");
-                          if (missing.length > 0) {
-                            toast({
-                              title: "Faltan campos por completar",
-                              description: missing.join(" • "),
-                              variant: "destructive",
-                            });
-                            return;
-                          }
+                          if (missing.length > 0) return;
                           setCurrentStep(4);
                         }}
                         variant="hero"
@@ -2124,14 +2110,7 @@ const ActivarPolizaNaturalPage = () => {
                           if (!formData.beneficiarioSexo) missing.push("Sexo del beneficiario");
                           if (!formData.beneficiarioFechaNacimiento) missing.push("Fecha de nacimiento del beneficiario");
 
-                          if (missing.length > 0) {
-                            toast({
-                              title: "Faltan campos por completar",
-                              description: missing.join(" • "),
-                              variant: "destructive",
-                            });
-                            return;
-                          }
+                          if (missing.length > 0) return;
                           setCurrentStep(5);
                         }}
                         variant="hero"
