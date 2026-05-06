@@ -1575,7 +1575,11 @@ const ActivarPolizaJuridicaPage = () => {
                           id="nombresRepresentante"
                           value={formData.nombresRepresentante}
                           onChange={(e) => handleInputChange("nombresRepresentante", e.target.value)}
+                          className={triedStep3 && (!formData.nombresRepresentante || formData.nombresRepresentante.trim().length < 2) ? "border-destructive" : ""}
                         />
+                        {triedStep3 && !formData.nombresRepresentante && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                         {formData.nombresRepresentante && formData.nombresRepresentante.trim().length < 2 && (
                           <p className="text-sm text-destructive">Mínimo 2 caracteres</p>
                         )}
@@ -1588,7 +1592,11 @@ const ActivarPolizaJuridicaPage = () => {
                           id="apellidosRepresentante"
                           value={formData.apellidosRepresentante}
                           onChange={(e) => handleInputChange("apellidosRepresentante", e.target.value)}
+                          className={triedStep3 && (!formData.apellidosRepresentante || formData.apellidosRepresentante.trim().length < 2) ? "border-destructive" : ""}
                         />
+                        {triedStep3 && !formData.apellidosRepresentante && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                         {formData.apellidosRepresentante && formData.apellidosRepresentante.trim().length < 2 && (
                           <p className="text-sm text-destructive">Mínimo 2 caracteres</p>
                         )}
@@ -1604,7 +1612,7 @@ const ActivarPolizaJuridicaPage = () => {
                           value={formData.tipoIdentificacionRepresentante}
                           onValueChange={handleTipoIdentificacionRepresentanteChange}
                         >
-                          <SelectTrigger id="tipoIdentificacionRepresentante">
+                          <SelectTrigger id="tipoIdentificacionRepresentante" className={triedStep3 && !formData.tipoIdentificacionRepresentante ? "border-destructive" : ""}>
                             <SelectValue placeholder="Seleccione..." />
                           </SelectTrigger>
                           <SelectContent>
@@ -1621,6 +1629,9 @@ const ActivarPolizaJuridicaPage = () => {
                               ))}
                           </SelectContent>
                         </Select>
+                        {triedStep3 && !formData.tipoIdentificacionRepresentante && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="cedulaRepresentante">
@@ -1649,10 +1660,13 @@ const ActivarPolizaJuridicaPage = () => {
                           }
                           value={formData.cedulaRepresentante}
                           onChange={(e) => handleInputChange("cedulaRepresentante", e.target.value)}
-                          className={cedulaRepresentanteError ? "border-destructive" : ""}
+                          className={(cedulaRepresentanteError || (triedStep3 && (!formData.cedulaRepresentante || formData.cedulaRepresentante.replace(/[^0-9]/g, '').length < 7))) ? "border-destructive" : ""}
                         />
                         {cedulaRepresentanteError && (
                           <p className="text-sm text-destructive">{cedulaRepresentanteError}</p>
+                        )}
+                        {!cedulaRepresentanteError && triedStep3 && (!formData.cedulaRepresentante || formData.cedulaRepresentante.replace(/[^0-9]/g, '').length < 7) && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
                         )}
                       </div>
                     </div>
@@ -1665,7 +1679,7 @@ const ActivarPolizaJuridicaPage = () => {
                         value={formData.estadoCivilRepresentante}
                         onValueChange={(value) => handleInputChange("estadoCivilRepresentante", value)}
                       >
-                        <SelectTrigger id="estadoCivilRepresentante">
+                        <SelectTrigger id="estadoCivilRepresentante" className={triedStep3 && !formData.estadoCivilRepresentante ? "border-destructive" : ""}>
                           <SelectValue placeholder="Seleccione..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -1676,6 +1690,9 @@ const ActivarPolizaJuridicaPage = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                      {triedStep3 && !formData.estadoCivilRepresentante && (
+                        <p className="text-sm text-destructive">Este campo es requerido</p>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1687,7 +1704,7 @@ const ActivarPolizaJuridicaPage = () => {
                           value={formData.sexoRepresentante}
                           onValueChange={(value) => handleInputChange("sexoRepresentante", value)}
                         >
-                          <SelectTrigger id="sexoRepresentante">
+                          <SelectTrigger id="sexoRepresentante" className={triedStep3 && !formData.sexoRepresentante ? "border-destructive" : ""}>
                             <SelectValue placeholder="Seleccione..." />
                           </SelectTrigger>
                           <SelectContent>
@@ -1698,6 +1715,9 @@ const ActivarPolizaJuridicaPage = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                        {triedStep3 && !formData.sexoRepresentante && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="fechaNacimientoRepresentante">
@@ -1708,7 +1728,14 @@ const ActivarPolizaJuridicaPage = () => {
                           type="date"
                           value={formData.fechaNacimientoRepresentante}
                           onChange={(e) => handleInputChange("fechaNacimientoRepresentante", e.target.value)}
+                          className={triedStep3 && (!formData.fechaNacimientoRepresentante || !isAdult(formData.fechaNacimientoRepresentante)) ? "border-destructive" : ""}
                         />
+                        {triedStep3 && !formData.fechaNacimientoRepresentante && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
+                        {triedStep3 && formData.fechaNacimientoRepresentante && !isAdult(formData.fechaNacimientoRepresentante) && (
+                          <p className="text-sm text-destructive">Debe ser mayor de edad</p>
+                        )}
                       </div>
                     </div>
 
