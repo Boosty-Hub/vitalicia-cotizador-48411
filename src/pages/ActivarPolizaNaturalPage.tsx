@@ -1858,6 +1858,7 @@ const ActivarPolizaNaturalPage = () => {
                       </Button>
                       <Button
                         onClick={() => {
+                          setTriedStep3(true);
                           const missing: string[] = [];
                           if (!placa) missing.push("Placa");
                           if (!formData.serialCarroceria) missing.push("Serial de carrocería");
