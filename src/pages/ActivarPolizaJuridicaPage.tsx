@@ -1468,7 +1468,11 @@ const ActivarPolizaJuridicaPage = () => {
                         id="nombreEmpresa"
                         value={formData.nombreEmpresa}
                         onChange={(e) => handleInputChange("nombreEmpresa", e.target.value)}
+                        className={triedStep2 && (!formData.nombreEmpresa || formData.nombreEmpresa.trim().length < 5) ? "border-destructive" : ""}
                       />
+                      {triedStep2 && !formData.nombreEmpresa && (
+                        <p className="text-sm text-destructive">Este campo es requerido</p>
+                      )}
                       {formData.nombreEmpresa && formData.nombreEmpresa.trim().length < 5 && (
                         <p className="text-sm text-destructive">Mínimo 5 caracteres</p>
                       )}
@@ -1483,7 +1487,7 @@ const ActivarPolizaJuridicaPage = () => {
                           value={formData.tipoIdentificacion}
                           onValueChange={handleTipoIdentificacionChange}
                         >
-                          <SelectTrigger id="tipoIdentificacion">
+                          <SelectTrigger id="tipoIdentificacion" className={triedStep2 && !formData.tipoIdentificacion ? "border-destructive" : ""}>
                             <SelectValue placeholder="Seleccione..." />
                           </SelectTrigger>
                           <SelectContent>
@@ -1492,6 +1496,9 @@ const ActivarPolizaJuridicaPage = () => {
                             <SelectItem value="Comuna">Comuna (C)</SelectItem>
                           </SelectContent>
                         </Select>
+                        {triedStep2 && !formData.tipoIdentificacion && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="numeroRIF">
@@ -1504,10 +1511,13 @@ const ActivarPolizaJuridicaPage = () => {
                           maxLength={9}
                           value={formData.numeroRIF}
                           onChange={(e) => handleInputChange("numeroRIF", e.target.value)}
-                          className={numeroRIFError ? "border-destructive" : ""}
+                          className={(numeroRIFError || (triedStep2 && formData.numeroRIF.replace(/[^0-9]/g, '').length !== 9)) ? "border-destructive" : ""}
                         />
                         {numeroRIFError && (
                           <p className="text-sm text-destructive">{numeroRIFError}</p>
+                        )}
+                        {!numeroRIFError && triedStep2 && formData.numeroRIF.replace(/[^0-9]/g, '').length !== 9 && (
+                          <p className="text-sm text-destructive">Debe tener exactamente 9 dígitos</p>
                         )}
                       </div>
                     </div>
