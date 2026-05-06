@@ -773,7 +773,7 @@ const ActivarPolizaJuridicaPage = () => {
 
       const polizaData = {
         // Campos Monday
-        estado_principal_monday: "Nuevo registro",
+        estado_principal_monday: "Pendiente revisión analista",
         api_monday: versionApiData?.cd_version_seguro || "BERA2025",
         user_id: user?.id || null,
         fecha_de_vencimiento_monday: fechaVencimiento,
