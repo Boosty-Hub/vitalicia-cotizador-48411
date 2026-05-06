@@ -1435,7 +1435,7 @@ const ActivarPolizaNaturalPage = () => {
                       <div className="space-y-2">
                         <Label htmlFor="tipoIdentificacion">Tipo de Identificación *</Label>
                         <Select value={formData.tipoIdentificacion} onValueChange={handleTipoIdentificacionChange}>
-                          <SelectTrigger>
+                          <SelectTrigger className={triedStep2 && !formData.tipoIdentificacion ? "border-destructive" : ""}>
                             <SelectValue placeholder="Seleccione una opción" />
                           </SelectTrigger>
                           <SelectContent>
@@ -1444,6 +1444,9 @@ const ActivarPolizaNaturalPage = () => {
                               </SelectItem>)}
                           </SelectContent>
                         </Select>
+                        {triedStep2 && !formData.tipoIdentificacion && (
+                          <p className="text-sm text-destructive">Seleccione una opción</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="numeroCedula">Número de {formData.tipoIdentificacion === "P" ? "Pasaporte" : "Cédula o RIF"} *</Label>
@@ -1463,10 +1466,13 @@ const ActivarPolizaNaturalPage = () => {
                               : "Seleccione tipo primero"
                           }
                           disabled={!formData.tipoIdentificacion}
-                          className={cedulaError ? "border-destructive" : ""}
+                          className={cedulaError || (triedStep2 && !formData.numeroCedula) ? "border-destructive" : ""}
                         />
                         {cedulaError && (
                           <p className="text-sm text-destructive">{cedulaError}</p>
+                        )}
+                        {triedStep2 && !cedulaError && !formData.numeroCedula && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
                         )}
                       </div>
                     </div>
