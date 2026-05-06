@@ -1915,7 +1915,7 @@ const ActivarPolizaNaturalPage = () => {
                           value={formData.beneficiarioRelacion}
                           onValueChange={value => handleInputChange("beneficiarioRelacion", value)}
                         >
-                          <SelectTrigger id="beneficiarioRelacion">
+                          <SelectTrigger id="beneficiarioRelacion" className={triedStep4 && !formData.beneficiarioRelacion ? "border-destructive" : ""}>
                             <SelectValue placeholder="Seleccione una opción" />
                           </SelectTrigger>
                           <SelectContent>
@@ -1924,6 +1924,9 @@ const ActivarPolizaNaturalPage = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                        {triedStep4 && !formData.beneficiarioRelacion && (
+                          <p className="text-sm text-destructive">Seleccione una opción</p>
+                        )}
                       </div>
                       {formData.beneficiarioRelacion === "otro" && (
                         <div className="space-y-2">
@@ -1933,7 +1936,11 @@ const ActivarPolizaNaturalPage = () => {
                             value={formData.beneficiarioRelacionOtro}
                             onChange={e => handleInputChange("beneficiarioRelacionOtro", e.target.value)}
                             placeholder="Ej: Hermano(a), Tío(a)..."
+                            className={triedStep4 && !formData.beneficiarioRelacionOtro?.trim() ? "border-destructive" : ""}
                           />
+                          {triedStep4 && !formData.beneficiarioRelacionOtro?.trim() && (
+                            <p className="text-sm text-destructive">Este campo es requerido</p>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1941,11 +1948,21 @@ const ActivarPolizaNaturalPage = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="beneficiarioNombre">Nombre *</Label>
-                        <Input id="beneficiarioNombre" value={formData.beneficiarioNombre} onChange={e => handleInputChange("beneficiarioNombre", e.target.value)} />
+                        <Input id="beneficiarioNombre" value={formData.beneficiarioNombre} onChange={e => handleInputChange("beneficiarioNombre", e.target.value)}
+                          className={triedStep4 && !formData.beneficiarioNombre ? "border-destructive" : ""}
+                        />
+                        {triedStep4 && !formData.beneficiarioNombre && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="beneficiarioApellidos">Apellidos *</Label>
-                        <Input id="beneficiarioApellidos" value={formData.beneficiarioApellidos} onChange={e => handleInputChange("beneficiarioApellidos", e.target.value)} />
+                        <Input id="beneficiarioApellidos" value={formData.beneficiarioApellidos} onChange={e => handleInputChange("beneficiarioApellidos", e.target.value)}
+                          className={triedStep4 && !formData.beneficiarioApellidos ? "border-destructive" : ""}
+                        />
+                        {triedStep4 && !formData.beneficiarioApellidos && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                       </div>
                     </div>
 
