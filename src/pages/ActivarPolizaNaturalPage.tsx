@@ -2005,7 +2005,7 @@ const ActivarPolizaNaturalPage = () => {
                         <div className="space-y-2">
                           <Label htmlFor="beneficiarioTipoIdentificacion">Tipo de Identificación *</Label>
                           <Select value={formData.beneficiarioTipoIdentificacion} onValueChange={handleBeneficiarioTipoIdentificacionChange}>
-                            <SelectTrigger>
+                            <SelectTrigger className={triedStep4 && !formData.beneficiarioTipoIdentificacion ? "border-destructive" : ""}>
                               <SelectValue placeholder="Seleccione una opción" />
                             </SelectTrigger>
                             <SelectContent>
@@ -2014,6 +2014,9 @@ const ActivarPolizaNaturalPage = () => {
                                   </SelectItem>)}
                             </SelectContent>
                           </Select>
+                          {triedStep4 && !formData.beneficiarioTipoIdentificacion && (
+                            <p className="text-sm text-destructive">Seleccione una opción</p>
+                          )}
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="beneficiarioNumeroCedula">Número de {formData.beneficiarioTipoIdentificacion === "P" ? "Pasaporte" : "Cédula"} *</Label>
@@ -2023,10 +2026,13 @@ const ActivarPolizaNaturalPage = () => {
                             onChange={e => handleBeneficiarioCedulaChange(e.target.value)}
                             placeholder={formData.beneficiarioTipoIdentificacion === "P" ? "Ej: AB123456" : formData.beneficiarioTipoIdentificacion ? `Ej: ${formData.beneficiarioTipoIdentificacion}-12345678` : "Seleccione tipo primero"}
                             disabled={!formData.beneficiarioTipoIdentificacion}
-                            className={beneficiarioCedulaError ? "border-destructive" : ""}
+                            className={beneficiarioCedulaError || (triedStep4 && !formData.beneficiarioNumeroCedula) ? "border-destructive" : ""}
                           />
                           {beneficiarioCedulaError && (
                             <p className="text-sm text-destructive">{beneficiarioCedulaError}</p>
+                          )}
+                          {triedStep4 && !beneficiarioCedulaError && !formData.beneficiarioNumeroCedula && (
+                            <p className="text-sm text-destructive">Este campo es requerido</p>
                           )}
                         </div>
                       </div>
@@ -2036,7 +2042,7 @@ const ActivarPolizaNaturalPage = () => {
                       <div className="space-y-2">
                         <Label htmlFor="beneficiarioSexo">Sexo *</Label>
                         <Select value={formData.beneficiarioSexo} onValueChange={value => handleInputChange("beneficiarioSexo", value)}>
-                          <SelectTrigger>
+                          <SelectTrigger className={triedStep4 && !formData.beneficiarioSexo ? "border-destructive" : ""}>
                             <SelectValue placeholder="Seleccione una opción" />
                           </SelectTrigger>
                           <SelectContent>
@@ -2045,6 +2051,9 @@ const ActivarPolizaNaturalPage = () => {
                               </SelectItem>)}
                           </SelectContent>
                         </Select>
+                        {triedStep4 && !formData.beneficiarioSexo && (
+                          <p className="text-sm text-destructive">Seleccione una opción</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="beneficiarioFechaNacimiento">Fecha de Nacimiento *</Label>
@@ -2054,8 +2063,12 @@ const ActivarPolizaNaturalPage = () => {
                           value={formData.beneficiarioFechaNacimiento}
                           max={todayISO()}
                           onChange={e => handleInputChange("beneficiarioFechaNacimiento", e.target.value)}
+                          className={triedStep4 && !formData.beneficiarioFechaNacimiento ? "border-destructive" : ""}
                         />
                         <p className="text-xs text-muted-foreground">Puede ser menor de edad.</p>
+                        {triedStep4 && !formData.beneficiarioFechaNacimiento && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                       </div>
                     </div>
 
