@@ -597,21 +597,24 @@ const ActivarPolizaJuridicaPage = () => {
   const { validateDocument, clearValidation, getValidation, allCriticalDocsValid, hasAnyValidating, hasAnyInvalid } = useDocumentValidation();
   const { buildLink: buildWhatsappLink } = useWhatsappSoporte();
 
-  const getFormDataForValidation = useCallback(() => {
-    const cedulaDigits = formData.cedulaRepresentante.replace(/[^0-9]/g, '');
+  const getFormDataForValidation = useCallback((docKey?: string) => {
+    const cedulaRepDigits = formData.cedulaRepresentante.replace(/[^0-9]/g, '');
+    const rifEmpresaDigits = formData.numeroRIF.replace(/[^0-9]/g, '');
+    // Para documentos de la empresa, validar contra RIF y razón social
+    const isEmpresaDoc = docKey === "docRIFEmpresa" || docKey === "docDeclaracionISLR" || docKey === "docReferenciaBancaria";
     return {
-      cedula: cedulaDigits,
-      nombre: formData.nombresRepresentante,
-      apellido: formData.apellidosRepresentante,
+      cedula: isEmpresaDoc ? rifEmpresaDigits : cedulaRepDigits,
+      nombre: isEmpresaDoc ? formData.nombreEmpresa : formData.nombresRepresentante,
+      apellido: isEmpresaDoc ? "" : formData.apellidosRepresentante,
       placa: placa.toUpperCase().trim(),
       razon_social: formData.nombreEmpresa,
     };
-  }, [formData.cedulaRepresentante, formData.nombresRepresentante, formData.apellidosRepresentante, placa, formData.nombreEmpresa]);
+  }, [formData.cedulaRepresentante, formData.numeroRIF, formData.nombresRepresentante, formData.apellidosRepresentante, formData.nombreEmpresa, placa]);
 
   const handleFileChange = (field: string, file: File | null) => {
     setFormData(prev => ({ ...prev, [field]: file }));
     if (file) {
-      validateDocument(field, file, getFormDataForValidation());
+      validateDocument(field, file, getFormDataForValidation(field));
     } else {
       clearValidation(field);
     }
@@ -770,7 +773,7 @@ const ActivarPolizaJuridicaPage = () => {
 
       const polizaData = {
         // Campos Monday
-        estado_principal_monday: "Nuevo registro",
+        estado_principal_monday: "Pendiente revisión analista",
         api_monday: versionApiData?.cd_version_seguro || "BERA2025",
         user_id: user?.id || null,
         fecha_de_vencimiento_monday: fechaVencimiento,
@@ -1225,21 +1228,11 @@ const ActivarPolizaJuridicaPage = () => {
         versionApiData
       );
 
-      // Llamar a RMS API para obtener número de póliza
-      try {
-        const rmsResponse = await callRmsApi(savedPoliza.id, savedPoliza);
-        toast({
-          title: "✅ Póliza activada exitosamente",
-          description: `Tu número de póliza es: ${rmsResponse.numeroPoliza}`,
-        });
-      } catch (rmsError) {
-        console.error('⚠️ Error al obtener número de póliza, pero la póliza fue guardada:', rmsError);
-        toast({
-          title: "Póliza registrada",
-          description: "Tu póliza ha sido guardada. El número de póliza se asignará pronto.",
-          variant: "default"
-        });
-      }
+      // Persona jurídica: NO llamar RMS API. Queda pendiente de revisión por un analista.
+      toast({
+        title: "✅ Solicitud enviada para revisión",
+        description: "Tu póliza fue registrada y será revisada por un analista. Te contactaremos pronto.",
+      });
 
       setCurrentStep(7);
 

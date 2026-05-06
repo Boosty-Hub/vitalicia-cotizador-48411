@@ -45,6 +45,11 @@ export function getPolizaStatus(poliza: {
     }
   }
   
+  // Si está pendiente de revisión por analista (jurídicas)
+  if (poliza.estado_principal_monday === 'Pendiente revisión analista' && !poliza.numero_poliza_monday) {
+    return { status: 'pending', message: 'Pendiente de revisión por analista' };
+  }
+
   // Si estado es "Nuevo registro" y no tiene número de póliza
   if (poliza.estado_principal_monday === 'Nuevo registro' && !poliza.numero_poliza_monday) {
     return { status: 'pending', message: 'Pendiente de procesar' };
