@@ -2026,23 +2026,17 @@ const ActivarPolizaJuridicaPage = () => {
                       </Button>
                       <Button
                         onClick={() => {
-                          const missing: string[] = [];
-                          if (!formData.direccion || validateDireccion(formData.direccion).error) missing.push("Dirección (mínimo 5 caracteres, sin comas)");
-                          if (!formData.estado) missing.push("Estado");
-                          if (!formData.ciudad) missing.push("Ciudad");
-                          if (!formData.municipio) missing.push("Municipio");
-                          if (!formData.codigoTelefonicoWhatsapp) missing.push("Código de celular");
-                          if (!formData.telefonoCelular || formData.telefonoCelular.length !== 7) missing.push("Número celular (7 dígitos)");
-                          if (!formData.codigoTelefonicoResidencial) missing.push("Código residencial");
-                          if (!formData.telefonoOficina || formData.telefonoOficina.length !== 7) missing.push("Número residencial (7 dígitos)");
-                          if (!formData.correoElectronico) missing.push("Correo electrónico");
-                          else if (validateEmailFormat(formData.correoElectronico).error) missing.push(`Correo electrónico (${validateEmailFormat(formData.correoElectronico).error})`);
-                          if (!formData.correoAlternativo) missing.push("Correo alternativo");
-                          else if (validateEmailFormat(formData.correoAlternativo).error) missing.push(`Correo alternativo (${validateEmailFormat(formData.correoAlternativo).error})`);
-                          if (missing.length > 0) {
-                            toast({ title: "Faltan campos por completar", description: missing.join(" • "), variant: "destructive" });
-                            return;
-                          }
+                          setTriedStep4(true);
+                          if (!formData.direccion || validateDireccion(formData.direccion).error) return;
+                          if (!formData.estado) return;
+                          if (!formData.ciudad) return;
+                          if (!formData.municipio) return;
+                          if (!formData.codigoTelefonicoWhatsapp) return;
+                          if (!formData.telefonoCelular || formData.telefonoCelular.length !== 7) return;
+                          if (!formData.codigoTelefonicoResidencial) return;
+                          if (!formData.telefonoOficina || formData.telefonoOficina.length !== 7) return;
+                          if (!formData.correoElectronico || validateEmailFormat(formData.correoElectronico).error) return;
+                          if (!formData.correoAlternativo || validateEmailFormat(formData.correoAlternativo).error) return;
                           setCurrentStep(5);
                         }}
                         variant="hero"
