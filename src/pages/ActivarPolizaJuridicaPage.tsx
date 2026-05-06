@@ -597,21 +597,24 @@ const ActivarPolizaJuridicaPage = () => {
   const { validateDocument, clearValidation, getValidation, allCriticalDocsValid, hasAnyValidating, hasAnyInvalid } = useDocumentValidation();
   const { buildLink: buildWhatsappLink } = useWhatsappSoporte();
 
-  const getFormDataForValidation = useCallback(() => {
-    const cedulaDigits = formData.cedulaRepresentante.replace(/[^0-9]/g, '');
+  const getFormDataForValidation = useCallback((docKey?: string) => {
+    const cedulaRepDigits = formData.cedulaRepresentante.replace(/[^0-9]/g, '');
+    const rifEmpresaDigits = formData.numeroRIF.replace(/[^0-9]/g, '');
+    // Para documentos de la empresa, validar contra RIF y razón social
+    const isEmpresaDoc = docKey === "docRIFEmpresa" || docKey === "docDeclaracionISLR" || docKey === "docReferenciaBancaria";
     return {
-      cedula: cedulaDigits,
-      nombre: formData.nombresRepresentante,
-      apellido: formData.apellidosRepresentante,
+      cedula: isEmpresaDoc ? rifEmpresaDigits : cedulaRepDigits,
+      nombre: isEmpresaDoc ? formData.nombreEmpresa : formData.nombresRepresentante,
+      apellido: isEmpresaDoc ? "" : formData.apellidosRepresentante,
       placa: placa.toUpperCase().trim(),
       razon_social: formData.nombreEmpresa,
     };
-  }, [formData.cedulaRepresentante, formData.nombresRepresentante, formData.apellidosRepresentante, placa, formData.nombreEmpresa]);
+  }, [formData.cedulaRepresentante, formData.numeroRIF, formData.nombresRepresentante, formData.apellidosRepresentante, formData.nombreEmpresa, placa]);
 
   const handleFileChange = (field: string, file: File | null) => {
     setFormData(prev => ({ ...prev, [field]: file }));
     if (file) {
-      validateDocument(field, file, getFormDataForValidation());
+      validateDocument(field, file, getFormDataForValidation(field));
     } else {
       clearValidation(field);
     }
