@@ -2188,10 +2188,13 @@ const ActivarPolizaJuridicaPage = () => {
                         min={MIN_FECHA_COMPRA}
                         max={todayISO()}
                         onChange={(e) => handleInputChange("fechaAdquisicion", e.target.value)}
-                        className={fechaAdquisicionError ? "border-destructive" : ""}
+                        className={(fechaAdquisicionError || (triedStep5 && !formData.fechaAdquisicion)) ? "border-destructive" : ""}
                       />
                       {fechaAdquisicionError && (
                         <p className="text-sm text-destructive">{fechaAdquisicionError}</p>
+                      )}
+                      {!fechaAdquisicionError && triedStep5 && !formData.fechaAdquisicion && (
+                        <p className="text-sm text-destructive">Este campo es requerido</p>
                       )}
                       <p className="text-xs text-muted-foreground">
                         Debe ser anterior o igual a hoy y no puede ser anterior al {MIN_FECHA_COMPRA}.
