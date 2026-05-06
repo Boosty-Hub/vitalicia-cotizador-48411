@@ -1026,6 +1026,8 @@ const ActivarPolizaJuridicaPage = () => {
       if ((!tieneTitulo && !tieneFacturaYOrigen) || !rifEmpresaUrl) {
         throw new Error('Error al subir uno o más documentos obligatorios');
       }
+      // Para columna existente: usar origenUrl si existe, si no titulo como respaldo
+      const origenFinalUrl = origenUrl || tituloUrl;
 
       // Fetch precio venta para EMPIRE
       const precioVenta = await fetchPrecioVentaEmpire();
