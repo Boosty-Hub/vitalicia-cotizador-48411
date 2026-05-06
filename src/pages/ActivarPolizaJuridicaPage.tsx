@@ -2201,19 +2201,13 @@ const ActivarPolizaJuridicaPage = () => {
                       </Button>
                       <Button
                         onClick={() => {
-                          const missing: string[] = [];
-                          if (!placa) missing.push("Placa");
-                          if (!formData.serialCarroceria) missing.push("Serial de carrocería");
-                          if (serialConfirmado !== true) missing.push("Confirmación del serial");
-                          if (!formData.fechaAdquisicion) missing.push("Fecha de compra");
-                          else {
-                            const fc = validateFechaCompraHelper(formData.fechaAdquisicion);
-                            if (!fc.valid) missing.push(`Fecha de compra (${fc.error})`);
-                          }
-                          if (missing.length > 0) {
-                            toast({ title: "Faltan campos por completar", description: missing.join(" • "), variant: "destructive" });
-                            return;
-                          }
+                          setTriedStep5(true);
+                          if (!placa) return;
+                          if (!formData.serialCarroceria) return;
+                          if (serialConfirmado !== true) return;
+                          if (!formData.fechaAdquisicion) return;
+                          const fc = validateFechaCompraHelper(formData.fechaAdquisicion);
+                          if (!fc.valid) return;
                           setCurrentStep(6);
                         }}
                         variant="hero"
