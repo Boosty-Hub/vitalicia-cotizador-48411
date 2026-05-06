@@ -1955,7 +1955,9 @@ const ActivarPolizaJuridicaPage = () => {
                           type="email"
                           value={formData.correoElectronico}
                           onChange={(e) => handleInputChange("correoElectronico", e.target.value)}
+                          className={correoError ? "border-destructive" : ""}
                         />
+                        {correoError && <p className="text-sm text-destructive">{correoError}</p>}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="correoAlternativo">
@@ -1966,7 +1968,9 @@ const ActivarPolizaJuridicaPage = () => {
                           type="email"
                           value={formData.correoAlternativo}
                           onChange={(e) => handleInputChange("correoAlternativo", e.target.value)}
+                          className={correoAltError ? "border-destructive" : ""}
                         />
+                        {correoAltError && <p className="text-sm text-destructive">{correoAltError}</p>}
                       </div>
                     </div>
 
@@ -1979,21 +1983,28 @@ const ActivarPolizaJuridicaPage = () => {
                         Anterior
                       </Button>
                       <Button
-                        onClick={() => setCurrentStep(5)}
+                        onClick={() => {
+                          const missing: string[] = [];
+                          if (!formData.direccion || validateDireccion(formData.direccion).error) missing.push("Dirección (mínimo 5 caracteres, sin comas)");
+                          if (!formData.estado) missing.push("Estado");
+                          if (!formData.ciudad) missing.push("Ciudad");
+                          if (!formData.municipio) missing.push("Municipio");
+                          if (!formData.codigoTelefonicoWhatsapp) missing.push("Código de celular");
+                          if (!formData.telefonoCelular || formData.telefonoCelular.length !== 7) missing.push("Número celular (7 dígitos)");
+                          if (!formData.codigoTelefonicoResidencial) missing.push("Código residencial");
+                          if (!formData.telefonoOficina || formData.telefonoOficina.length !== 7) missing.push("Número residencial (7 dígitos)");
+                          if (!formData.correoElectronico) missing.push("Correo electrónico");
+                          else if (validateEmailFormat(formData.correoElectronico).error) missing.push(`Correo electrónico (${validateEmailFormat(formData.correoElectronico).error})`);
+                          if (!formData.correoAlternativo) missing.push("Correo alternativo");
+                          else if (validateEmailFormat(formData.correoAlternativo).error) missing.push(`Correo alternativo (${validateEmailFormat(formData.correoAlternativo).error})`);
+                          if (missing.length > 0) {
+                            toast({ title: "Faltan campos por completar", description: missing.join(" • "), variant: "destructive" });
+                            return;
+                          }
+                          setCurrentStep(5);
+                        }}
                         variant="hero"
                         className="flex-1"
-                        disabled={
-                          !formData.direccion || formData.direccion.trim().length < 5 ||
-                          !formData.estado ||
-                          !formData.ciudad ||
-                          !formData.municipio ||
-                          !formData.codigoTelefonicoWhatsapp ||
-                          !formData.telefonoCelular || formData.telefonoCelular.length !== 7 ||
-                          !formData.codigoTelefonicoResidencial ||
-                          !formData.telefonoOficina || formData.telefonoOficina.length !== 7 ||
-                          !formData.correoElectronico ||
-                          !formData.correoAlternativo
-                        }
                       >
                         Siguiente
                       </Button>
