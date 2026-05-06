@@ -113,7 +113,7 @@ const ActivarPolizaNaturalPage = () => {
     numeroTelefonico: "",
     email: "",
     email2: "",
-    actividadEconomica: "",
+    actividadEconomica: "Otras actividades de servicios",
     serialCarroceria: "",
     fechaCompra: "",
     // Beneficiary data
@@ -710,6 +710,7 @@ const ActivarPolizaNaturalPage = () => {
       { key: 'docCertificadoMedico', file: formData.docCertificadoMedico, name: 'certificado-medico' },
       { key: 'docOrigenVehiculo', file: formData.docOrigenVehiculo, name: 'certificado-origen' },
       { key: 'docFacturaCompra', file: formData.docFacturaCompra, name: 'factura-compra' },
+      { key: 'docTituloPropiedad', file: formData.docTituloPropiedad, name: 'titulo-propiedad' },
       { key: 'docRIF', file: formData.docRIF, name: 'rif' }
     ];
 
@@ -1057,6 +1058,7 @@ const ActivarPolizaNaturalPage = () => {
         certificado_medico_url: documentUrls.docCertificadoMedico || "",
         certificado_origen_vehiculo_url: documentUrls.docOrigenVehiculo || "",
         factura_compra_vehiculo_url: documentUrls.docFacturaCompra || "",
+        titulo_propiedad_url: documentUrls.docTituloPropiedad || "",
         rif_url: documentUrls.docRIF || "",
         
         // Campos del payload completo (compatibilidad)
