@@ -2318,9 +2318,12 @@ const ActivarPolizaJuridicaPage = () => {
                               if (!a.rif) missing.push(`RIF del accionista #${i + 1}`);
                             });
                           }
-                          if (!formData.docFacturaCompra) missing.push("Factura de Compra del Vehículo");
-                          if (!formData.docOrigenVehiculo && !formData.docTituloPropiedad) {
-                            missing.push("Certificado de Origen o Título de Propiedad");
+                          {
+                            const tieneTitulo = !!formData.docTituloPropiedad;
+                            const tieneFacturaYOrigen = !!formData.docFacturaCompra && !!formData.docOrigenVehiculo;
+                            if (!tieneTitulo && !tieneFacturaYOrigen) {
+                              missing.push("Título de Propiedad, o bien Factura + Certificado de Origen");
+                            }
                           }
                           if (missing.length > 0) {
                             toast({
