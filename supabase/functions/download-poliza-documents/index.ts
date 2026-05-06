@@ -58,6 +58,7 @@ const DOCUMENT_FIELDS: DocDef[] = [
   // Vehículo
   { field: "factura_compra_vehiculo_url", key: "factura_compra", label: "factura-compra", section: "vehiculo", order: 1 },
   { field: "certificado_origen_vehiculo_url", key: "certificado_origen", label: "certificado-origen", section: "vehiculo", order: 2 },
+  { field: "titulo_propiedad_url", key: "titulo_propiedad", label: "titulo-propiedad", section: "vehiculo", order: 3 },
 
   // Póliza emitida
   { field: "url_poliza_monday", key: "poliza_emitida", label: "poliza-emitida", section: "poliza", order: 1 },
