@@ -2160,6 +2160,9 @@ const ActivarPolizaJuridicaPage = () => {
                           No es
                         </Button>
                       </div>
+                      {triedStep5 && serialConfirmado !== true && (
+                        <p className="text-sm text-destructive">Debe confirmar el serial de carrocería</p>
+                      )}
                       <p className="text-xs text-blue-900/80 dark:text-blue-100/80 pt-2 border-t border-blue-200 dark:border-blue-900">
                         De haber alguna diferencia con algún dato de la moto, comuníquese con nosotros por{" "}
                         <a
