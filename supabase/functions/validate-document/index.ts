@@ -138,7 +138,7 @@ serve(async (req) => {
 Tu trabajo es analizar imágenes de documentos y verificar que la información coincida con los datos del formulario.
 Sé preciso al verificar números de cédula y placas. Ignora prefijos como V-, E-, J-, G- al comparar cédulas - compara solo los dígitos.
 Para placas, ignora diferencias de mayúsculas/minúsculas.
-Para nombres, sé flexible con acentos y mayúsculas/minúsculas, pero verifica que sea sustancialmente la misma persona.
+Para nombres, sé MUY FLEXIBLE: normaliza acentos (á=a, é=e, í=i, ó=o, ú=u), la letra ñ=n, mayúsculas/minúsculas y espacios. Una persona en Venezuela puede tener varios nombres y apellidos; el documento puede mostrarlos en distinto orden o solo algunos. Considera que COINCIDE si al menos UN nombre de pila y UN apellido del documento aparecen en el formulario (en cualquier orden), o viceversa. NO marques discrepancia por falta de un segundo nombre, segundo apellido, acentos, ñ vs n, o diferencias de mayúsculas.
 
 IMPORTANTE: Para este tipo de documento, SOLO debes validar estos campos: ${fieldsToValidate}.
 NO generes observaciones sobre campos que NO corresponden a este documento.
@@ -160,7 +160,7 @@ Nunca menciones IA, extracción, ni procesamiento automático.`;
 IMPORTANTE: Compara ÚNICAMENTE los siguientes campos: ${fieldsToValidate}.
 - Para cédulas: compara SOLO los dígitos numéricos (ignora prefijos V-, E-, etc.)
 - Para placas: ignora mayúsculas/minúsculas
-- Para nombres: sé flexible con acentos pero verifica que coincida sustancialmente
+- Para nombres: normaliza acentos (á→a, é→e, í→i, ó→o, ú→u), ñ→n, mayúsculas/minúsculas y espacios antes de comparar. Considera COINCIDENCIA si al menos UN nombre de pila Y UN apellido coinciden entre el documento y el formulario (en cualquier orden). NO marques error por segundos nombres/apellidos faltantes, acentos, ñ, o diferencias de mayúsculas.
 - NO agregues observaciones sobre campos que no aplican a este tipo de documento
 - Las observaciones deben ser claras y amigables para el usuario, sin jerga técnica`
       : `${basePrompt}
