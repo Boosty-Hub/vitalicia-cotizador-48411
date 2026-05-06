@@ -1228,21 +1228,11 @@ const ActivarPolizaJuridicaPage = () => {
         versionApiData
       );
 
-      // Llamar a RMS API para obtener número de póliza
-      try {
-        const rmsResponse = await callRmsApi(savedPoliza.id, savedPoliza);
-        toast({
-          title: "✅ Póliza activada exitosamente",
-          description: `Tu número de póliza es: ${rmsResponse.numeroPoliza}`,
-        });
-      } catch (rmsError) {
-        console.error('⚠️ Error al obtener número de póliza, pero la póliza fue guardada:', rmsError);
-        toast({
-          title: "Póliza registrada",
-          description: "Tu póliza ha sido guardada. El número de póliza se asignará pronto.",
-          variant: "default"
-        });
-      }
+      // Persona jurídica: NO llamar RMS API. Queda pendiente de revisión por un analista.
+      toast({
+        title: "✅ Solicitud enviada para revisión",
+        description: "Tu póliza fue registrada y será revisada por un analista. Te contactaremos pronto.",
+      });
 
       setCurrentStep(7);
 
