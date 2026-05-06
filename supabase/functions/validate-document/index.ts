@@ -16,9 +16,10 @@ Si NO es una cédula de identidad válida, indica que no es válida.`,
   },
   certificado_origen: {
     prompt: `Analiza esta imagen de un Certificado de Origen de un vehículo venezolano (emitido por el INTT o similar).
-Extrae la placa del vehículo que aparece en el documento y el nombre del propietario/comprador.
+Estos documentos suelen estar impresos con impresora de punto (matriz), por lo que la placa y otros campos pueden ser ilegibles o difíciles de leer.
+Extrae ÚNICAMENTE el nombre del propietario/comprador y su cédula si aparece. NO intentes validar la placa.
 Si NO es un certificado de origen de vehículo, indica que no es válido.`,
-    validFields: ["placa", "nombre"],
+    validFields: ["nombre", "cedula"],
   },
   factura_compra: {
     prompt: `Analiza esta imagen de una factura de compra de un vehículo.
