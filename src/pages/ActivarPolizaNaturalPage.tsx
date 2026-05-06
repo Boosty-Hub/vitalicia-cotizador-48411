@@ -113,7 +113,7 @@ const ActivarPolizaNaturalPage = () => {
     numeroTelefonico: "",
     email: "",
     email2: "",
-    actividadEconomica: "",
+    actividadEconomica: "Otras actividades de servicios",
     serialCarroceria: "",
     fechaCompra: "",
     // Beneficiary data
@@ -710,6 +710,7 @@ const ActivarPolizaNaturalPage = () => {
       { key: 'docCertificadoMedico', file: formData.docCertificadoMedico, name: 'certificado-medico' },
       { key: 'docOrigenVehiculo', file: formData.docOrigenVehiculo, name: 'certificado-origen' },
       { key: 'docFacturaCompra', file: formData.docFacturaCompra, name: 'factura-compra' },
+      { key: 'docTituloPropiedad', file: formData.docTituloPropiedad, name: 'titulo-propiedad' },
       { key: 'docRIF', file: formData.docRIF, name: 'rif' }
     ];
 
@@ -1057,6 +1058,7 @@ const ActivarPolizaNaturalPage = () => {
         certificado_medico_url: documentUrls.docCertificadoMedico || "",
         certificado_origen_vehiculo_url: documentUrls.docOrigenVehiculo || "",
         factura_compra_vehiculo_url: documentUrls.docFacturaCompra || "",
+        titulo_propiedad_url: documentUrls.docTituloPropiedad || "",
         rif_url: documentUrls.docRIF || "",
         
         // Campos del payload completo (compatibilidad)
@@ -2095,38 +2097,48 @@ const ActivarPolizaNaturalPage = () => {
                       <div className="border-l-4 border-primary pl-3 mb-4">
                         <h3 className="text-lg font-semibold text-foreground">Documentos de la Moto</h3>
                         <p className="text-sm text-muted-foreground">
-                          La factura es obligatoria. Adicionalmente cargue Certificado de Origen <strong>o</strong> Título de Propiedad.
+                          Tiene dos opciones — cargue <strong>una</strong>:
                         </p>
+                        <ul className="text-sm text-muted-foreground list-disc ml-5 mt-1">
+                          <li><strong>Opción A:</strong> Título de Propiedad (cubre todo).</li>
+                          <li><strong>Opción B:</strong> Factura de Compra <strong>+</strong> Certificado de Origen.</li>
+                        </ul>
                       </div>
                       <div className="space-y-6">
-                        <FileUploader
-                          id="docFacturaCompra"
-                          label="Factura de Compra del Vehículo"
-                          file={formData.docFacturaCompra}
-                          onFileChange={(file) => handleFileChange("docFacturaCompra", file)}
-                          required
-                          validationStatus={getValidation("docFacturaCompra").status}
-                          validationMessage={getValidation("docFacturaCompra").message}
-                          validationObservations={getValidation("docFacturaCompra").observations}
-                        />
-                        <FileUploader
-                          id="docOrigenVehiculo"
-                          label="Certificado de Origen del Vehículo"
-                          file={formData.docOrigenVehiculo}
-                          onFileChange={(file) => handleFileChange("docOrigenVehiculo", file)}
-                          validationStatus={getValidation("docOrigenVehiculo").status}
-                          validationMessage={getValidation("docOrigenVehiculo").message}
-                          validationObservations={getValidation("docOrigenVehiculo").observations}
-                        />
-                        <FileUploader
-                          id="docTituloPropiedad"
-                          label="Título de Propiedad (alternativa al Cert. de Origen)"
-                          file={formData.docTituloPropiedad}
-                          onFileChange={(file) => handleFileChange("docTituloPropiedad", file)}
-                        />
-                        <p className="text-xs text-muted-foreground -mt-3">
-                          Debe cargar al menos uno: Certificado de Origen <strong>o</strong> Título de Propiedad.
-                        </p>
+                        <div className="rounded-lg border border-border p-4">
+                          <p className="text-sm font-semibold mb-3">Opción A — Título de Propiedad</p>
+                          <FileUploader
+                            id="docTituloPropiedad"
+                            label="Título de Propiedad"
+                            file={formData.docTituloPropiedad}
+                            onFileChange={(file) => handleFileChange("docTituloPropiedad", file)}
+                            validationStatus={getValidation("docTituloPropiedad").status}
+                            validationMessage={getValidation("docTituloPropiedad").message}
+                            validationObservations={getValidation("docTituloPropiedad").observations}
+                          />
+                        </div>
+                        <div className="text-center text-xs text-muted-foreground font-medium">— O —</div>
+                        <div className="rounded-lg border border-border p-4 space-y-6">
+                          <p className="text-sm font-semibold">Opción B — Factura + Certificado de Origen</p>
+                          <FileUploader
+                            id="docFacturaCompra"
+                            label="Factura de Compra del Vehículo"
+                            file={formData.docFacturaCompra}
+                            onFileChange={(file) => handleFileChange("docFacturaCompra", file)}
+                            validationStatus={getValidation("docFacturaCompra").status}
+                            validationMessage={getValidation("docFacturaCompra").message}
+                            validationObservations={getValidation("docFacturaCompra").observations}
+                          />
+                          <FileUploader
+                            id="docOrigenVehiculo"
+                            label="Certificado de Origen del Vehículo"
+                            file={formData.docOrigenVehiculo}
+                            onFileChange={(file) => handleFileChange("docOrigenVehiculo", file)}
+                            validationStatus={getValidation("docOrigenVehiculo").status}
+                            validationMessage={getValidation("docOrigenVehiculo").message}
+                            validationObservations={getValidation("docOrigenVehiculo").observations}
+                          />
+                        </div>
                       </div>
                     </div>
 
@@ -2153,9 +2165,10 @@ const ActivarPolizaNaturalPage = () => {
                           if (!formData.docRIF) missing.push("RIF");
                           if (!formData.docLicenciaConducir) missing.push("Licencia de Conducir");
                           if (!formData.docCertificadoMedico) missing.push("Certificado Médico");
-                          if (!formData.docFacturaCompra) missing.push("Factura de Compra");
-                          if (!formData.docOrigenVehiculo && !formData.docTituloPropiedad) {
-                            missing.push("Certificado de Origen o Título de Propiedad");
+                          const tieneTitulo = !!formData.docTituloPropiedad;
+                          const tieneFacturaYOrigen = !!formData.docFacturaCompra && !!formData.docOrigenVehiculo;
+                          if (!tieneTitulo && !tieneFacturaYOrigen) {
+                            missing.push("Título de Propiedad, o bien Factura + Certificado de Origen");
                           }
                           if (missing.length > 0) {
                             toast({ title: "Faltan documentos por cargar", description: missing.join(" • "), variant: "destructive" });

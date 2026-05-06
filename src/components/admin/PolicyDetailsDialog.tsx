@@ -807,8 +807,9 @@ export function PolicyDetailsDialog({
                       </CardHeader>
                       <CardContent className="p-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {renderDocumentLink("Factura Compra Vehículo", selectedPoliza.factura_compra_vehiculo_url)}
-                          {renderDocumentLink("Certificado Origen / Título de Propiedad", selectedPoliza.certificado_origen_vehiculo_url)}
+                          {renderDocumentLink("Factura de Compra", selectedPoliza.factura_compra_vehiculo_url)}
+                          {renderDocumentLink("Certificado de Origen", selectedPoliza.certificado_origen_vehiculo_url)}
+                          {renderDocumentLink("Título de Propiedad", (selectedPoliza as any).titulo_propiedad_url)}
                         </div>
                       </CardContent>
                     </Card>
@@ -846,6 +847,7 @@ export function PolicyDetailsDialog({
                     {renderField("URL Certificado Médico", "certificado_medico_url")}
                     {renderField("URL Cert. Origen Vehículo", "certificado_origen_vehiculo_url")}
                     {renderField("URL Factura Compra", "factura_compra_vehiculo_url")}
+                    {renderField("URL Título de Propiedad", "titulo_propiedad_url" as keyof Poliza)}
                     {renderField("URL RIF", "rif_url")}
                     {renderField("URL Póliza", "url_poliza_monday")}
                     {renderField("URL Carnet", "url_carnet_monday")}

@@ -714,6 +714,7 @@ export type Database = {
           serial_motor_monday: string | null
           sexo_apoderado_monday: string | null
           tipo_id_titular_monday: string | null
+          titulo_propiedad_url: string | null
           transmision_empire_monday: string | null
           updated_at: string
           url_carnet_monday: string | null
@@ -854,6 +855,7 @@ export type Database = {
           serial_motor_monday?: string | null
           sexo_apoderado_monday?: string | null
           tipo_id_titular_monday?: string | null
+          titulo_propiedad_url?: string | null
           transmision_empire_monday?: string | null
           updated_at?: string
           url_carnet_monday?: string | null
@@ -994,6 +996,7 @@ export type Database = {
           serial_motor_monday?: string | null
           sexo_apoderado_monday?: string | null
           tipo_id_titular_monday?: string | null
+          titulo_propiedad_url?: string | null
           transmision_empire_monday?: string | null
           updated_at?: string
           url_carnet_monday?: string | null
