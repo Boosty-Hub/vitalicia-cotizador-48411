@@ -1717,19 +1717,25 @@ const ActivarPolizaJuridicaPage = () => {
                         Anterior
                       </Button>
                        <Button
-                        onClick={() => setCurrentStep(4)}
+                        onClick={() => {
+                          const missing: string[] = [];
+                          if (!formData.nombresRepresentante || formData.nombresRepresentante.trim().length < 2) missing.push("Nombre del representante");
+                          if (!formData.apellidosRepresentante || formData.apellidosRepresentante.trim().length < 2) missing.push("Apellidos del representante");
+                          if (!formData.tipoIdentificacionRepresentante) missing.push("Tipo de identificación");
+                          if (!formData.cedulaRepresentante || formData.cedulaRepresentante.replace(/[^0-9]/g, '').length < 7) missing.push("Número de cédula/pasaporte");
+                          if (cedulaRepresentanteError) missing.push(`Cédula (${cedulaRepresentanteError})`);
+                          if (!formData.estadoCivilRepresentante) missing.push("Estado civil");
+                          if (!formData.sexoRepresentante) missing.push("Sexo");
+                          if (!formData.fechaNacimientoRepresentante) missing.push("Fecha de nacimiento");
+                          else if (!isAdult(formData.fechaNacimientoRepresentante)) missing.push("Fecha de nacimiento (debe ser mayor de edad)");
+                          if (missing.length > 0) {
+                            toast({ title: "Faltan campos por completar", description: missing.join(" • "), variant: "destructive" });
+                            return;
+                          }
+                          setCurrentStep(4);
+                        }}
                         variant="hero"
                         className="flex-1"
-                        disabled={
-                          !formData.nombresRepresentante || formData.nombresRepresentante.trim().length < 2 ||
-                          !formData.apellidosRepresentante || formData.apellidosRepresentante.trim().length < 2 ||
-                          !formData.tipoIdentificacionRepresentante || 
-                          !formData.cedulaRepresentante || formData.cedulaRepresentante.replace(/[^0-9]/g, '').length < 7 ||
-                          !formData.estadoCivilRepresentante ||
-                          !formData.sexoRepresentante ||
-                          !formData.fechaNacimientoRepresentante ||
-                          !!cedulaRepresentanteError
-                        }
                       >
                         Siguiente
                       </Button>
