@@ -1474,7 +1474,7 @@ const ActivarPolizaJuridicaPage = () => {
                           <SelectContent>
                             <SelectItem value="Jurídico">Jurídico (J)</SelectItem>
                             <SelectItem value="Gobierno">Gobierno (G)</SelectItem>
-                            <SelectItem value="Comuna">Comuna (W)</SelectItem>
+                            <SelectItem value="Comuna">Comuna (C)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
