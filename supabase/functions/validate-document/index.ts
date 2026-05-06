@@ -26,6 +26,12 @@ Extrae el nombre del comprador, su número de cédula (solo dígitos) y la placa
 Si NO es una factura de compra, indica que no es válida.`,
     validFields: ["cedula", "nombre", "placa"],
   },
+  titulo_propiedad: {
+    prompt: `Analiza esta imagen de un Título de Propiedad de un vehículo venezolano (emitido por el INTT).
+Extrae la placa del vehículo y el nombre del propietario, así como su número de cédula o RIF (solo dígitos, sin prefijo) si aparece.
+Si NO es un Título de Propiedad de vehículo, indica que no es válido.`,
+    validFields: ["cedula", "nombre", "placa"],
+  },
   licencia_conducir: {
     prompt: `Analiza esta imagen. Determina si es una licencia de conducir válida venezolana.
 Si NO es una licencia de conducir, indica que no es válida.`,
