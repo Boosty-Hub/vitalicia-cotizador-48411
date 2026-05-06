@@ -847,6 +847,7 @@ export function PolicyDetailsDialog({
                     {renderField("URL Certificado Médico", "certificado_medico_url")}
                     {renderField("URL Cert. Origen Vehículo", "certificado_origen_vehiculo_url")}
                     {renderField("URL Factura Compra", "factura_compra_vehiculo_url")}
+                    {renderField("URL Título de Propiedad", "titulo_propiedad_url" as keyof Poliza)}
                     {renderField("URL RIF", "rif_url")}
                     {renderField("URL Póliza", "url_poliza_monday")}
                     {renderField("URL Carnet", "url_carnet_monday")}
