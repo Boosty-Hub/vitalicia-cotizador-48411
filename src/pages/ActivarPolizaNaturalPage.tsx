@@ -1411,16 +1411,22 @@ const ActivarPolizaNaturalPage = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                        <div className="space-y-2">
                         <Label htmlFor="nombre">Nombre * (mín. 2 caracteres)</Label>
-                        <Input id="nombre" value={formData.nombre} onChange={e => handleInputChange("nombre", e.target.value)} />
+                        <Input id="nombre" value={formData.nombre} onChange={e => handleInputChange("nombre", e.target.value)} className={triedStep2 && (!formData.nombre || formData.nombre.trim().length < 2) ? "border-destructive" : ""} />
                         {formData.nombre && formData.nombre.trim().length < 2 && (
                           <p className="text-sm text-destructive">Mínimo 2 caracteres</p>
+                        )}
+                        {triedStep2 && !formData.nombre && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
                         )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="apellidos">Apellidos * (mín. 2 caracteres)</Label>
-                        <Input id="apellidos" value={formData.apellidos} onChange={e => handleInputChange("apellidos", e.target.value)} />
+                        <Input id="apellidos" value={formData.apellidos} onChange={e => handleInputChange("apellidos", e.target.value)} className={triedStep2 && (!formData.apellidos || formData.apellidos.trim().length < 2) ? "border-destructive" : ""} />
                         {formData.apellidos && formData.apellidos.trim().length < 2 && (
                           <p className="text-sm text-destructive">Mínimo 2 caracteres</p>
+                        )}
+                        {triedStep2 && !formData.apellidos && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
                         )}
                       </div>
                     </div>
