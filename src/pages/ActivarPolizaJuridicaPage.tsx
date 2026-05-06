@@ -47,6 +47,9 @@ const ActivarPolizaJuridicaPage = () => {
   const [isValidating, setIsValidating] = useState(false);
   const [numeroRIFError, setNumeroRIFError] = useState("");
   const [cedulaRepresentanteError, setCedulaRepresentanteError] = useState("");
+  const [correoError, setCorreoError] = useState("");
+  const [correoAltError, setCorreoAltError] = useState("");
+  const [fechaAdquisicionError, setFechaAdquisicionError] = useState("");
   const [estadosCiviles, setEstadosCiviles] = useState<Array<{ descripcion: string }>>([]);
   const [sexos, setSexos] = useState<Array<{ descripcion: string }>>([]);
   const [actividadesEconomicas, setActividadesEconomicas] = useState<Array<{ descripcion: string }>>([]);
