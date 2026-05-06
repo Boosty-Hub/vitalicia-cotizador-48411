@@ -95,6 +95,10 @@ const ActivarPolizaNaturalPage = () => {
   const [direccionError, setDireccionError] = useState("");
   const [fechaCompraError, setFechaCompraError] = useState("");
   const [fechaNacimientoError, setFechaNacimientoError] = useState("");
+  const [triedStep2, setTriedStep2] = useState(false);
+  const [triedStep3, setTriedStep3] = useState(false);
+  const [triedStep4, setTriedStep4] = useState(false);
+  const [triedStep5, setTriedStep5] = useState(false);
   const [formData, setFormData] = useState({
     nombre: "",
     apellidos: "",
