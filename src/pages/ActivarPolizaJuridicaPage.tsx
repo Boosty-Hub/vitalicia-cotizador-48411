@@ -1826,7 +1826,14 @@ const ActivarPolizaJuridicaPage = () => {
                         id="direccion"
                         value={formData.direccion}
                         onChange={(e) => handleInputChange("direccion", e.target.value)}
+                        className={triedStep4 && (!formData.direccion || !!validateDireccion(formData.direccion).error) ? "border-destructive" : ""}
                       />
+                      {triedStep4 && !formData.direccion && (
+                        <p className="text-sm text-destructive">Este campo es requerido</p>
+                      )}
+                      {triedStep4 && formData.direccion && validateDireccion(formData.direccion).error && (
+                        <p className="text-sm text-destructive">{validateDireccion(formData.direccion).error}</p>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1838,7 +1845,7 @@ const ActivarPolizaJuridicaPage = () => {
                           value={formData.estado}
                           onValueChange={(value) => handleInputChange("estado", value)}
                         >
-                          <SelectTrigger id="estado">
+                          <SelectTrigger id="estado" className={triedStep4 && !formData.estado ? "border-destructive" : ""}>
                             <SelectValue placeholder="Seleccione..." />
                           </SelectTrigger>
                           <SelectContent>
@@ -1849,6 +1856,9 @@ const ActivarPolizaJuridicaPage = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                        {triedStep4 && !formData.estado && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="ciudad">
@@ -1859,7 +1869,7 @@ const ActivarPolizaJuridicaPage = () => {
                           onValueChange={(value) => handleInputChange("ciudad", value)}
                           disabled={!formData.estado}
                         >
-                          <SelectTrigger id="ciudad">
+                          <SelectTrigger id="ciudad" className={triedStep4 && !formData.ciudad ? "border-destructive" : ""}>
                             <SelectValue placeholder={formData.estado ? "Seleccione una ciudad" : "Seleccione estado primero"} />
                           </SelectTrigger>
                           <SelectContent>
@@ -1870,6 +1880,9 @@ const ActivarPolizaJuridicaPage = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                        {triedStep4 && !formData.ciudad && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                       </div>
                     </div>
 
@@ -1883,7 +1896,7 @@ const ActivarPolizaJuridicaPage = () => {
                           onValueChange={(value) => handleInputChange("municipio", value)}
                           disabled={!formData.ciudad}
                         >
-                          <SelectTrigger id="municipio">
+                          <SelectTrigger id="municipio" className={triedStep4 && !formData.municipio ? "border-destructive" : ""}>
                             <SelectValue placeholder={formData.ciudad ? "Seleccione un municipio" : "Seleccione ciudad primero"} />
                           </SelectTrigger>
                           <SelectContent>
@@ -1894,6 +1907,9 @@ const ActivarPolizaJuridicaPage = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                        {triedStep4 && !formData.municipio && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="codigoPostal">Código Postal</Label>
@@ -1914,7 +1930,7 @@ const ActivarPolizaJuridicaPage = () => {
                           value={formData.codigoTelefonicoWhatsapp}
                           onValueChange={(value) => handleInputChange("codigoTelefonicoWhatsapp", value)}
                         >
-                          <SelectTrigger id="codigoTelefonicoWhatsapp">
+                          <SelectTrigger id="codigoTelefonicoWhatsapp" className={triedStep4 && !formData.codigoTelefonicoWhatsapp ? "border-destructive" : ""}>
                             <SelectValue placeholder="Seleccione..." />
                           </SelectTrigger>
                           <SelectContent>
@@ -1925,6 +1941,9 @@ const ActivarPolizaJuridicaPage = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                        {triedStep4 && !formData.codigoTelefonicoWhatsapp && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                       </div>
                        <div className="space-y-2">
                         <Label htmlFor="telefonoCelular">
@@ -1939,7 +1958,11 @@ const ActivarPolizaJuridicaPage = () => {
                           }}
                           maxLength={7}
                           placeholder="1234567"
+                          className={triedStep4 && (!formData.telefonoCelular || formData.telefonoCelular.length !== 7) ? "border-destructive" : ""}
                         />
+                        {triedStep4 && !formData.telefonoCelular && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                         {formData.telefonoCelular && formData.telefonoCelular.length < 7 && formData.telefonoCelular.length > 0 && (
                           <p className="text-sm text-destructive">El teléfono debe tener exactamente 7 dígitos</p>
                         )}
@@ -1955,7 +1978,7 @@ const ActivarPolizaJuridicaPage = () => {
                           value={formData.codigoTelefonicoResidencial}
                           onValueChange={(value) => handleInputChange("codigoTelefonicoResidencial", value)}
                         >
-                          <SelectTrigger id="codigoTelefonicoResidencial">
+                          <SelectTrigger id="codigoTelefonicoResidencial" className={triedStep4 && !formData.codigoTelefonicoResidencial ? "border-destructive" : ""}>
                             <SelectValue placeholder="Seleccione..." />
                           </SelectTrigger>
                           <SelectContent>
@@ -1966,6 +1989,9 @@ const ActivarPolizaJuridicaPage = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                        {triedStep4 && !formData.codigoTelefonicoResidencial && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                       </div>
                        <div className="space-y-2">
                         <Label htmlFor="telefonoOficina">
@@ -1980,7 +2006,11 @@ const ActivarPolizaJuridicaPage = () => {
                           }}
                           maxLength={7}
                           placeholder="1234567"
+                          className={triedStep4 && (!formData.telefonoOficina || formData.telefonoOficina.length !== 7) ? "border-destructive" : ""}
                         />
+                        {triedStep4 && !formData.telefonoOficina && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
                         {formData.telefonoOficina && formData.telefonoOficina.length < 7 && formData.telefonoOficina.length > 0 && (
                           <p className="text-sm text-destructive">El teléfono debe tener exactamente 7 dígitos</p>
                         )}
@@ -1997,9 +2027,15 @@ const ActivarPolizaJuridicaPage = () => {
                           type="email"
                           value={formData.correoElectronico}
                           onChange={(e) => handleInputChange("correoElectronico", e.target.value)}
-                          className={correoError ? "border-destructive" : ""}
+                          className={(correoError || (triedStep4 && (!formData.correoElectronico || !!validateEmailFormat(formData.correoElectronico).error))) ? "border-destructive" : ""}
                         />
                         {correoError && <p className="text-sm text-destructive">{correoError}</p>}
+                        {!correoError && triedStep4 && !formData.correoElectronico && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
+                        {!correoError && triedStep4 && formData.correoElectronico && validateEmailFormat(formData.correoElectronico).error && (
+                          <p className="text-sm text-destructive">{validateEmailFormat(formData.correoElectronico).error}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="correoAlternativo">
@@ -2010,9 +2046,15 @@ const ActivarPolizaJuridicaPage = () => {
                           type="email"
                           value={formData.correoAlternativo}
                           onChange={(e) => handleInputChange("correoAlternativo", e.target.value)}
-                          className={correoAltError ? "border-destructive" : ""}
+                          className={(correoAltError || (triedStep4 && (!formData.correoAlternativo || !!validateEmailFormat(formData.correoAlternativo).error))) ? "border-destructive" : ""}
                         />
                         {correoAltError && <p className="text-sm text-destructive">{correoAltError}</p>}
+                        {!correoAltError && triedStep4 && !formData.correoAlternativo && (
+                          <p className="text-sm text-destructive">Este campo es requerido</p>
+                        )}
+                        {!correoAltError && triedStep4 && formData.correoAlternativo && validateEmailFormat(formData.correoAlternativo).error && (
+                          <p className="text-sm text-destructive">{validateEmailFormat(formData.correoAlternativo).error}</p>
+                        )}
                       </div>
                     </div>
 
