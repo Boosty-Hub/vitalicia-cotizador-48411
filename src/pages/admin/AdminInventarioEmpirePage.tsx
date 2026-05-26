@@ -784,6 +784,35 @@ export default function AdminInventarioEmpirePage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => { setIsEditDialogOpen(open); if (!open) { setEditingId(null); setFormData(initialFormData); } }}>
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Moto EMPIRE</DialogTitle>
+            <DialogDescription>Modifica los datos del registro</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="space-y-2"><Label>Fecha</Label><Input type="date" value={formData.fecha} onChange={(e) => setFormData({ ...formData, fecha: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Marca</Label><Input value={formData.marca} onChange={(e) => setFormData({ ...formData, marca: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Modelo</Label><Input value={formData.modelo} onChange={(e) => setFormData({ ...formData, modelo: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Versión</Label><Input value={formData.version} onChange={(e) => setFormData({ ...formData, version: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Año</Label><Input type="number" value={formData.anio} onChange={(e) => setFormData({ ...formData, anio: parseInt(e.target.value) || 0 })} /></div>
+            <div className="space-y-2"><Label>Transmisión</Label><Input value={formData.transmision} onChange={(e) => setFormData({ ...formData, transmision: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Placa</Label><Input value={formData.placa} onChange={(e) => setFormData({ ...formData, placa: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Serial Motor</Label><Input value={formData.serial_motor} onChange={(e) => setFormData({ ...formData, serial_motor: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Serial Carrocería</Label><Input value={formData.serial_carroceria} onChange={(e) => setFormData({ ...formData, serial_carroceria: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Color</Label><Input value={formData.color} onChange={(e) => setFormData({ ...formData, color: e.target.value })} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleEdit} disabled={saving} className="bg-orange-500 hover:bg-orange-600">
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Guardar cambios
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Policy Details Dialog */}
       <PolicyDetailsDialog
         open={isPolicyDialogOpen}
