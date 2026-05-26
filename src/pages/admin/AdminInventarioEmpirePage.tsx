@@ -251,6 +251,58 @@ export default function AdminInventarioEmpirePage() {
     }
   };
 
+  const openEditDialog = (item: MotoEmpire) => {
+    setEditingId(item.id);
+    setFormData({
+      fecha: item.fecha || "",
+      marca: item.marca || "EMPIRE",
+      modelo: item.modelo || "",
+      version: item.version || "",
+      anio: item.anio || new Date().getFullYear(),
+      transmision: item.transmision || "",
+      placa: item.placa || "",
+      serial_motor: item.serial_motor || "",
+      serial_carroceria: item.serial_carroceria || "",
+      color: item.color || "",
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEdit = async () => {
+    if (!editingId) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("bd_empire")
+        .update({
+          fecha: formData.fecha || null,
+          marca: formData.marca,
+          modelo: formData.modelo || null,
+          version: formData.version || null,
+          anio: formData.anio || null,
+          transmision: formData.transmision || null,
+          placa: formData.placa || null,
+          serial_motor: formData.serial_motor || null,
+          serial_carroceria: formData.serial_carroceria || null,
+          color: formData.color || null,
+        })
+        .eq("id", editingId);
+
+      if (error) throw error;
+
+      toast({ title: "Registro actualizado", description: "Los cambios se guardaron correctamente" });
+      setIsEditDialogOpen(false);
+      setEditingId(null);
+      setFormData(initialFormData);
+      fetchData();
+    } catch (error) {
+      console.error("Error updating record:", error);
+      toast({ title: "Error", description: "No se pudo actualizar el registro", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!selectedId) return;
 
