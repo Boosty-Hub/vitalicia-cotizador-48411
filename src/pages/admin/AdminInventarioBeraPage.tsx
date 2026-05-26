@@ -267,6 +267,68 @@ export default function AdminInventarioBeraPage() {
     }
   };
 
+  const openEditDialog = (item: MotoBera) => {
+    setEditingId(item.id);
+    setFormData({
+      fecha: item.fecha || "",
+      marca: item.marca || "BERA",
+      cod_modelo: item.cod_modelo || "",
+      modelo: item.modelo || "",
+      anio_modelo: item.anio_modelo || new Date().getFullYear(),
+      placa: item.placa || "",
+      transmision: item.transmision || "",
+      serial_chasis: item.serial_chasis || "",
+      serial_motor: item.serial_motor || "",
+      cod_color: item.cod_color || "",
+      color: item.color || "",
+      precio_venta_tienda: item.precio_venta_tienda || 0,
+      precio_base_venta_tienda: item.precio_base_venta_tienda || 0,
+      precio_venta_sugerido: item.precio_venta_sugerido || 0,
+      precio_base_venta_sugerido: item.precio_base_venta_sugerido || 0,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEdit = async () => {
+    if (!editingId) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("bd_bera")
+        .update({
+          fecha: formData.fecha || null,
+          marca: formData.marca,
+          cod_modelo: formData.cod_modelo || null,
+          modelo: formData.modelo || null,
+          anio_modelo: formData.anio_modelo || null,
+          placa: formData.placa || null,
+          transmision: formData.transmision || null,
+          serial_chasis: formData.serial_chasis || null,
+          serial_motor: formData.serial_motor || null,
+          cod_color: formData.cod_color || null,
+          color: formData.color || null,
+          precio_venta_tienda: formData.precio_venta_tienda || null,
+          precio_base_venta_tienda: formData.precio_base_venta_tienda || null,
+          precio_venta_sugerido: formData.precio_venta_sugerido || null,
+          precio_base_venta_sugerido: formData.precio_base_venta_sugerido || null,
+        })
+        .eq("id", editingId);
+
+      if (error) throw error;
+
+      toast({ title: "Registro actualizado", description: "Los cambios se guardaron correctamente" });
+      setIsEditDialogOpen(false);
+      setEditingId(null);
+      setFormData(initialFormData);
+      fetchData();
+    } catch (error) {
+      console.error("Error updating record:", error);
+      toast({ title: "Error", description: "No se pudo actualizar el registro", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!selectedId) return;
 
