@@ -81,6 +81,29 @@ export function PolicyDetailsDialog({
     }
   };
 
+  const handleGenerateCarnet = async () => {
+    if (!selectedPoliza?.id) return;
+    setIsGeneratingCarnet(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-carnet-poliza", {
+        body: { polizaId: selectedPoliza.id },
+      });
+      if (error) throw error;
+      const url = (data as any)?.url;
+      toast({ title: "Carnet generado", description: "El carnet se generó correctamente." });
+      if (url) {
+        setSelectedPoliza((prev) => (prev ? ({ ...prev, carnet_poliza_url: url } as Poliza) : prev));
+        setEditedPoliza((prev) => (prev ? ({ ...prev, carnet_poliza_url: url } as Poliza) : prev));
+      }
+      onPolicyUpdated?.();
+    } catch (e: any) {
+      console.error("Error generating carnet:", e);
+      toast({ title: "Error", description: e?.message || "No se pudo generar el carnet", variant: "destructive" });
+    } finally {
+      setIsGeneratingCarnet(false);
+    }
+  };
+
   // Update local state when prop changes
   useEffect(() => {
     setSelectedPoliza(initialPolicy);
