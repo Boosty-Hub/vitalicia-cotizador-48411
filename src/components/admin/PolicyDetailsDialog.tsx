@@ -57,6 +57,8 @@ export function PolicyDetailsDialog({
   const [processingPolizaId, setProcessingPolizaId] = useState<string | null>(null);
   const [isGeneratingFactura, setIsGeneratingFactura] = useState(false);
   const [isGeneratingCarnet, setIsGeneratingCarnet] = useState(false);
+  const [facturaHtml, setFacturaHtml] = useState<string | null>(null);
+  const [carnetHtml, setCarnetHtml] = useState<string | null>(null);
 
   const handleGenerateFactura = async () => {
     if (!selectedPoliza?.id) return;
@@ -103,6 +105,29 @@ export function PolicyDetailsDialog({
       setIsGeneratingCarnet(false);
     }
   };
+
+  // Fetch HTML content for factura/carnet (Supabase serves them as text/plain, so we render via srcDoc)
+  useEffect(() => {
+    const url = (selectedPoliza as any)?.factura_poliza_url;
+    if (!url) { setFacturaHtml(null); return; }
+    let cancelled = false;
+    fetch(`${url}?t=${Date.now()}`)
+      .then((r) => r.text())
+      .then((t) => { if (!cancelled) setFacturaHtml(t); })
+      .catch(() => { if (!cancelled) setFacturaHtml(null); });
+    return () => { cancelled = true; };
+  }, [(selectedPoliza as any)?.factura_poliza_url]);
+
+  useEffect(() => {
+    const url = (selectedPoliza as any)?.carnet_poliza_url;
+    if (!url) { setCarnetHtml(null); return; }
+    let cancelled = false;
+    fetch(`${url}?t=${Date.now()}`)
+      .then((r) => r.text())
+      .then((t) => { if (!cancelled) setCarnetHtml(t); })
+      .catch(() => { if (!cancelled) setCarnetHtml(null); });
+    return () => { cancelled = true; };
+  }, [(selectedPoliza as any)?.carnet_poliza_url]);
 
   // Update local state when prop changes
   useEffect(() => {
@@ -934,7 +959,7 @@ export function PolicyDetailsDialog({
                     <div className="rounded-lg border bg-white overflow-hidden">
                       <iframe
                         key={(selectedPoliza as any).factura_poliza_url}
-                        src={`${(selectedPoliza as any).factura_poliza_url}?t=${selectedPoliza.updated_at || ''}`}
+                        srcDoc={facturaHtml ?? "<p style='font-family:sans-serif;padding:24px;color:#666'>Cargando factura...</p>"}
                         title="Factura"
                         className="w-full bg-white"
                         style={{ height: 900, border: 0 }}
@@ -985,7 +1010,7 @@ export function PolicyDetailsDialog({
                     <div className="rounded-lg border bg-white overflow-hidden">
                       <iframe
                         key={(selectedPoliza as any).carnet_poliza_url}
-                        src={`${(selectedPoliza as any).carnet_poliza_url}?t=${selectedPoliza.updated_at || ''}`}
+                        srcDoc={carnetHtml ?? "<p style='font-family:sans-serif;padding:24px;color:#666'>Cargando carnet...</p>"}
                         title="Carnet"
                         className="w-full bg-white"
                         style={{ height: 900, border: 0 }}
