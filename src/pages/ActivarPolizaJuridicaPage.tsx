@@ -913,7 +913,7 @@ const ActivarPolizaJuridicaPage = () => {
         c_cd_version: codigosData.versionCodigo,
         s_version: vehicleData?.Modelo || "",
         n_nu_centuria: versionApiData?.n_centuria || vehicleData?.Año || new Date().getFullYear().toString(),
-        c_motor: formData.serialCarroceria,
+        c_motor: vehicleData?.SerialMotor || "",
         c_cd_color: codigosData.colorCodigo,
         s_color: vehicleData?.Color || "",
         c_cd_versionseguro: versionApiData?.cd_version_seguro || "",
