@@ -869,16 +869,23 @@ export function PolicyDetailsDialog({
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 gap-3">
-                    {renderDocumentLink("Factura (link público)", selectedPoliza.factura_compra_vehiculo_url)}
+                    {renderDocumentLink("Factura (link público)", (selectedPoliza as any).factura_poliza_url)}
                   </div>
                   {isEditing && (
                     <div className="pt-2 border-t">
-                      {renderField("URL pública de la Factura", "factura_compra_vehiculo_url")}
+                      {renderField("URL pública de la Factura", "factura_poliza_url" as any)}
                     </div>
                   )}
-                  <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground bg-muted/30">
-                    El diseño y formato de la factura se definirá próximamente. Aquí se mostrará la vista previa y datos de la factura cuando esté disponible.
-                  </div>
+                  {(selectedPoliza as any).factura_poliza_url && (
+                    <div className="rounded-lg border bg-card overflow-hidden">
+                      <iframe
+                        src={(selectedPoliza as any).factura_poliza_url}
+                        title="Factura"
+                        className="w-full"
+                        style={{ height: 600, border: 0 }}
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
