@@ -959,7 +959,7 @@ export function PolicyDetailsDialog({
                     <div className="rounded-lg border bg-white overflow-hidden">
                       <iframe
                         key={(selectedPoliza as any).factura_poliza_url}
-                        src={`${(selectedPoliza as any).factura_poliza_url}?t=${selectedPoliza.updated_at || ''}`}
+                        srcDoc={facturaHtml ?? "<p style='font-family:sans-serif;padding:24px;color:#666'>Cargando factura...</p>"}
                         title="Factura"
                         className="w-full bg-white"
                         style={{ height: 900, border: 0 }}
@@ -1010,7 +1010,7 @@ export function PolicyDetailsDialog({
                     <div className="rounded-lg border bg-white overflow-hidden">
                       <iframe
                         key={(selectedPoliza as any).carnet_poliza_url}
-                        src={`${(selectedPoliza as any).carnet_poliza_url}?t=${selectedPoliza.updated_at || ''}`}
+                        srcDoc={carnetHtml ?? "<p style='font-family:sans-serif;padding:24px;color:#666'>Cargando carnet...</p>"}
                         title="Carnet"
                         className="w-full bg-white"
                         style={{ height: 900, border: 0 }}
