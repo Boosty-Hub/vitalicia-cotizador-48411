@@ -623,6 +623,7 @@ export type Database = {
           c_numtelef1: string | null
           c_placa: string | null
           c_razonsocial: string | null
+          carnet_poliza_url: string | null
           cd_edocivil: string | null
           cd_edocivilap: string | null
           cd_edocivilch: string | null
@@ -765,6 +766,7 @@ export type Database = {
           c_numtelef1?: string | null
           c_placa?: string | null
           c_razonsocial?: string | null
+          carnet_poliza_url?: string | null
           cd_edocivil?: string | null
           cd_edocivilap?: string | null
           cd_edocivilch?: string | null
@@ -907,6 +909,7 @@ export type Database = {
           c_numtelef1?: string | null
           c_placa?: string | null
           c_razonsocial?: string | null
+          carnet_poliza_url?: string | null
           cd_edocivil?: string | null
           cd_edocivilap?: string | null
           cd_edocivilch?: string | null

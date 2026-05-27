@@ -1251,6 +1251,15 @@ const ActivarPolizaJuridicaPage = () => {
         console.error('⚠️ Error generando factura:', facturaErr);
       }
 
+      // Generar carnet (con QR) — luego de la factura
+      try {
+        await supabase.functions.invoke('generate-carnet-poliza', {
+          body: { polizaId: savedPoliza.id }
+        });
+      } catch (carnetErr) {
+        console.error('⚠️ Error generando carnet:', carnetErr);
+      }
+
       setCurrentStep(7);
 
     } catch (error) {
