@@ -369,6 +369,7 @@ const ActivarPolizaJuridicaPage = () => {
           Año: beraData.anio_modelo?.toString() || null,
           Color: beraData.color || null,
           Carroceria: beraData.serial_chasis || null,
+          SerialMotor: beraData.serial_motor || null,
           Suma: beraData.precio_venta_tienda?.toString() || "0",
           MondayId: null,
           Source: 'bd_bera' as const
