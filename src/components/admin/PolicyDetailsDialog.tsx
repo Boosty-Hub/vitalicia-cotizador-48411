@@ -380,16 +380,13 @@ export function PolicyDetailsDialog({
       if (looksHtml) {
         const html = await response.text();
         if (/<html|<!doctype|<body|<div|<table/i.test(html)) {
-          // A4 width @ 96dpi ≈ 794px
-          const A4_WIDTH_PX = 794;
-
           // Render HTML in a hidden iframe so <head> styles apply correctly
           const iframe = document.createElement('iframe');
           iframe.style.position = 'fixed';
           iframe.style.left = '-10000px';
           iframe.style.top = '0';
-          iframe.style.width = A4_WIDTH_PX + 'px';
-          iframe.style.height = '1123px';
+          iframe.style.width = '1200px';
+          iframe.style.height = '2000px';
           iframe.style.border = '0';
           iframe.style.background = '#ffffff';
           document.body.appendChild(iframe);
@@ -400,11 +397,9 @@ export function PolicyDetailsDialog({
             doc.open();
             doc.write(html);
             doc.close();
-            // Fallback in case onload doesn't fire after write
             setTimeout(() => resolve(), 600);
           });
 
-          // Esperar a que fuentes/imágenes carguen
           try {
             // @ts-ignore
             if (iframe.contentDocument?.fonts?.ready) await iframe.contentDocument.fonts.ready;
@@ -422,7 +417,6 @@ export function PolicyDetailsDialog({
           );
           await new Promise((r) => setTimeout(r, 200));
 
-          // Mover estilos + body al documento padre (html2canvas no captura bien iframes)
           const iframeDoc = iframe.contentDocument!;
           const styleNodes = Array.from(
             iframeDoc.querySelectorAll('style, link[rel="stylesheet"]')
@@ -432,47 +426,64 @@ export function PolicyDetailsDialog({
           const bodyHtml = iframeDoc.body.innerHTML;
           const bodyInlineStyle = iframeDoc.body.getAttribute('style') || '';
 
+          // Dimensiones naturales del contenido renderizado
+          const naturalWidth = Math.ceil(
+            Math.max(iframeDoc.body.scrollWidth, iframeDoc.documentElement.scrollWidth)
+          );
+          const naturalHeight = Math.ceil(
+            Math.max(iframeDoc.body.scrollHeight, iframeDoc.documentElement.scrollHeight)
+          );
+
           const wrapper = document.createElement('div');
           wrapper.style.position = 'fixed';
           wrapper.style.left = '-10000px';
           wrapper.style.top = '0';
-          wrapper.style.width = A4_WIDTH_PX + 'px';
+          wrapper.style.width = naturalWidth + 'px';
           wrapper.style.background = '#ffffff';
           wrapper.innerHTML = `
             ${styleNodes}
-            <div class="pdf-body" style="${bodyInlineStyle};width:${A4_WIDTH_PX}px;margin:0;background:#ffffff;">
+            <div class="pdf-body" style="${bodyInlineStyle};width:${naturalWidth}px;margin:0;background:#ffffff;">
               ${bodyHtml}
             </div>
           `;
           document.body.appendChild(wrapper);
+          await new Promise((r) => setTimeout(r, 150));
 
-          // Esperar a que el navegador aplique estilos
-          await new Promise((r) => setTimeout(r, 100));
+          const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+            import('html2canvas'),
+            import('jspdf'),
+          ]);
 
-          const html2pdf = (await import('html2pdf.js')).default;
+          const canvas = await html2canvas(wrapper, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            windowWidth: naturalWidth,
+            windowHeight: naturalHeight,
+          });
+
+          // px -> mm (96 dpi)
+          const pxToMm = 25.4 / 96;
+          const pdfWidthMm = naturalWidth * pxToMm;
+          const pdfHeightMm = naturalHeight * pxToMm;
+
+          const pdf = new jsPDF({
+            unit: 'mm',
+            format: [pdfWidthMm, pdfHeightMm],
+            orientation: pdfWidthMm > pdfHeightMm ? 'landscape' : 'portrait',
+          });
+
+          const imgData = canvas.toDataURL('image/jpeg', 0.95);
+          pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidthMm, pdfHeightMm);
+
           const pdfName = filename.replace(/\.(html?|txt)$/i, '') + '.pdf';
-
-          await html2pdf()
-            .from(wrapper)
-            .set({
-              margin: [10, 10, 10, 10],
-              filename: pdfName,
-              image: { type: 'jpeg', quality: 0.98 },
-              html2canvas: {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: '#ffffff',
-                windowWidth: A4_WIDTH_PX,
-              },
-              jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-              pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
-            } as any)
-            .save();
+          pdf.save(pdfName);
 
           document.body.removeChild(wrapper);
           document.body.removeChild(iframe);
           return;
         }
+
 
       }
 
