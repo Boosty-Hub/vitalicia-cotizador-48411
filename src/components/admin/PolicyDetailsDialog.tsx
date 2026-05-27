@@ -1022,7 +1022,7 @@ export function PolicyDetailsDialog({
                     </div>
                   )}
                   <div className="grid grid-cols-1 gap-3">
-                    {renderDocumentLink("Carnet generado (link público)", (selectedPoliza as any).carnet_poliza_url)}
+                    {renderDocumentLink("Carnet generado (link público)", (selectedPoliza as any).carnet_poliza_url, `${window.location.origin}/carnet/${selectedPoliza.id}`)}
                     {renderDocumentLink("Carnet Monday", selectedPoliza.url_carnet_monday)}
                   </div>
                   {isEditing && (
