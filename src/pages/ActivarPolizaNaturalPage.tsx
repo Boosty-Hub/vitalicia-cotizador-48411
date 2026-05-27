@@ -52,6 +52,7 @@ const ActivarPolizaNaturalPage = () => {
     Año: string | null;
     Color: string | null;
     Carroceria: string | null;
+    SerialMotor?: string | null;
     Suma?: string;
     MondayId?: string | null;
     Source?: 'bd_bera' | 'bd_empire';
