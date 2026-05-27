@@ -577,7 +577,7 @@ export function PolicyDetailsDialog({
         
         <ScrollArea className="h-[70vh] pr-4">
           <Tabs defaultValue="titular" className="w-full">
-            <TabsList className="grid w-full grid-cols-8">
+            <TabsList className="grid w-full grid-cols-9">
               <TabsTrigger value="titular">Titular</TabsTrigger>
               <TabsTrigger value="beneficiario">Beneficiario</TabsTrigger>
               <TabsTrigger value="vehiculo">Vehículo</TabsTrigger>
@@ -586,6 +586,7 @@ export function PolicyDetailsDialog({
               <TabsTrigger value="factura">Factura</TabsTrigger>
               <TabsTrigger value="carnet">Carnet</TabsTrigger>
               <TabsTrigger value="tecnico">Técnico</TabsTrigger>
+              <TabsTrigger value="response">Response</TabsTrigger>
             </TabsList>
 
             {/* Datos del Titular */}
@@ -1133,6 +1134,73 @@ export function PolicyDetailsDialog({
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Response API */}
+            <TabsContent value="response" className="space-y-4 mt-4">
+              {(() => {
+                const formatVal = (v: any) => {
+                  if (v == null || v === "") return "-";
+                  if (typeof v === "string") {
+                    try {
+                      const parsed = JSON.parse(v);
+                      return JSON.stringify(parsed, null, 2);
+                    } catch {
+                      return v;
+                    }
+                  }
+                  return JSON.stringify(v, null, 2);
+                };
+                const fields: Array<[string, any]> = [
+                  ["api_status", (selectedPoliza as any).api_status],
+                  ["api_message", (selectedPoliza as any).api_message],
+                  ["n_serialcontrato", (selectedPoliza as any).n_serialcontrato],
+                  ["n_serialcertif", (selectedPoliza as any).n_serialcertif],
+                  ["numero_poliza_monday", (selectedPoliza as any).numero_poliza_monday],
+                  ["api_recibos", (selectedPoliza as any).api_recibos],
+                  ["api_coberturas", (selectedPoliza as any).api_coberturas],
+                ];
+                const fullPayload = Object.fromEntries(fields);
+                return (
+                  <>
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base">Respuesta completa de la API</CardTitle>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(JSON.stringify(fullPayload, null, 2));
+                              toast({ title: "Copiado", description: "Respuesta copiada al portapapeles" });
+                            }}
+                          >
+                            Copiar JSON
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <pre className="text-xs bg-muted p-3 rounded-md overflow-auto max-h-[300px] whitespace-pre-wrap break-all">
+{JSON.stringify(fullPayload, null, 2)}
+                        </pre>
+                      </CardContent>
+                    </Card>
+
+                    {fields.map(([key, val]) => (
+                      <Card key={key}>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-mono">{key}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <pre className="text-xs bg-muted p-3 rounded-md overflow-auto max-h-[400px] whitespace-pre-wrap break-all">
+{formatVal(val)}
+                          </pre>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </>
+                );
+              })()}
             </TabsContent>
           </Tabs>
         </ScrollArea>
