@@ -69,6 +69,7 @@ const ActivarPolizaJuridicaPage = () => {
     Año: string | null;
     Color: string | null;
     Carroceria: string | null;
+    SerialMotor?: string | null;
     Suma: string;
     MondayId: string | null;
     Source?: 'bd_bera' | 'bd_empire';
@@ -368,6 +369,7 @@ const ActivarPolizaJuridicaPage = () => {
           Año: beraData.anio_modelo?.toString() || null,
           Color: beraData.color || null,
           Carroceria: beraData.serial_chasis || null,
+          SerialMotor: beraData.serial_motor || null,
           Suma: beraData.precio_venta_tienda?.toString() || "0",
           MondayId: null,
           Source: 'bd_bera' as const
@@ -440,6 +442,7 @@ const ActivarPolizaJuridicaPage = () => {
           Año: empireData.anio?.toString() || null,
           Color: empireData.color || null,
           Carroceria: empireData.serial_carroceria || null,
+          SerialMotor: empireData.serial_motor || null,
           Suma: precioVenta,
           MondayId: null,
           Source: 'bd_empire' as const
@@ -786,7 +789,7 @@ const ActivarPolizaJuridicaPage = () => {
         placa_monday: placa,
         año_monday: vehicleData?.Año || new Date().getFullYear().toString(),
         serial_carroceria_monday: formData.serialCarroceria,
-        serial_motor_monday: formData.serialCarroceria,
+        serial_motor_monday: vehicleData?.SerialMotor || "",
         fecha_compra_monday: formData.fechaAdquisicion,
         cod_modelo_monday: codigosData.modeloCodigo,
         version_modelo_monday: vehicleData?.Modelo || "",
@@ -910,7 +913,7 @@ const ActivarPolizaJuridicaPage = () => {
         c_cd_version: codigosData.versionCodigo,
         s_version: vehicleData?.Modelo || "",
         n_nu_centuria: versionApiData?.n_centuria || vehicleData?.Año || new Date().getFullYear().toString(),
-        c_motor: formData.serialCarroceria,
+        c_motor: vehicleData?.SerialMotor || "",
         c_cd_color: codigosData.colorCodigo,
         s_color: vehicleData?.Color || "",
         c_cd_versionseguro: versionApiData?.cd_version_seguro || "",

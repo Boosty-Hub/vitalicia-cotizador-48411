@@ -52,6 +52,7 @@ const ActivarPolizaNaturalPage = () => {
     Año: string | null;
     Color: string | null;
     Carroceria: string | null;
+    SerialMotor?: string | null;
     Suma?: string;
     MondayId?: string | null;
     Source?: 'bd_bera' | 'bd_empire';
@@ -401,6 +402,7 @@ const ActivarPolizaNaturalPage = () => {
           Año: beraData.anio_modelo?.toString() || null,
           Color: beraData.color || null,
           Carroceria: beraData.serial_chasis || null,
+          SerialMotor: beraData.serial_motor || null,
           Suma: beraData.precio_venta_tienda?.toString() || "0",
           MondayId: null,
           Source: 'bd_bera' as const
@@ -464,6 +466,7 @@ const ActivarPolizaNaturalPage = () => {
           Año: empireData.anio?.toString() || null,
           Color: empireData.color || null,
           Carroceria: empireData.serial_carroceria || null,
+          SerialMotor: empireData.serial_motor || null,
           Suma: precioVenta,
           MondayId: null,
           Source: 'bd_empire' as const
@@ -950,7 +953,7 @@ const ActivarPolizaNaturalPage = () => {
       c_cd_version: vehicleCodes.c_cd_version,
       s_version: vehicleCodes.s_version,
       n_nu_centuria: versionApiData?.n_centuria || vehicleData?.Año || new Date().getFullYear().toString(),
-      c_motor: formData.serialCarroceria,
+      c_motor: vehicleData?.SerialMotor || "",
       c_cd_color: vehicleCodes.c_cd_color,
       s_color: vehicleCodes.s_color,
       c_cd_versionseguro: versionApiData?.cd_version_seguro || "",
