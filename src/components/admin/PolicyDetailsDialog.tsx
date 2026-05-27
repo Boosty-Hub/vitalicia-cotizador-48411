@@ -55,6 +55,30 @@ export function PolicyDetailsDialog({
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [processingPolizaId, setProcessingPolizaId] = useState<string | null>(null);
+  const [isGeneratingFactura, setIsGeneratingFactura] = useState(false);
+
+  const handleGenerateFactura = async () => {
+    if (!selectedPoliza?.id) return;
+    setIsGeneratingFactura(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-factura-poliza", {
+        body: { polizaId: selectedPoliza.id },
+      });
+      if (error) throw error;
+      const url = (data as any)?.url;
+      toast({ title: "Factura generada", description: "La factura se generó correctamente." });
+      if (url) {
+        setSelectedPoliza((prev) => (prev ? ({ ...prev, factura_poliza_url: url } as Poliza) : prev));
+        setEditedPoliza((prev) => (prev ? ({ ...prev, factura_poliza_url: url } as Poliza) : prev));
+      }
+      onPolicyUpdated?.();
+    } catch (e: any) {
+      console.error("Error generating factura:", e);
+      toast({ title: "Error", description: e?.message || "No se pudo generar la factura", variant: "destructive" });
+    } finally {
+      setIsGeneratingFactura(false);
+    }
+  };
 
   // Update local state when prop changes
   useEffect(() => {
@@ -862,9 +886,23 @@ export function PolicyDetailsDialog({
             <TabsContent value="factura" className="space-y-4 mt-4">
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-primary" />
-                    Factura de la Póliza
+                  <CardTitle className="text-base flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-primary" />
+                      Factura de la Póliza
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={isGeneratingFactura || !selectedPoliza?.id}
+                      onClick={handleGenerateFactura}
+                    >
+                      {isGeneratingFactura ? (
+                        <><Loader2 className="h-4 w-4 animate-spin" /> Generando...</>
+                      ) : (
+                        <><RefreshCw className="h-4 w-4" /> {(selectedPoliza as any)?.factura_poliza_url ? "Regenerar factura" : "Generar factura"}</>
+                      )}
+                    </Button>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
