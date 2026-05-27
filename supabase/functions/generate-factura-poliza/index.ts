@@ -369,12 +369,18 @@ function buildHtml(p: any): string {
   const numFactura = primerRecibo.n_numfactura || primerRecibo.numero_factura || "";
 
   const isDate = (v: any) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v);
-  const fechaEmision = (isDate(p.f_fchdesde) ? p.f_fchdesde : isDate(p.desde) ? p.desde : new Date().toISOString().slice(0, 10)).slice(0, 10);
   const addYearIso = (s: string) => {
     const d = new Date(`${s}T00:00:00`); d.setFullYear(d.getFullYear() + 1);
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   };
+  // Fecha emisión de la póliza = f_fchdesde (Fecha Inicio del tab Técnico)
+  const fechaEmision = (isDate(p.f_fchdesde) ? p.f_fchdesde : new Date().toISOString().slice(0, 10)).slice(0, 10);
+  // Fecha vencimiento de la póliza (tab Técnico)
   const fechaVencimiento = (isDate(p.fecha_de_vencimiento_monday) ? p.fecha_de_vencimiento_monday : addYearIso(fechaEmision)).slice(0, 10);
+  // Vigencia del recibo: desde = fecha emisión factura (hoy o f_fchdesde), hasta = +1 año
+  const reciboDesde = fechaEmision;
+  const reciboHasta = addYearIso(reciboDesde);
+
   const numPoliza = p.numero_poliza_monday || "PENDIENTE";
 
   return `<!DOCTYPE html>
@@ -473,7 +479,7 @@ html,body{margin:0;padding:0;background:var(--bg);font-family:Arial,Helvetica,sa
     <tr>
       <td class="lbl" style="width:90px;">N° PÓLIZA:</td><td class="val strong" style="width:120px;">${esc(numPoliza)}</td>
       <td class="lbl" style="width:90px;">N° RECIBO:</td><td class="val strong" style="width:120px;">${esc(numRecibo)}</td>
-      <td class="lbl" style="width:130px;background:var(--brand);color:#fff;">VIGENCIA DE LA POLIZA</td>
+      <td class="lbl" style="width:130px;">VIGENCIA DE LA POLIZA</td>
       <td class="lbl" style="width:55px;">DESDE:</td><td class="val">${fmtDate(fechaEmision)}</td>
     </tr>
     <tr>
@@ -485,13 +491,14 @@ html,body{margin:0;padding:0;background:var(--bg);font-family:Arial,Helvetica,sa
     <tr>
       <td class="lbl">SUCURSAL EMISIÓN:</td><td class="val" colspan="2">OFICINA PRINCIPAL CARACAS</td>
       <td class="lbl">FREQ. PAGO:</td><td class="val">ANUAL</td>
-      <td class="lbl" colspan="2" style="background:var(--brand);color:#fff;">VIGENCIA DEL RECIBO</td>
+      <td class="lbl" colspan="2">VIGENCIA DEL RECIBO</td>
     </tr>
     <tr>
       <td class="lbl">SUC. SUSCRIPTORA:</td><td class="val" colspan="2">OFICINA PRINCIPAL CARACAS</td>
-      <td class="lbl">DESDE:</td><td class="val">${fmtDate(fechaEmision)}</td>
-      <td class="lbl">HASTA:</td><td class="val">${fmtDate(fechaVencimiento)}</td>
+      <td class="lbl">DESDE:</td><td class="val">${fmtDate(reciboDesde)}</td>
+      <td class="lbl">HASTA:</td><td class="val">${fmtDate(reciboHasta)}</td>
     </tr>
+
     <tr>
       <td class="lbl">INTERMEDIARIO:</td><td class="val" colspan="3">0001 - SEGUROS LA VITALICIA, C.A.</td>
       <td class="lbl">% PARTIC.:</td><td class="val">100</td>
