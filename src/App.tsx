@@ -31,6 +31,7 @@ import ActivarPolizaRCVPage from "./pages/ActivarPolizaRCVPage";
 import ActivarPolizaNaturalPage from "./pages/ActivarPolizaNaturalPage";
 import ActivarPolizaJuridicaPage from "./pages/ActivarPolizaJuridicaPage";
 import FacturaPublicaPage from "./pages/FacturaPublicaPage";
+import CarnetPublicoPage from "./pages/CarnetPublicoPage";
 
 // Admin imports
 import { AdminAuthProvider } from "./contexts/AdminAuthContext";
@@ -91,6 +92,7 @@ const App = () => (
             <Route path="/carga-bera" element={<AdminCargaBeraPage />} />
             <Route path="/carga-empire" element={<AdminCargaEmpirePage />} />
             <Route path="/factura/:polizaId" element={<FacturaPublicaPage />} />
+            <Route path="/carnet/:polizaId" element={<CarnetPublicoPage />} />
             
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLoginPage />} />
