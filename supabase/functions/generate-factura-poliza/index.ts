@@ -85,7 +85,13 @@ function buildHtml(p: any): string {
   const numRecibo = primerRecibo.n_numrecibo || primerRecibo.numero_recibo || "";
   const numFactura = primerRecibo.n_numfactura || primerRecibo.numero_factura || "";
 
-  const fechaEmision = (p.desde || p.f_fchdesde || new Date().toISOString().slice(0, 10)).slice(0, 10);
+  const isDate = (v: any) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v);
+  const fechaEmision = (isDate(p.f_fchdesde) ? p.f_fchdesde : isDate(p.desde) ? p.desde : new Date().toISOString().slice(0, 10)).slice(0, 10);
+  const addYearIso = (s: string) => {
+    const d = new Date(`${s}T00:00:00`); d.setFullYear(d.getFullYear() + 1);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  };
+  const fechaVencimiento = (isDate(p.fecha_de_vencimiento_monday) ? p.fecha_de_vencimiento_monday : addYearIso(fechaEmision)).slice(0, 10);
   const numPoliza = p.numero_poliza_monday || "PENDIENTE";
 
   return `<!DOCTYPE html>
@@ -191,7 +197,7 @@ html,body{margin:0;padding:0;background:var(--bg);font-family:Arial,Helvetica,sa
       <td class="lbl">N° FACTURA:</td><td class="val strong">${esc(numFactura)}</td>
       <td class="lbl">CERTIFICADO:</td><td class="val">${esc(p.n_serialcertif || "")}</td>
       <td class="lbl">&nbsp;</td>
-      <td class="lbl">HASTA:</td><td class="val">${addYear(fechaEmision)}</td>
+      <td class="lbl">HASTA:</td><td class="val">${fmtDate(fechaVencimiento)}</td>
     </tr>
     <tr>
       <td class="lbl">SUCURSAL EMISIÓN:</td><td class="val" colspan="2">OFICINA PRINCIPAL CARACAS</td>
@@ -201,7 +207,7 @@ html,body{margin:0;padding:0;background:var(--bg);font-family:Arial,Helvetica,sa
     <tr>
       <td class="lbl">SUC. SUSCRIPTORA:</td><td class="val" colspan="2">OFICINA PRINCIPAL CARACAS</td>
       <td class="lbl">DESDE:</td><td class="val">${fmtDate(fechaEmision)}</td>
-      <td class="lbl">HASTA:</td><td class="val">${addYear(fechaEmision)}</td>
+      <td class="lbl">HASTA:</td><td class="val">${fmtDate(fechaVencimiento)}</td>
     </tr>
     <tr>
       <td class="lbl">INTERMEDIARIO:</td><td class="val" colspan="3">0001 - SEGUROS LA VITALICIA, C.A.</td>
