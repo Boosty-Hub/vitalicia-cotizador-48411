@@ -1242,6 +1242,15 @@ const ActivarPolizaJuridicaPage = () => {
         description: "Tu póliza fue registrada y será revisada por un analista. Te contactaremos pronto.",
       });
 
+      // Generar factura (Cuadro Póliza Recibo)
+      try {
+        await supabase.functions.invoke('generate-factura-poliza', {
+          body: { polizaId: savedPoliza.id }
+        });
+      } catch (facturaErr) {
+        console.error('⚠️ Error generando factura:', facturaErr);
+      }
+
       setCurrentStep(7);
 
     } catch (error) {
