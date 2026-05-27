@@ -422,17 +422,38 @@ export function PolicyDetailsDialog({
           );
           await new Promise((r) => setTimeout(r, 200));
 
-          const target = iframe.contentDocument!.body;
-          // Asegurar ancho A4 para captura nítida
-          target.style.width = A4_WIDTH_PX + 'px';
-          target.style.margin = '0';
-          target.style.background = '#ffffff';
+          // Mover estilos + body al documento padre (html2canvas no captura bien iframes)
+          const iframeDoc = iframe.contentDocument!;
+          const styleNodes = Array.from(
+            iframeDoc.querySelectorAll('style, link[rel="stylesheet"]')
+          )
+            .map((n) => n.outerHTML)
+            .join('\n');
+          const bodyHtml = iframeDoc.body.innerHTML;
+          const bodyInlineStyle = iframeDoc.body.getAttribute('style') || '';
+
+          const wrapper = document.createElement('div');
+          wrapper.style.position = 'fixed';
+          wrapper.style.left = '-10000px';
+          wrapper.style.top = '0';
+          wrapper.style.width = A4_WIDTH_PX + 'px';
+          wrapper.style.background = '#ffffff';
+          wrapper.innerHTML = `
+            ${styleNodes}
+            <div class="pdf-body" style="${bodyInlineStyle};width:${A4_WIDTH_PX}px;margin:0;background:#ffffff;">
+              ${bodyHtml}
+            </div>
+          `;
+          document.body.appendChild(wrapper);
+
+          // Esperar a que el navegador aplique estilos
+          await new Promise((r) => setTimeout(r, 100));
 
           const html2pdf = (await import('html2pdf.js')).default;
           const pdfName = filename.replace(/\.(html?|txt)$/i, '') + '.pdf';
 
           await html2pdf()
-            .from(target)
+            .from(wrapper)
             .set({
               margin: [10, 10, 10, 10],
               filename: pdfName,
@@ -448,10 +469,11 @@ export function PolicyDetailsDialog({
             } as any)
             .save();
 
-
+          document.body.removeChild(wrapper);
           document.body.removeChild(iframe);
           return;
         }
+
       }
 
       const blob = await response.blob();
