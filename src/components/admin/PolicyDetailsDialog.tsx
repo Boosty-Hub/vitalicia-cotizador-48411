@@ -956,9 +956,23 @@ export function PolicyDetailsDialog({
             <TabsContent value="carnet" className="space-y-4 mt-4">
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <FileCheck className="h-5 w-5 text-primary" />
-                    Carnet del Asegurado
+                  <CardTitle className="text-base flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-2">
+                      <FileCheck className="h-5 w-5 text-primary" />
+                      Carnet del Asegurado
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={isGeneratingCarnet || !selectedPoliza?.id}
+                      onClick={handleGenerateCarnet}
+                    >
+                      {isGeneratingCarnet ? (
+                        <><Loader2 className="h-4 w-4 animate-spin" /> Generando...</>
+                      ) : (
+                        <><RefreshCw className="h-4 w-4" /> {(selectedPoliza as any)?.carnet_poliza_url ? "Regenerar carnet" : "Generar carnet"}</>
+                      )}
+                    </Button>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
