@@ -389,7 +389,7 @@ export function PolicyDetailsDialog({
     }
   };
 
-  const renderDocumentLink = (label: string, url: string | null) => {
+  const renderDocumentLink = (label: string, url: string | null, viewUrl?: string | null) => {
     const filename = url?.split('/').pop() || 'documento';
     const isPDF = filename.toLowerCase().endsWith('.pdf');
     const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
