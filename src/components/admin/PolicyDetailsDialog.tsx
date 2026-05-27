@@ -862,9 +862,23 @@ export function PolicyDetailsDialog({
             <TabsContent value="factura" className="space-y-4 mt-4">
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-primary" />
-                    Factura de la Póliza
+                  <CardTitle className="text-base flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-primary" />
+                      Factura de la Póliza
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={isGeneratingFactura || !selectedPoliza?.id}
+                      onClick={handleGenerateFactura}
+                    >
+                      {isGeneratingFactura ? (
+                        <><Loader2 className="h-4 w-4 animate-spin" /> Generando...</>
+                      ) : (
+                        <><RefreshCw className="h-4 w-4" /> {(selectedPoliza as any)?.factura_poliza_url ? "Regenerar factura" : "Generar factura"}</>
+                      )}
+                    </Button>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
