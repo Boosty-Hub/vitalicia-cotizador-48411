@@ -1,0 +1,1 @@
+ALTER TABLE public.polizas_activas ADD COLUMN IF NOT EXISTS carnet_poliza_url text;
