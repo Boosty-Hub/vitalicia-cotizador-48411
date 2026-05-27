@@ -369,12 +369,18 @@ function buildHtml(p: any): string {
   const numFactura = primerRecibo.n_numfactura || primerRecibo.numero_factura || "";
 
   const isDate = (v: any) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v);
-  const fechaEmision = (isDate(p.f_fchdesde) ? p.f_fchdesde : isDate(p.desde) ? p.desde : new Date().toISOString().slice(0, 10)).slice(0, 10);
   const addYearIso = (s: string) => {
     const d = new Date(`${s}T00:00:00`); d.setFullYear(d.getFullYear() + 1);
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   };
+  // Fecha emisión de la póliza = f_fchdesde (Fecha Inicio del tab Técnico)
+  const fechaEmision = (isDate(p.f_fchdesde) ? p.f_fchdesde : new Date().toISOString().slice(0, 10)).slice(0, 10);
+  // Fecha vencimiento de la póliza (tab Técnico)
   const fechaVencimiento = (isDate(p.fecha_de_vencimiento_monday) ? p.fecha_de_vencimiento_monday : addYearIso(fechaEmision)).slice(0, 10);
+  // Vigencia del recibo: desde = fecha emisión factura (hoy o f_fchdesde), hasta = +1 año
+  const reciboDesde = fechaEmision;
+  const reciboHasta = addYearIso(reciboDesde);
+
   const numPoliza = p.numero_poliza_monday || "PENDIENTE";
 
   return `<!DOCTYPE html>
