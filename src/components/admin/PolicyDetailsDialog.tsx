@@ -55,6 +55,30 @@ export function PolicyDetailsDialog({
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [processingPolizaId, setProcessingPolizaId] = useState<string | null>(null);
+  const [isGeneratingFactura, setIsGeneratingFactura] = useState(false);
+
+  const handleGenerateFactura = async () => {
+    if (!selectedPoliza?.id) return;
+    setIsGeneratingFactura(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-factura-poliza", {
+        body: { polizaId: selectedPoliza.id },
+      });
+      if (error) throw error;
+      const url = (data as any)?.url;
+      toast({ title: "Factura generada", description: "La factura se generó correctamente." });
+      if (url) {
+        setSelectedPoliza((prev) => (prev ? ({ ...prev, factura_poliza_url: url } as Poliza) : prev));
+        setEditedPoliza((prev) => (prev ? ({ ...prev, factura_poliza_url: url } as Poliza) : prev));
+      }
+      onPolicyUpdated?.();
+    } catch (e: any) {
+      console.error("Error generating factura:", e);
+      toast({ title: "Error", description: e?.message || "No se pudo generar la factura", variant: "destructive" });
+    } finally {
+      setIsGeneratingFactura(false);
+    }
+  };
 
   // Update local state when prop changes
   useEffect(() => {
