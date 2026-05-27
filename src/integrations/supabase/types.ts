@@ -654,6 +654,7 @@ export type Database = {
           f_fecnacap: string | null
           f_fecnacch: string | null
           factura_compra_vehiculo_url: string | null
+          factura_poliza_url: string | null
           fecha_compra_monday: string | null
           fecha_de_vencimiento_monday: string | null
           fecha_nacimiento_apoderado_monday: string | null
@@ -795,6 +796,7 @@ export type Database = {
           f_fecnacap?: string | null
           f_fecnacch?: string | null
           factura_compra_vehiculo_url?: string | null
+          factura_poliza_url?: string | null
           fecha_compra_monday?: string | null
           fecha_de_vencimiento_monday?: string | null
           fecha_nacimiento_apoderado_monday?: string | null
@@ -936,6 +938,7 @@ export type Database = {
           f_fecnacap?: string | null
           f_fecnacch?: string | null
           factura_compra_vehiculo_url?: string | null
+          factura_poliza_url?: string | null
           fecha_compra_monday?: string | null
           fecha_de_vencimiento_monday?: string | null
           fecha_nacimiento_apoderado_monday?: string | null

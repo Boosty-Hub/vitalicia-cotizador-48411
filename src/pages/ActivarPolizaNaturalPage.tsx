@@ -1232,6 +1232,15 @@ const ActivarPolizaNaturalPage = () => {
         });
       }
 
+      // Step 6: Generar factura (Cuadro Póliza Recibo)
+      try {
+        await supabase.functions.invoke('generate-factura-poliza', {
+          body: { polizaId: savedPoliza.id }
+        });
+      } catch (facturaErr) {
+        console.error('⚠️ Error generando factura:', facturaErr);
+      }
+
       setCurrentStep(6);
       
     } catch (error) {
