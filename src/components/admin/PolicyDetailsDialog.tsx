@@ -56,6 +56,7 @@ export function PolicyDetailsDialog({
   const [isSaving, setIsSaving] = useState(false);
   const [processingPolizaId, setProcessingPolizaId] = useState<string | null>(null);
   const [isGeneratingFactura, setIsGeneratingFactura] = useState(false);
+  const [isGeneratingCarnet, setIsGeneratingCarnet] = useState(false);
 
   const handleGenerateFactura = async () => {
     if (!selectedPoliza?.id) return;
@@ -77,6 +78,29 @@ export function PolicyDetailsDialog({
       toast({ title: "Error", description: e?.message || "No se pudo generar la factura", variant: "destructive" });
     } finally {
       setIsGeneratingFactura(false);
+    }
+  };
+
+  const handleGenerateCarnet = async () => {
+    if (!selectedPoliza?.id) return;
+    setIsGeneratingCarnet(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-carnet-poliza", {
+        body: { polizaId: selectedPoliza.id },
+      });
+      if (error) throw error;
+      const url = (data as any)?.url;
+      toast({ title: "Carnet generado", description: "El carnet se generó correctamente." });
+      if (url) {
+        setSelectedPoliza((prev) => (prev ? ({ ...prev, carnet_poliza_url: url } as Poliza) : prev));
+        setEditedPoliza((prev) => (prev ? ({ ...prev, carnet_poliza_url: url } as Poliza) : prev));
+      }
+      onPolicyUpdated?.();
+    } catch (e: any) {
+      console.error("Error generating carnet:", e);
+      toast({ title: "Error", description: e?.message || "No se pudo generar el carnet", variant: "destructive" });
+    } finally {
+      setIsGeneratingCarnet(false);
     }
   };
 
@@ -932,9 +956,23 @@ export function PolicyDetailsDialog({
             <TabsContent value="carnet" className="space-y-4 mt-4">
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <FileCheck className="h-5 w-5 text-primary" />
-                    Carnet del Asegurado
+                  <CardTitle className="text-base flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-2">
+                      <FileCheck className="h-5 w-5 text-primary" />
+                      Carnet del Asegurado
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={isGeneratingCarnet || !selectedPoliza?.id}
+                      onClick={handleGenerateCarnet}
+                    >
+                      {isGeneratingCarnet ? (
+                        <><Loader2 className="h-4 w-4 animate-spin" /> Generando...</>
+                      ) : (
+                        <><RefreshCw className="h-4 w-4" /> {(selectedPoliza as any)?.carnet_poliza_url ? "Regenerar carnet" : "Generar carnet"}</>
+                      )}
+                    </Button>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
