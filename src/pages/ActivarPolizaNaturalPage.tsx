@@ -953,7 +953,7 @@ const ActivarPolizaNaturalPage = () => {
       c_cd_version: vehicleCodes.c_cd_version,
       s_version: vehicleCodes.s_version,
       n_nu_centuria: versionApiData?.n_centuria || vehicleData?.Año || new Date().getFullYear().toString(),
-      c_motor: formData.serialCarroceria,
+      c_motor: vehicleData?.SerialMotor || "",
       c_cd_color: vehicleCodes.c_cd_color,
       s_color: vehicleCodes.s_color,
       c_cd_versionseguro: versionApiData?.cd_version_seguro || "",
