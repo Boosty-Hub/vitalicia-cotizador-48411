@@ -971,7 +971,7 @@ export function PolicyDetailsDialog({
                     </div>
                   )}
                   <div className="grid grid-cols-1 gap-3">
-                    {renderDocumentLink("Factura (link público)", (selectedPoliza as any).factura_poliza_url)}
+                    {renderDocumentLink("Factura (link público)", (selectedPoliza as any).factura_poliza_url, `${window.location.origin}/factura/${selectedPoliza.id}`)}
                   </div>
                   {isEditing && (
                     <div className="pt-2 border-t">
