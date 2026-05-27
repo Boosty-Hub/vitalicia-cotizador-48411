@@ -445,8 +445,9 @@ export function PolicyDetailsDialog({
               },
               jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
               pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
-            })
+            } as any)
             .save();
+
 
           document.body.removeChild(iframe);
           return;
