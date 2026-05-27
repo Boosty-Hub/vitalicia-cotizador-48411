@@ -56,6 +56,7 @@ export function PolicyDetailsDialog({
   const [isSaving, setIsSaving] = useState(false);
   const [processingPolizaId, setProcessingPolizaId] = useState<string | null>(null);
   const [isGeneratingFactura, setIsGeneratingFactura] = useState(false);
+  const [isGeneratingCarnet, setIsGeneratingCarnet] = useState(false);
 
   const handleGenerateFactura = async () => {
     if (!selectedPoliza?.id) return;
