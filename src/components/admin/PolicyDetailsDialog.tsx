@@ -425,7 +425,7 @@ export function PolicyDetailsDialog({
         </div>
         <div className="flex items-center gap-1">
           <a 
-            href={url} 
+            href={viewUrl || url} 
             target="_blank" 
             rel="noopener noreferrer"
             className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200"
