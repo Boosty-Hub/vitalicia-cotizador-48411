@@ -240,10 +240,9 @@ serve(async (req) => {
       });
     }
 
-    // QR apunta a la factura si existe, si no a la URL pública del carnet/póliza
+    // QR apunta al link público del carnet
     const path = `carnets/${polizaId}.html`;
-    const { data: pubPre } = supabase.storage.from("poliza-documentos").getPublicUrl(path);
-    const verifyUrl = poliza.factura_poliza_url || pubPre.publicUrl;
+    const verifyUrl = `https://seguroslavitalicia.com/carnet/${polizaId}`;
 
     const html = buildHtml(poliza, verifyUrl);
 
