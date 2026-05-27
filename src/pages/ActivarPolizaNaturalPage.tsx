@@ -1241,6 +1241,15 @@ const ActivarPolizaNaturalPage = () => {
         console.error('⚠️ Error generando factura:', facturaErr);
       }
 
+      // Step 7: Generar carnet (con QR) — luego de la factura
+      try {
+        await supabase.functions.invoke('generate-carnet-poliza', {
+          body: { polizaId: savedPoliza.id }
+        });
+      } catch (carnetErr) {
+        console.error('⚠️ Error generando carnet:', carnetErr);
+      }
+
       setCurrentStep(6);
       
     } catch (error) {
