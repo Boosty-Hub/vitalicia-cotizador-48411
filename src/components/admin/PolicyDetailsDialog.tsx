@@ -858,6 +858,56 @@ export function PolicyDetailsDialog({
               )}
             </TabsContent>
 
+            {/* Factura */}
+            <TabsContent value="factura" className="space-y-4 mt-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-primary" />
+                    Factura de la Póliza
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 gap-3">
+                    {renderDocumentLink("Factura (link público)", selectedPoliza.factura_compra_vehiculo_url)}
+                  </div>
+                  {isEditing && (
+                    <div className="pt-2 border-t">
+                      {renderField("URL pública de la Factura", "factura_compra_vehiculo_url")}
+                    </div>
+                  )}
+                  <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground bg-muted/30">
+                    El diseño y formato de la factura se definirá próximamente. Aquí se mostrará la vista previa y datos de la factura cuando esté disponible.
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Carnet */}
+            <TabsContent value="carnet" className="space-y-4 mt-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FileCheck className="h-5 w-5 text-primary" />
+                    Carnet del Asegurado
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 gap-3">
+                    {renderDocumentLink("Carnet (link público)", selectedPoliza.url_carnet_monday)}
+                  </div>
+                  {isEditing && (
+                    <div className="pt-2 border-t">
+                      {renderField("URL pública del Carnet", "url_carnet_monday")}
+                    </div>
+                  )}
+                  <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground bg-muted/30">
+                    El diseño del carnet se definirá próximamente. Aquí se mostrará la vista previa del carnet del asegurado con el formato final.
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             {/* Datos Técnicos */}
             <TabsContent value="tecnico" className="space-y-4 mt-4">
               {/* Estado API y Reprocesar */}
