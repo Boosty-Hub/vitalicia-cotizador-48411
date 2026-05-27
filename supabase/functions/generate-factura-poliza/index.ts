@@ -197,7 +197,7 @@ html,body{margin:0;padding:0;background:var(--bg);font-family:Arial,Helvetica,sa
       <td class="lbl">N° FACTURA:</td><td class="val strong">${esc(numFactura)}</td>
       <td class="lbl">CERTIFICADO:</td><td class="val">${esc(p.n_serialcertif || "")}</td>
       <td class="lbl">&nbsp;</td>
-      <td class="lbl">HASTA:</td><td class="val">${addYear(fechaEmision)}</td>
+      <td class="lbl">HASTA:</td><td class="val">${fmtDate(fechaVencimiento)}</td>
     </tr>
     <tr>
       <td class="lbl">SUCURSAL EMISIÓN:</td><td class="val" colspan="2">OFICINA PRINCIPAL CARACAS</td>
