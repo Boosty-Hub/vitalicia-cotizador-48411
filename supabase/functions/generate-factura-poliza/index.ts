@@ -207,7 +207,7 @@ html,body{margin:0;padding:0;background:var(--bg);font-family:Arial,Helvetica,sa
     <tr>
       <td class="lbl">SUC. SUSCRIPTORA:</td><td class="val" colspan="2">OFICINA PRINCIPAL CARACAS</td>
       <td class="lbl">DESDE:</td><td class="val">${fmtDate(fechaEmision)}</td>
-      <td class="lbl">HASTA:</td><td class="val">${addYear(fechaEmision)}</td>
+      <td class="lbl">HASTA:</td><td class="val">${fmtDate(fechaVencimiento)}</td>
     </tr>
     <tr>
       <td class="lbl">INTERMEDIARIO:</td><td class="val" colspan="3">0001 - SEGUROS LA VITALICIA, C.A.</td>
