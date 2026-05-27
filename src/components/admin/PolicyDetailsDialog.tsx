@@ -577,7 +577,7 @@ export function PolicyDetailsDialog({
         
         <ScrollArea className="h-[70vh] pr-4">
           <Tabs defaultValue="titular" className="w-full">
-            <TabsList className="grid w-full grid-cols-8">
+            <TabsList className="grid w-full grid-cols-9">
               <TabsTrigger value="titular">Titular</TabsTrigger>
               <TabsTrigger value="beneficiario">Beneficiario</TabsTrigger>
               <TabsTrigger value="vehiculo">Vehículo</TabsTrigger>
@@ -586,6 +586,7 @@ export function PolicyDetailsDialog({
               <TabsTrigger value="factura">Factura</TabsTrigger>
               <TabsTrigger value="carnet">Carnet</TabsTrigger>
               <TabsTrigger value="tecnico">Técnico</TabsTrigger>
+              <TabsTrigger value="response">Response</TabsTrigger>
             </TabsList>
 
             {/* Datos del Titular */}
