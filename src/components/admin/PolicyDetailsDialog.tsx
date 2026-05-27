@@ -379,28 +379,76 @@ export function PolicyDetailsDialog({
 
       if (looksHtml) {
         const html = await response.text();
-        // Detectar si el contenido es realmente HTML
         if (/<html|<!doctype|<body|<div|<table/i.test(html)) {
-          const container = document.createElement('div');
-          container.innerHTML = html;
-          container.style.position = 'fixed';
-          container.style.left = '-10000px';
-          container.style.top = '0';
-          container.style.background = '#fff';
-          document.body.appendChild(container);
+          // A4 width @ 96dpi ≈ 794px
+          const A4_WIDTH_PX = 794;
+
+          // Render HTML in a hidden iframe so <head> styles apply correctly
+          const iframe = document.createElement('iframe');
+          iframe.style.position = 'fixed';
+          iframe.style.left = '-10000px';
+          iframe.style.top = '0';
+          iframe.style.width = A4_WIDTH_PX + 'px';
+          iframe.style.height = '1123px';
+          iframe.style.border = '0';
+          iframe.style.background = '#ffffff';
+          document.body.appendChild(iframe);
+
+          await new Promise<void>((resolve) => {
+            iframe.onload = () => resolve();
+            const doc = iframe.contentDocument!;
+            doc.open();
+            doc.write(html);
+            doc.close();
+            // Fallback in case onload doesn't fire after write
+            setTimeout(() => resolve(), 600);
+          });
+
+          // Esperar a que fuentes/imágenes carguen
+          try {
+            // @ts-ignore
+            if (iframe.contentDocument?.fonts?.ready) await iframe.contentDocument.fonts.ready;
+          } catch {}
+          const imgs = Array.from(iframe.contentDocument?.images || []);
+          await Promise.all(
+            imgs.map((img) =>
+              (img as HTMLImageElement).complete
+                ? Promise.resolve()
+                : new Promise((res) => {
+                    (img as HTMLImageElement).onload = () => res(null);
+                    (img as HTMLImageElement).onerror = () => res(null);
+                  })
+            )
+          );
+          await new Promise((r) => setTimeout(r, 200));
+
+          const target = iframe.contentDocument!.body;
+          // Asegurar ancho A4 para captura nítida
+          target.style.width = A4_WIDTH_PX + 'px';
+          target.style.margin = '0';
+          target.style.background = '#ffffff';
+
           const html2pdf = (await import('html2pdf.js')).default;
           const pdfName = filename.replace(/\.(html?|txt)$/i, '') + '.pdf';
+
           await html2pdf()
-            .from(container)
+            .from(target)
             .set({
-              margin: 10,
+              margin: [10, 10, 10, 10],
               filename: pdfName,
               image: { type: 'jpeg', quality: 0.98 },
-              html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+              html2canvas: {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                windowWidth: A4_WIDTH_PX,
+              },
               jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+              pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
             })
             .save();
-          document.body.removeChild(container);
+
+          document.body.removeChild(iframe);
           return;
         }
       }
@@ -419,6 +467,7 @@ export function PolicyDetailsDialog({
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
+
 
 
   const renderDocumentLink = (label: string, url: string | null, viewUrl?: string | null) => {
