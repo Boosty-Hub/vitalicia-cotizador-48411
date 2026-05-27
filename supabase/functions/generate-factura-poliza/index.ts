@@ -362,8 +362,9 @@ function buildHtml(p: any): string {
 
   const recibos: any[] = Array.isArray(p.api_recibos) ? p.api_recibos : [];
   const primerRecibo = recibos[0] || {};
-  const igtfNum = Number(primerRecibo.n_igtf ?? primerRecibo.igtf ?? totalPrima * 0.03);
-  const totalCobrarNum = Number(primerRecibo.n_totalcobrar ?? primerRecibo.total ?? totalPrima + igtfNum);
+  const igtfNum = totalPrima * 0.03;
+  const totalCobrarNum = totalPrima + igtfNum;
+
   const numRecibo = primerRecibo.n_numrecibo || primerRecibo.numero_recibo || "";
   const numFactura = primerRecibo.n_numfactura || primerRecibo.numero_factura || "";
 
