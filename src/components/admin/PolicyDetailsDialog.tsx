@@ -930,22 +930,27 @@ export function PolicyDetailsDialog({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {(selectedPoliza as any).factura_poliza_url ? (
+                    <div className="rounded-lg border bg-white overflow-hidden">
+                      <iframe
+                        key={(selectedPoliza as any).factura_poliza_url}
+                        src={`${(selectedPoliza as any).factura_poliza_url}?t=${selectedPoliza.updated_at || ''}`}
+                        title="Factura"
+                        className="w-full bg-white"
+                        style={{ height: 900, border: 0 }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+                      Aún no se ha generado la factura. Pulsa “Generar factura” para crearla con los datos de este registro.
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 gap-3">
                     {renderDocumentLink("Factura (link público)", (selectedPoliza as any).factura_poliza_url)}
                   </div>
                   {isEditing && (
                     <div className="pt-2 border-t">
                       {renderField("URL pública de la Factura", "factura_poliza_url" as any)}
-                    </div>
-                  )}
-                  {(selectedPoliza as any).factura_poliza_url && (
-                    <div className="rounded-lg border bg-card overflow-hidden">
-                      <iframe
-                        src={(selectedPoliza as any).factura_poliza_url}
-                        title="Factura"
-                        className="w-full"
-                        style={{ height: 600, border: 0 }}
-                      />
                     </div>
                   )}
                 </CardContent>
@@ -976,6 +981,21 @@ export function PolicyDetailsDialog({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {(selectedPoliza as any).carnet_poliza_url ? (
+                    <div className="rounded-lg border bg-white overflow-hidden">
+                      <iframe
+                        key={(selectedPoliza as any).carnet_poliza_url}
+                        src={`${(selectedPoliza as any).carnet_poliza_url}?t=${selectedPoliza.updated_at || ''}`}
+                        title="Carnet"
+                        className="w-full bg-white"
+                        style={{ height: 900, border: 0 }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+                      Aún no se ha generado el carnet. Pulsa “Generar carnet” para crearlo con los datos de este registro.
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 gap-3">
                     {renderDocumentLink("Carnet generado (link público)", (selectedPoliza as any).carnet_poliza_url)}
                     {renderDocumentLink("Carnet Monday", selectedPoliza.url_carnet_monday)}
@@ -984,16 +1004,6 @@ export function PolicyDetailsDialog({
                     <div className="pt-2 border-t space-y-3">
                       {renderField("URL pública del Carnet generado", "carnet_poliza_url" as any)}
                       {renderField("URL Carnet Monday", "url_carnet_monday")}
-                    </div>
-                  )}
-                  {(selectedPoliza as any).carnet_poliza_url && (
-                    <div className="rounded-lg border bg-card overflow-hidden">
-                      <iframe
-                        src={(selectedPoliza as any).carnet_poliza_url}
-                        title="Carnet"
-                        className="w-full"
-                        style={{ height: 800, border: 0 }}
-                      />
                     </div>
                   )}
                 </CardContent>
