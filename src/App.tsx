@@ -90,6 +90,7 @@ const App = () => (
             {/* Public Factory Upload Pages */}
             <Route path="/carga-bera" element={<AdminCargaBeraPage />} />
             <Route path="/carga-empire" element={<AdminCargaEmpirePage />} />
+            <Route path="/factura/:polizaId" element={<FacturaPublicaPage />} />
             
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLoginPage />} />
