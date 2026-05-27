@@ -106,6 +106,29 @@ export function PolicyDetailsDialog({
     }
   };
 
+  // Fetch HTML content for factura/carnet (Supabase serves them as text/plain, so we render via srcDoc)
+  useEffect(() => {
+    const url = (selectedPoliza as any)?.factura_poliza_url;
+    if (!url) { setFacturaHtml(null); return; }
+    let cancelled = false;
+    fetch(`${url}?t=${Date.now()}`)
+      .then((r) => r.text())
+      .then((t) => { if (!cancelled) setFacturaHtml(t); })
+      .catch(() => { if (!cancelled) setFacturaHtml(null); });
+    return () => { cancelled = true; };
+  }, [(selectedPoliza as any)?.factura_poliza_url]);
+
+  useEffect(() => {
+    const url = (selectedPoliza as any)?.carnet_poliza_url;
+    if (!url) { setCarnetHtml(null); return; }
+    let cancelled = false;
+    fetch(`${url}?t=${Date.now()}`)
+      .then((r) => r.text())
+      .then((t) => { if (!cancelled) setCarnetHtml(t); })
+      .catch(() => { if (!cancelled) setCarnetHtml(null); });
+    return () => { cancelled = true; };
+  }, [(selectedPoliza as any)?.carnet_poliza_url]);
+
   // Update local state when prop changes
   useEffect(() => {
     setSelectedPoliza(initialPolicy);
