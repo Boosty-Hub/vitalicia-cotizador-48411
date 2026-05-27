@@ -30,6 +30,7 @@ import CotizarEmpresaPage from "./pages/CotizarEmpresaPage";
 import ActivarPolizaRCVPage from "./pages/ActivarPolizaRCVPage";
 import ActivarPolizaNaturalPage from "./pages/ActivarPolizaNaturalPage";
 import ActivarPolizaJuridicaPage from "./pages/ActivarPolizaJuridicaPage";
+import FacturaPublicaPage from "./pages/FacturaPublicaPage";
 
 // Admin imports
 import { AdminAuthProvider } from "./contexts/AdminAuthContext";
