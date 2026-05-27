@@ -442,6 +442,7 @@ const ActivarPolizaJuridicaPage = () => {
           Año: empireData.anio?.toString() || null,
           Color: empireData.color || null,
           Carroceria: empireData.serial_carroceria || null,
+          SerialMotor: empireData.serial_motor || null,
           Suma: precioVenta,
           MondayId: null,
           Source: 'bd_empire' as const
