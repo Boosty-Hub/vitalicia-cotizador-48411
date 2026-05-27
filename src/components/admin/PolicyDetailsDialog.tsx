@@ -504,12 +504,14 @@ export function PolicyDetailsDialog({
         
         <ScrollArea className="h-[70vh] pr-4">
           <Tabs defaultValue="titular" className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="titular">Titular</TabsTrigger>
               <TabsTrigger value="beneficiario">Beneficiario</TabsTrigger>
               <TabsTrigger value="vehiculo">Vehículo</TabsTrigger>
               <TabsTrigger value="ubicacion">Ubicación</TabsTrigger>
               <TabsTrigger value="documentos">Documentos</TabsTrigger>
+              <TabsTrigger value="factura">Factura</TabsTrigger>
+              <TabsTrigger value="carnet">Carnet</TabsTrigger>
               <TabsTrigger value="tecnico">Técnico</TabsTrigger>
             </TabsList>
 
