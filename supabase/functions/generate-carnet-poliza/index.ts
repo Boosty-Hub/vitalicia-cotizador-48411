@@ -168,7 +168,7 @@ html,body{margin:0;padding:0;background:radial-gradient(1200px 600px at 50% -100
         <div class="vdates">
           <div class="d"><span class="k">Desde</span><span class="v">${fmtDate(desde)}</span></div>
           <span class="arrow">→</span>
-          <div class="d"><span class="k">Hasta</span><span class="v">${addYearFmt(desde)}</span></div>
+          <div class="d"><span class="k">Hasta</span><span class="v">${hasta ? fmtDate(hasta) : addYearFmt(desde)}</span></div>
         </div>
       </div>
     </div>
