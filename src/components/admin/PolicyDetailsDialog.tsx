@@ -389,7 +389,7 @@ export function PolicyDetailsDialog({
     }
   };
 
-  const renderDocumentLink = (label: string, url: string | null) => {
+  const renderDocumentLink = (label: string, url: string | null, viewUrl?: string | null) => {
     const filename = url?.split('/').pop() || 'documento';
     const isPDF = filename.toLowerCase().endsWith('.pdf');
     const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
@@ -425,7 +425,7 @@ export function PolicyDetailsDialog({
         </div>
         <div className="flex items-center gap-1">
           <a 
-            href={url} 
+            href={viewUrl || url} 
             target="_blank" 
             rel="noopener noreferrer"
             className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200"
@@ -971,7 +971,7 @@ export function PolicyDetailsDialog({
                     </div>
                   )}
                   <div className="grid grid-cols-1 gap-3">
-                    {renderDocumentLink("Factura (link público)", (selectedPoliza as any).factura_poliza_url)}
+                    {renderDocumentLink("Factura (link público)", (selectedPoliza as any).factura_poliza_url, `${window.location.origin}/factura/${selectedPoliza.id}`)}
                   </div>
                   {isEditing && (
                     <div className="pt-2 border-t">
