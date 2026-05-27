@@ -901,16 +901,25 @@ export function PolicyDetailsDialog({
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 gap-3">
-                    {renderDocumentLink("Carnet (link público)", selectedPoliza.url_carnet_monday)}
+                    {renderDocumentLink("Carnet generado (link público)", (selectedPoliza as any).carnet_poliza_url)}
+                    {renderDocumentLink("Carnet Monday", selectedPoliza.url_carnet_monday)}
                   </div>
                   {isEditing && (
-                    <div className="pt-2 border-t">
-                      {renderField("URL pública del Carnet", "url_carnet_monday")}
+                    <div className="pt-2 border-t space-y-3">
+                      {renderField("URL pública del Carnet generado", "carnet_poliza_url" as any)}
+                      {renderField("URL Carnet Monday", "url_carnet_monday")}
                     </div>
                   )}
-                  <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground bg-muted/30">
-                    El diseño del carnet se definirá próximamente. Aquí se mostrará la vista previa del carnet del asegurado con el formato final.
-                  </div>
+                  {(selectedPoliza as any).carnet_poliza_url && (
+                    <div className="rounded-lg border bg-card overflow-hidden">
+                      <iframe
+                        src={(selectedPoliza as any).carnet_poliza_url}
+                        title="Carnet"
+                        className="w-full"
+                        style={{ height: 800, border: 0 }}
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
