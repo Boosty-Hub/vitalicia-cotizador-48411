@@ -374,6 +374,37 @@ export function PolicyDetailsDialog({
   const handleDownloadDocument = async (url: string, filename: string) => {
     try {
       const response = await fetch(url);
+      const contentType = response.headers.get('content-type') || '';
+      const looksHtml = contentType.includes('html') || /\.html?$/i.test(filename) || /\.(txt)$/i.test(filename);
+
+      if (looksHtml) {
+        const html = await response.text();
+        // Detectar si el contenido es realmente HTML
+        if (/<html|<!doctype|<body|<div|<table/i.test(html)) {
+          const container = document.createElement('div');
+          container.innerHTML = html;
+          container.style.position = 'fixed';
+          container.style.left = '-10000px';
+          container.style.top = '0';
+          container.style.background = '#fff';
+          document.body.appendChild(container);
+          const html2pdf = (await import('html2pdf.js')).default;
+          const pdfName = filename.replace(/\.(html?|txt)$/i, '') + '.pdf';
+          await html2pdf()
+            .from(container)
+            .set({
+              margin: 10,
+              filename: pdfName,
+              image: { type: 'jpeg', quality: 0.98 },
+              html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+              jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            })
+            .save();
+          document.body.removeChild(container);
+          return;
+        }
+      }
+
       const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -388,6 +419,7 @@ export function PolicyDetailsDialog({
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
+
 
   const renderDocumentLink = (label: string, url: string | null, viewUrl?: string | null) => {
     const filename = url?.split('/').pop() || 'documento';
