@@ -54,7 +54,9 @@ function buildHtml(p: any, verifyUrl: string): string {
   const anio = p.n_anio || p.año_monday || "";
   const color = p.s_color || p.color_bera_monday || "";
   const serialCarroceria = p.c_carroceria || p.serial_carroceria_monday || "";
-  const desde = (p.desde || p.f_fchdesde || new Date().toISOString().slice(0, 10)).slice(0, 10);
+  const isDate = (v: any) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v);
+  const desde = (isDate(p.f_fchdesde) ? p.f_fchdesde : isDate(p.desde) ? p.desde : new Date().toISOString().slice(0, 10)).slice(0, 10);
+  const hasta = isDate(p.fecha_de_vencimiento_monday) ? p.fecha_de_vencimiento_monday.slice(0, 10) : null;
 
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=230x230&margin=0&data=${encodeURIComponent(verifyUrl)}`;
 
