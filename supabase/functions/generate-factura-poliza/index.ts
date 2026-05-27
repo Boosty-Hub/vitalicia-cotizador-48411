@@ -187,7 +187,140 @@ const COBERTURAS_RAW: Array<[string, string, string]> = [
   ["21", "101", "EXPLOSIÓN, SEA QUE CAUSE INCENDIO O NO"],
   ["21", "102", "IMPACTO DE AERONAVES, SATÉLITES, COHETES O OTROS APARATOS AÉREOS"],
   ["21", "103", "AGUA U OTROS AGENTES DE EXTINCIÓN"],
-  ["21", "104", "HUMO DE IN
+  ["21", "104", "HUMO DE INCENDIO ORIGINADO EN LOS PREDIOS OCUPADOS POR EL ASEGURADO"],
+  ["21", "105", "EXTENSIÓN DE COBERTURA"],
+  ["21", "106", "ROBO, ASALTO Y ATRACO"],
+  ["21", "107", "RUTURA DE VIDRIOS Y ANUNCIOS"],
+  ["21", "108", "RESPONSABILIDAD CIVIL GENERAL"],
+  ["21", "109", "TERREMOTO O TEMBLOR DE TIERRA"],
+  ["21", "110", "MOTÍN, DISTURBIOS POPULARES Y DAÑOS MALICIOSOS"],
+  ["21", "111", "DAÑOS POR AGUA"],
+  ["21", "112", "INUNDACIÓN"],
+  ["21", "113", "BIENES REFRIGERADOS O CONGELADOS"],
+  ["21", "114", "PÉRDIDA DE RENTA"],
+  ["21", "115", "PÉRDIDAS INDIRECTAS"],
+  ["21", "116", "FIDELIDAD"],
+  ["21", "117", "RESPONSABILIDAD CIVIL ANTE VECINOS"],
+  ["21", "118", "RESPONSABILIDAD CIVIL RIESGO LOCATIVO"],
+  ["21", "119", "RESPONSABILIDAD CIVIL DAÑOS CAUSADOS POR AGUA"],
+  ["21", "120", "RESPONSABILIDAD CIVIL CONTRATISTAS INDEPENDIENTES"],
+  ["21", "122", "RESPONSABILIDAD CIVIL ASCENSORES Y MONTACARGAS"],
+  ["21", "123", "RESPONSABILIDAD CIVIL AVISOS Y ANUNCIOS"],
+  ["21", "124", "RESPONSABILIDAD CIVIL TRANSPORTE CARGA Y DESCARGA"],
+  ["21", "125", "RESPONSABILIDAD CIVIL INCENDIO Y/O EXPLOSIÓN"],
+  ["21", "126", "RESPONSABILIDAD CIVIL VIGILANTES PRIVADOS"],
+  ["21", "127", "EQUIPOS ELECTRONICOS DAÑOS INTERNOS"],
+  ["21", "128", "EQUIPOS ELECTRONICOS (PORTADORES EXTERNOS DE DATOS)"],
+  ["21", "129", "EQUIPOS ELECTRONICOS (INCREMENTO EN EL COSTO DE OPERACIONES)"],
+  ["21", "130", "ROTURA MAQUINARIAS DAÑOS INTERNOS"],
+  ["21", "131", "DINERO Y VALORES"],
+  ["21", "167", "La Cobertura de Prueba de Ernesto"],
+  ["22", "17", "LUCRO CESANTE POR INCENDIO"],
+  ["25", "22", "HURTO"],
+  ["25", "94", "COBERTURA BASICA"],
+  ["25", "95", "RIESGOS CATASTRÓFICOS"],
+  ["25", "96", "MOTÍN, DISTURBIOS POPULARES Y DAÑOS MALICIOSOS"],
+  ["25", "97", "DAÑOS MATERIALES SEGUN POLIZA"],
+  ["25", "143", "TERREMOTO"],
+  ["25", "144", "ROBO, ASALTO, ATRACO Y HURTO"],
+  ["26", "68", "RCV DAÑOS A COSAS"],
+  ["26", "69", "EXCESO DE LIMITE"],
+  ["26", "70", "DEFENSA PENAL"],
+  ["26", "76", "SERVICIO DE GRUA"],
+  ["26", "81", "RCV DAÑOS A PERSONAS"],
+  ["28", "24", "PREDIOS Y OPERACIONES"],
+  ["28", "25", "RESPONSABILIDAD CIVIL RIESGO LOCATIVO"],
+  ["28", "26", "RESPONSABILIDAD CIVIL DAÑOS POR AGUA"],
+  ["28", "27", "RESPONSABILIDAD CIVIL AVISOS Y ANUNCIOS"],
+  ["28", "28", "RESPONSABILIDAD CIVIL CONTRATISTAS INDEPENDIENTES"],
+  ["28", "29", "RESPONSABILIDAD CIVIL INCENDIO Y/O EXPLOSIÓN"],
+  ["28", "30", "RESPONSABILIDAD CIVIL ASCENSORES, GRÚAS Y MONTACARGAS"],
+  ["28", "31", "RESPONSABILIDAD CIVIL VEHÍCULOS AJENOS Y ALQUILADOS"],
+  ["28", "32", "RESPONSABILIDAD CIVIL VIGILANTES Y/O EMPRESAS DE VIGILANCIA"],
+  ["28", "33", "RESPONSABILIDAD CIVIL CRUZADA"],
+  ["28", "34", "RESPONSABILIDAD CIVIL DEFENSA PENAL Y ASISTENCIA LEGAL"],
+  ["28", "35", "RESPONSABILIDAD CIVIL TRANSPORTE, CARGA Y DESCARGA"],
+  ["28", "36", "RESPONSABILIDAD CIVIL SUMINISTRO DE ALIMENTOS Y BEBIDAS"],
+  ["28", "37", "RESPONSABILIDAD CIVIL PROFESIONAL DE MÉDICOS"],
+  ["28", "38", "RESPONSABILIDAD CIVIL PRODUCTOS"],
+  ["28", "39", "RESPONSABILIDAD CIVIL VEHÍCULOS EN PREDIOS PRIVADOS"],
+  ["28", "40", "RESPONSABILIDAD CIVIL CALDERAS Y MAQUINARIAS A VAPOR"],
+  ["28", "41", "RESPONSABILIDAD CIVIL CONTAMINACIÓN ACCIDENTAL"],
+  ["28", "42", "RESPONSABILIDAD CIVIL VEHÍCULOS ESTACIONADOS"],
+  ["28", "53", "RESPONSABILIDAD CIVIL RIESGO ANTE VECINOS"],
+  ["28", "63", "LIMITE COMBINADO POR EVENTO Y/O AÑO POLIZA"],
+  ["28", "145", "RESPONSABILIDAD CIVIL CARGA Y DESCARGA"],
+  ["28", "155", "RESPONSABILIDAD CIVIL DE VIGILANTES"],
+  ["28", "156", "RESPONSABILIDAD CIVIL CUIDADO, CONTROL Y CUSTODIA"],
+  ["28", "157", "RESPONSABILIDAD CIVIL DEL PATRONO"],
+  ["29", "170", "LABORAL"],
+  ["30", "169", "FIEL CUMPLIMIENTO"],
+  ["35", "23", "MOTIN, DISTURBIOS POPULARES Y DAÑOS MALICIOSOS"],
+  ["35", "43", "DAÑOS MATERIALES"],
+  ["35", "54", "TERREMOTO O TEMBLOR DE TIERRA"],
+  ["38", "49", "COBERTURA BASICA"],
+  ["38", "50", "PORTADORES EXTERNOS DE DATOS"],
+  ["38", "60", "INCREMENTO EN EL COSTO DE OPERACION"],
+  ["38", "139", "DAÑOS INTERNOS EQUIPO ELECTRONICO"],
+  ["38", "158", "MOTIN, DISTURBIOS POPULARES, DISTURBIOS LABORALES Y DAÑOS MALICIOSOS"],
+  ["38", "159", "TERREMOTO O TEMBLOR DE TIERRA"],
+  ["38", "160", "EQUIPOS MOVILES O PORTATILES FUERA DE LOS PREDIOS ASEGURADOS"],
+  ["38", "161", "FALLAS EN LOS EQUIPOS DE CLIMATIZACION"],
+  ["39", "51", "COBERTURA BASICA"],
+  ["40", "52", "COBERTURA BASICA"],
+  ["41", "71", "COBERTURA AMPLIA"],
+  ["41", "72", "PERDIDA TOTAL"],
+  ["41", "73", "PERDIDA PARCIAL"],
+  ["41", "74", "ACCESORIOS"],
+  ["41", "75", "INDEMNIZACIÓN DIARIA"],
+  ["44", "61", "LUCRO CESANTE POR TERREMOTO"],
+  ["45", "62", "LUCRO CESANTE POR ROTURA DE MAQUINARIA"],
+  ["46", "64", "INFIDELIDAD DE EMPLEADOS-POR COLUSION Y/O AÑO POLIZA"],
+  ["46", "65", "INFIDELIDAD DE EMPLEADO-POR EMPLEADO"],
+  ["46", "66", "FALSIFICACION DE DEPOSITOS Y RETIROS BANCARIOS"],
+  ["47", "77", "MUERTE"],
+  ["47", "78", "INVALIDEZ"],
+  ["47", "79", "GASTOS MEDICOS"],
+  ["49", "150", "R.C.V. DAÑOS A PERSONAS"],
+  ["49", "151", "R.C.V. DAÑOS A COSAS"],
+  ["49", "152", "EXCESO DE LIMITE"],
+  ["49", "153", "DEFENSA PENAL"],
+  ["49", "154", "SERVICIO DE GRUA"],
+  ["48", "80", "SERVICIO FUNERARIO"],
+  ["51", "147", "MUERTE"],
+  ["51", "148", "INVALIDEZ"],
+  ["51", "149", "GASTOS MEDICOS"],
+  ["52", "146", "SERVICIOS FUNERARIOS OCUPANTES DE VEHICULOS FLOTAS"],
+  ["89", "67", "PAGO UNICO POR CANCER"],
+  ["89", "163", "EXCESO"],
+  ["89", "164", "MATERNIDAD"],
+  ["89", "165", "ODONTOLOGÍA"],
+  ["89", "168", "CONTROL GINECOLÓGICO"],
+  ["91", "140", "TELEMEDICINA"],
+  ["1000", "1", "HOSPITALIZACION Y CIRUGIA"],
+  ["1000", "2", "MATERNIDAD"],
+  ["1000", "5", "COMPLICACIONES MATERNAS Y PARTO GEMELAR"],
+  ["1000", "8", "ASISTENCIA MEDICA PRIMARIA APS"],
+  ["1000", "9", "ASISTENCIA MEDICA DOMICILIARIA Y AMBULANCIA"],
+  ["1000", "10", "MEDICINA PREVENTIVA"],
+  ["1000", "11", "JORNADAS DE SALUD"],
+  ["1000", "12", "SERVICIOS ADICIONALES"],
+  ["1000", "40", "TELEMEDICINA"],
+  ["1000", "42", "FUNERARIO"],
+  ["1000", "43", "VIDA"],
+  ["1000", "44", "SERVICIO TELEMEDICINA"],
+  ["1000", "45", "ODONTOLOGIA"],
+  ["1000", "46", "OFTALMOLOGIA"],
+  ["1000", "47", "DERMATOLOGIA"],
+];
+
+const COBERTURAS_MAP: Record<string, string> = (() => {
+  const m: Record<string, string> = {};
+  for (const [r, c, d] of COBERTURAS_RAW) {
+    m[`${r}-${String(c).padStart(4, "0")}`] = d;
+  }
+  return m;
+})();
 
 function buildHtml(p: any): string {
   const isJur = p.formulario === "juridico";
@@ -208,17 +341,24 @@ function buildHtml(p: any): string {
   let totalPrima = 0;
   const coberturasRows = coberturas
     .map((c: any) => {
-      const rama = c.ramo || c.c_codramo || c.codigo || "";
-      const cobNum = c.cobertura || c.c_codcob || "";
-      const desc = c.descripcion || c.s_descob || c.nombre || "";
-      const suma = c.suma_asegurada ?? c.n_sumaasegurada ?? c.n_suma ?? 0;
+      const cdRamo = String(c.cd_ramo ?? c.ramo ?? c.c_codramo ?? "").trim();
+      const cdCobertRaw = String(c.cd_cobert ?? c.cobertura ?? c.c_codcob ?? "").trim();
+      const cdCobert = cdCobertRaw ? cdCobertRaw.padStart(4, "0") : "";
+      const ramoDesc = RAMOS_MAP[cdRamo] || "";
+      const cobDesc =
+        COBERTURAS_MAP[`${cdRamo}-${cdCobert}`] ||
+        c.descripcion || c.s_descob || c.nombre || "";
+      const suma = c.suma ?? c.suma_asegurada ?? c.n_sumaasegurada ?? c.n_suma ?? 0;
       const tasa = c.tasa ?? c.n_tasa ?? 0;
       const prima = Number(c.prima ?? c.n_primanetacob ?? c.n_prima ?? 0);
       totalPrima += isNaN(prima) ? 0 : prima;
-      const label = [rama, cobNum].filter(Boolean).join(" - ") + (desc ? ` ${desc}` : "");
+      const codes = [cdRamo, cdCobert].filter(Boolean).join(" - ");
+      const descParts = [ramoDesc, cobDesc].filter(Boolean).join(" / ");
+      const label = [codes, descParts].filter(Boolean).join(" ");
       return `<tr><td>${esc(label)}</td><td class="num">${fmtNum(suma)}</td><td class="num">${fmtNum(tasa)}</td><td class="num">${fmtNum(prima)}</td></tr>`;
     })
     .join("\n");
+
 
   const recibos: any[] = Array.isArray(p.api_recibos) ? p.api_recibos : [];
   const primerRecibo = recibos[0] || {};
