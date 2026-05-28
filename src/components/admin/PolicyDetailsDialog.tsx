@@ -530,7 +530,6 @@ export function PolicyDetailsDialog({
             return;
           }
 
-          }
 
           // ===== FACTURA (and other HTML docs): existing flow =====
 
