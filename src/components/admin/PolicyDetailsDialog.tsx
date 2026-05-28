@@ -435,57 +435,77 @@ export function PolicyDetailsDialog({
           const iframeDoc = iframe.contentDocument!;
 
           if (isCarnet) {
-            const pdfSafeStyle = iframeDoc.createElement('style');
-            pdfSafeStyle.setAttribute('data-pdf-safe', 'carnet');
-            pdfSafeStyle.textContent = `
-              html, body {
-                width: ${A4_WIDTH_PX}px !important;
-                min-height: auto !important;
-                height: auto !important;
-                overflow: visible !important;
-                background: #ffffff !important;
-                -webkit-font-smoothing: antialiased;
-                text-rendering: geometricPrecision;
-              }
-              .stage {
-                width: 100% !important;
-                flex-direction: column !important;
-                flex-wrap: nowrap !important;
-                align-items: center !important;
-                justify-content: flex-start !important;
-                gap: 24px !important;
-              }
-              .card-wrap {
-                width: 540px !important;
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-              }
-              .field .lbl, .field .val {
-                transform: none !important;
-              }
-              .field .lbl {
-                display: block !important;
-                line-height: 1.35 !important;
-                padding-bottom: 1px !important;
-                overflow: visible !important;
-              }
-              .field .val {
-                display: block !important;
-                line-height: 1.38 !important;
-                min-height: 16px !important;
-                padding: 1px 0 2px !important;
-                overflow: hidden !important;
-              }
-              .field.mono .val { min-height: 15px !important; }
-              .titleband, .titleband *, .doctype *, .vigencia *,
-              .back .blk *, .back .contact .row *, .back .legal *, .caption {
-                line-height: 1.3 !important;
-              }
-              .body { gap: 4px 18px !important; padding-top: 8px !important; }
-              .section-tag { margin-bottom: -1px !important; }
-            `;
-            iframeDoc.head.appendChild(pdfSafeStyle);
+            // CARNET: capture each .card element individually (no layout overrides)
+            // so the PDF matches the HTML pixel-for-pixel, then place one per A4 page.
+            try {
+              // @ts-ignore
+              if (iframeDoc.fonts?.ready) await iframeDoc.fonts.ready;
+            } catch {}
+
+            const imgs = Array.from(iframeDoc.images || []);
+            await Promise.all(
+              imgs.map((img) =>
+                (img as HTMLImageElement).complete && (img as HTMLImageElement).naturalWidth > 0
+                  ? Promise.resolve()
+                  : new Promise<void>((res) => {
+                      (img as HTMLImageElement).onload = () => res();
+                      (img as HTMLImageElement).onerror = () => res();
+                      setTimeout(() => res(), 4000);
+                    })
+              )
+            );
+            await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+            const cards = Array.from(
+              iframeDoc.querySelectorAll<HTMLElement>('.card')
+            );
+            if (cards.length === 0) throw new Error('No se encontraron tarjetas del carnet');
+
+            const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+              import('html2canvas'),
+              import('jspdf'),
+            ]);
+
+            const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+            const pageWmm = 210;
+            const pageHmm = 297;
+            // Card native size: 540 x 340 px (aspect 1.588)
+            // Two cards per A4 page stacked vertically with margin/gap.
+            const marginMm = 14;
+            const gapMm = 12;
+            const innerWmm = pageWmm - marginMm * 2;
+            const cardHmm = (innerWmm * 340) / 540;
+
+            for (let i = 0; i < cards.length; i++) {
+              const card = cards[i];
+              const canvas = await html2canvas(card, {
+                scale: 3,
+                useCORS: true,
+                allowTaint: false,
+                backgroundColor: null,
+                logging: false,
+                width: card.offsetWidth,
+                height: card.offsetHeight,
+                windowWidth: iframeDoc.documentElement.scrollWidth,
+                windowHeight: iframeDoc.documentElement.scrollHeight,
+              });
+              const imgData = canvas.toDataURL('image/png');
+
+              // Two cards per page: indices 0,1 on page 1; 2,3 on page 2; etc.
+              const slotOnPage = i % 2;
+              if (i > 0 && slotOnPage === 0) pdf.addPage();
+              const totalContentH = cardHmm * 2 + gapMm;
+              const topOffset = (pageHmm - totalContentH) / 2;
+              const y = topOffset + slotOnPage * (cardHmm + gapMm);
+              pdf.addImage(imgData, 'PNG', marginMm, y, innerWmm, cardHmm, undefined, 'FAST');
+            }
+
+            pdf.save(buildPdfFilename(label));
+            toast({ title: 'PDF descargado', description: `${label} lista para imprimir (A4).` });
+            return;
           }
+
+          // ===== FACTURA (and other HTML docs): existing flow =====
 
           // Wait for iframe fonts
           try {
@@ -507,8 +527,7 @@ export function PolicyDetailsDialog({
             )
           );
 
-          // 2) Clone <style> and <link rel=stylesheet> into PARENT <head> so wrapper renders identically,
-          //    then wait for each external link to load before capture
+          // Clone styles to parent head for wrapper rendering
           const styleSources = Array.from(
             iframeDoc.querySelectorAll('style, link[rel="stylesheet"]')
           ) as (HTMLStyleElement | HTMLLinkElement)[];
@@ -531,13 +550,11 @@ export function PolicyDetailsDialog({
           });
           await Promise.all(linkLoadPromises);
 
-          // Wait for parent fonts to load (the injected @font-face)
           try {
             // @ts-ignore
             if (document.fonts?.ready) await document.fonts.ready;
           } catch {}
 
-          // 3) Build wrapper at A4 width, let height grow naturally
           const bodyHtml = iframeDoc.body.innerHTML;
           const bodyInlineStyle = iframeDoc.body.getAttribute('style') || '';
 
@@ -547,22 +564,8 @@ export function PolicyDetailsDialog({
           wrapper.style.top = '0';
           wrapper.style.width = A4_WIDTH_PX + 'px';
           wrapper.style.background = '#ffffff';
-          const carnetBodyStyle = [
-            `width:${A4_WIDTH_PX}px`,
-            'min-height:auto',
-            'margin:0',
-            'background:#ffffff',
-            'padding:40px 20px 46px',
-            'display:flex',
-            'flex-direction:column',
-            'align-items:center',
-            'gap:26px',
-            'font-family:"Helvetica Neue",Helvetica,Arial,sans-serif',
-            'color:#0f1a2b',
-            'overflow:visible',
-          ].join(';');
           wrapper.innerHTML = `
-            <div class="pdf-body" style="${isCarnet ? carnetBodyStyle : `${bodyInlineStyle};width:${A4_WIDTH_PX}px;margin:0;background:#ffffff;`}">
+            <div class="pdf-body" style="${bodyInlineStyle};width:${A4_WIDTH_PX}px;margin:0;background:#ffffff;">
               ${bodyHtml}
             </div>
           `;
@@ -579,39 +582,10 @@ export function PolicyDetailsDialog({
                   })
             )
           );
-          try {
-            // @ts-ignore
-            if (document.fonts?.ready) await document.fonts.ready;
-          } catch {}
           await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-          // Measure natural height precisely (last child bottom relative to wrapper)
-          const wrapperRect = wrapper.getBoundingClientRect();
-          const innerNodes = Array.from(wrapper.querySelectorAll<HTMLElement>(':scope > .pdf-body > *'));
-          let measuredHeight = wrapper.scrollHeight;
-          if (innerNodes.length > 0) {
-            const lastBottom = Math.max(
-              ...innerNodes.map((n) => n.getBoundingClientRect().bottom - wrapperRect.top)
-            );
-            measuredHeight = Math.max(measuredHeight, Math.ceil(lastBottom));
-          }
-          // Tiny safety pad to absorb sub-pixel rounding (no magic +28 anymore)
-          const naturalHeight = measuredHeight + 4;
-
-          // For carnet: capture per-card bottoms so pagination doesn't split a card
-          const carnetCardBottomsPx: number[] = [];
-          const CARNET_SCALE = 2.5;
-          const FACTURA_SCALE = 2;
-          const scale = isCarnet ? CARNET_SCALE : FACTURA_SCALE;
-          if (isCarnet) {
-            const cards = Array.from(wrapper.querySelectorAll<HTMLElement>('.card-wrap'));
-            cards.forEach((c) => {
-              const r = c.getBoundingClientRect();
-              const bottomCss = r.bottom - wrapperRect.top;
-              // Add small breathing room below each card so the cut isn't flush against the border
-              carnetCardBottomsPx.push(Math.ceil((bottomCss + 12) * scale));
-            });
-          }
+          const naturalHeight = wrapper.scrollHeight + 4;
+          const scale = 2;
 
           const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
             import('html2canvas'),
@@ -629,36 +603,16 @@ export function PolicyDetailsDialog({
             scrollY: 0,
           });
 
-          // 4) Paginate canvas into A4 pages
           const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
           const pdfPageWidthMm = 210;
           const pdfPageHeightMm = 297;
-          const pxPerMm = canvas.width / pdfPageWidthMm; // canvas px per mm
+          const pxPerMm = canvas.width / pdfPageWidthMm;
           const pageHeightPx = Math.floor(pdfPageHeightMm * pxPerMm);
-
-          // Build cut points. For carnet, snap each cut to a card boundary when possible
-          // to avoid splitting a card across two pages.
-          const computeNextCut = (cursor: number): number => {
-            const maxCut = Math.min(cursor + pageHeightPx, canvas.height);
-            if (!isCarnet || carnetCardBottomsPx.length === 0) return maxCut;
-            // Greedy: pick the largest card bottom that fits in [cursor, cursor + pageHeightPx]
-            let chosen = -1;
-            for (let i = 0; i < carnetCardBottomsPx.length; i++) {
-              const b = carnetCardBottomsPx[i];
-              if (b <= cursor) continue;
-              if (b <= maxCut) chosen = b;
-              else break;
-            }
-            if (chosen > cursor) return chosen;
-            // If no card fits (a single card is taller than a page), fall back to max cut
-            return maxCut;
-          };
 
           let renderedHeight = 0;
           let pageIndex = 0;
           while (renderedHeight < canvas.height) {
-            const cutAt = computeNextCut(renderedHeight);
-            const sliceHeight = Math.max(1, cutAt - renderedHeight);
+            const sliceHeight = Math.min(pageHeightPx, canvas.height - renderedHeight);
             const pageCanvas = document.createElement('canvas');
             pageCanvas.width = canvas.width;
             pageCanvas.height = sliceHeight;
@@ -670,15 +624,11 @@ export function PolicyDetailsDialog({
               0, renderedHeight, canvas.width, sliceHeight,
               0, 0, canvas.width, sliceHeight
             );
-            // PNG for carnet (sharp text on navy/gold), JPEG for factura (smaller, mostly white)
-            const imgData = isCarnet
-              ? pageCanvas.toDataURL('image/png')
-              : pageCanvas.toDataURL('image/jpeg', 0.95);
-            const imgFormat: 'PNG' | 'JPEG' = isCarnet ? 'PNG' : 'JPEG';
+            const imgData = pageCanvas.toDataURL('image/jpeg', 0.95);
             const sliceHeightMm = sliceHeight / pxPerMm;
             if (pageIndex > 0) pdf.addPage();
-            pdf.addImage(imgData, imgFormat, 0, 0, pdfPageWidthMm, sliceHeightMm);
-            renderedHeight = cutAt;
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfPageWidthMm, sliceHeightMm);
+            renderedHeight += sliceHeight;
             pageIndex++;
           }
 
@@ -686,6 +636,8 @@ export function PolicyDetailsDialog({
           toast({ title: 'PDF descargado', description: `${label} lista para imprimir (A4).` });
           return;
         }
+      }
+
       }
 
       // Non-HTML: direct download
