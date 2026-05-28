@@ -638,7 +638,7 @@ export function PolicyDetailsDialog({
         }
       }
 
-      }
+
 
       // Non-HTML: direct download
       const blob = await response.blob();
