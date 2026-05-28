@@ -59,6 +59,24 @@ export function PolicyDetailsDialog({
   const [isGeneratingCarnet, setIsGeneratingCarnet] = useState(false);
   const [facturaHtml, setFacturaHtml] = useState<string | null>(null);
   const [carnetHtml, setCarnetHtml] = useState<string | null>(null);
+  const [downloadingUrl, setDownloadingUrl] = useState<string | null>(null);
+
+  // Preload PDF libs when the dialog opens so the first click is instant
+  useEffect(() => {
+    if (!open) return;
+    import('html2canvas').catch(() => {});
+    import('jspdf').catch(() => {});
+  }, [open]);
+
+  const buildPdfFilename = (label: 'Factura' | 'Carnet' | 'Documento') => {
+    const numero = selectedPoliza?.numero_poliza_monday?.replace(/[^\w-]/g, '') || selectedPoliza?.id?.slice(0, 8) || 'poliza';
+    const apellido = (selectedPoliza?.apellidos_titular_monday || selectedPoliza?.razon_social_juridico_monday || '')
+      .toString()
+      .trim()
+      .split(/\s+/)[0]
+      ?.replace(/[^\w]/g, '') || '';
+    return [label, numero, apellido].filter(Boolean).join('-') + '.pdf';
+  };
 
   const handleGenerateFactura = async () => {
     if (!selectedPoliza?.id) return;
