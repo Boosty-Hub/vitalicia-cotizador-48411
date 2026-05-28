@@ -504,8 +504,8 @@ export function PolicyDetailsDialog({
                 windowHeight: iframeDoc.documentElement.scrollHeight,
                 scrollX: 0,
                 scrollY: 0,
-                onclone: (clonedDoc) => applyCarnetPdfSafeCss(clonedDoc),
               });
+
 
               const side = i === 0 ? 'anverso' : i === 1 ? 'reverso' : `cara-${i + 1}`;
               const baseName = buildPdfFilename(label).replace(/\.pdf$/i, '');
