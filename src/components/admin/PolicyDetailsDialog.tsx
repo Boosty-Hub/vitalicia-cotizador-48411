@@ -461,10 +461,10 @@ export function PolicyDetailsDialog({
             // so the PDF matches the HTML pixel-for-pixel, then place one per A4 page.
             applyCarnetPdfSafeCss(iframeDoc);
             try {
-              // @ts-ignore
-              await iframeDoc.fonts?.load?.('700 12px "Helvetica Neue"');
-              await iframeDoc.fonts?.load?.('700 11px "SF Mono"');
-              if (iframeDoc.fonts?.ready) await iframeDoc.fonts.ready;
+              const fontSet = (iframeDoc as any).fonts;
+              await fontSet?.load?.('700 12px "Helvetica Neue"');
+              await fontSet?.load?.('700 11px "SF Mono"');
+              if (fontSet?.ready) await fontSet.ready;
             } catch {}
 
             const imgs = Array.from(iframeDoc.images || []);
