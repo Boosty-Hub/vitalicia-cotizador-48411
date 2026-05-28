@@ -390,6 +390,12 @@ export function PolicyDetailsDialog({
   };
 
   const handleDownloadDocument = async (url: string, filename: string) => {
+    if (downloadingUrl) return;
+    setDownloadingUrl(url);
+    let iframe: HTMLIFrameElement | null = null;
+    let wrapper: HTMLDivElement | null = null;
+    const injectedNodes: Element[] = [];
+
     try {
       const response = await fetch(url);
       const contentType = response.headers.get('content-type') || '';
@@ -398,74 +404,107 @@ export function PolicyDetailsDialog({
       if (looksHtml) {
         const html = await response.text();
         if (/<html|<!doctype|<body|<div|<table/i.test(html)) {
-          // Render HTML in a hidden iframe so <head> styles apply correctly
-          const iframe = document.createElement('iframe');
+          const isFactura = /factura/i.test(filename) || /factura/i.test(url);
+          const isCarnet = /carnet/i.test(filename) || /carnet/i.test(url);
+          const label: 'Factura' | 'Carnet' | 'Documento' = isFactura ? 'Factura' : isCarnet ? 'Carnet' : 'Documento';
+
+          // A4 portrait @ 96dpi
+          const A4_WIDTH_PX = 794;
+          const A4_HEIGHT_PX = 1123;
+
+          // 1) Render in hidden iframe to compute natural layout
+          iframe = document.createElement('iframe');
           iframe.style.position = 'fixed';
           iframe.style.left = '-10000px';
           iframe.style.top = '0';
-          iframe.style.width = '1200px';
-          iframe.style.height = '2000px';
+          iframe.style.width = A4_WIDTH_PX + 'px';
+          iframe.style.height = A4_HEIGHT_PX + 'px';
           iframe.style.border = '0';
           iframe.style.background = '#ffffff';
           document.body.appendChild(iframe);
 
           await new Promise<void>((resolve) => {
-            iframe.onload = () => resolve();
-            const doc = iframe.contentDocument!;
+            iframe!.onload = () => resolve();
+            const doc = iframe!.contentDocument!;
             doc.open();
             doc.write(html);
             doc.close();
-            setTimeout(() => resolve(), 600);
+            setTimeout(() => resolve(), 800);
           });
 
+          const iframeDoc = iframe.contentDocument!;
+
+          // Wait for iframe fonts
           try {
             // @ts-ignore
-            if (iframe.contentDocument?.fonts?.ready) await iframe.contentDocument.fonts.ready;
+            if (iframeDoc.fonts?.ready) await iframeDoc.fonts.ready;
           } catch {}
-          const imgs = Array.from(iframe.contentDocument?.images || []);
+
+          // Wait for iframe images
+          const imgs = Array.from(iframeDoc.images || []);
           await Promise.all(
             imgs.map((img) =>
-              (img as HTMLImageElement).complete
+              (img as HTMLImageElement).complete && (img as HTMLImageElement).naturalWidth > 0
                 ? Promise.resolve()
-                : new Promise((res) => {
-                    (img as HTMLImageElement).onload = () => res(null);
-                    (img as HTMLImageElement).onerror = () => res(null);
+                : new Promise<void>((res) => {
+                    (img as HTMLImageElement).onload = () => res();
+                    (img as HTMLImageElement).onerror = () => res();
+                    setTimeout(() => res(), 4000);
                   })
             )
           );
-          await new Promise((r) => setTimeout(r, 200));
 
-          const iframeDoc = iframe.contentDocument!;
-          const styleNodes = Array.from(
+          // 2) Clone <style> and <link rel=stylesheet> into PARENT <head> so wrapper renders identically,
+          //    then wait for each external link to load before capture
+          const styleSources = Array.from(
             iframeDoc.querySelectorAll('style, link[rel="stylesheet"]')
-          )
-            .map((n) => n.outerHTML)
-            .join('\n');
+          ) as (HTMLStyleElement | HTMLLinkElement)[];
+
+          const linkLoadPromises: Promise<void>[] = [];
+          styleSources.forEach((node) => {
+            const clone = node.cloneNode(true) as HTMLElement;
+            clone.setAttribute('data-pdf-injected', '1');
+            document.head.appendChild(clone);
+            injectedNodes.push(clone);
+            if (clone.tagName === 'LINK') {
+              linkLoadPromises.push(
+                new Promise<void>((res) => {
+                  (clone as HTMLLinkElement).onload = () => res();
+                  (clone as HTMLLinkElement).onerror = () => res();
+                  setTimeout(() => res(), 4000);
+                })
+              );
+            }
+          });
+          await Promise.all(linkLoadPromises);
+
+          // Wait for parent fonts to load (the injected @font-face)
+          try {
+            // @ts-ignore
+            if (document.fonts?.ready) await document.fonts.ready;
+          } catch {}
+
+          // 3) Build wrapper at A4 width, let height grow naturally
           const bodyHtml = iframeDoc.body.innerHTML;
           const bodyInlineStyle = iframeDoc.body.getAttribute('style') || '';
 
-          // Dimensiones naturales del contenido renderizado
-          const naturalWidth = Math.ceil(
-            Math.max(iframeDoc.body.scrollWidth, iframeDoc.documentElement.scrollWidth)
-          );
-          const naturalHeight = Math.ceil(
-            Math.max(iframeDoc.body.scrollHeight, iframeDoc.documentElement.scrollHeight)
-          );
-
-          const wrapper = document.createElement('div');
+          wrapper = document.createElement('div');
           wrapper.style.position = 'fixed';
           wrapper.style.left = '-10000px';
           wrapper.style.top = '0';
-          wrapper.style.width = naturalWidth + 'px';
+          wrapper.style.width = A4_WIDTH_PX + 'px';
           wrapper.style.background = '#ffffff';
           wrapper.innerHTML = `
-            ${styleNodes}
-            <div class="pdf-body" style="${bodyInlineStyle};width:${naturalWidth}px;margin:0;background:#ffffff;">
+            <div class="pdf-body" style="${bodyInlineStyle};width:${A4_WIDTH_PX}px;margin:0;background:#ffffff;">
               ${bodyHtml}
             </div>
           `;
           document.body.appendChild(wrapper);
-          await new Promise((r) => setTimeout(r, 150));
+          await new Promise((r) => setTimeout(r, 200));
+
+          const naturalHeight = Math.ceil(
+            Math.max(wrapper.scrollHeight, wrapper.getBoundingClientRect().height)
+          );
 
           const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
             import('html2canvas'),
@@ -476,35 +515,47 @@ export function PolicyDetailsDialog({
             scale: 2,
             useCORS: true,
             backgroundColor: '#ffffff',
-            windowWidth: naturalWidth,
+            windowWidth: A4_WIDTH_PX,
             windowHeight: naturalHeight,
           });
 
-          // px -> mm (96 dpi)
-          const pxToMm = 25.4 / 96;
-          const pdfWidthMm = naturalWidth * pxToMm;
-          const pdfHeightMm = naturalHeight * pxToMm;
+          // 4) Paginate canvas into A4 pages
+          const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+          const pdfPageWidthMm = 210;
+          const pdfPageHeightMm = 297;
+          const pxPerMm = canvas.width / pdfPageWidthMm; // canvas px per mm
+          const pageHeightPx = Math.floor(pdfPageHeightMm * pxPerMm);
 
-          const pdf = new jsPDF({
-            unit: 'mm',
-            format: [pdfWidthMm, pdfHeightMm],
-            orientation: pdfWidthMm > pdfHeightMm ? 'landscape' : 'portrait',
-          });
+          let renderedHeight = 0;
+          let pageIndex = 0;
+          while (renderedHeight < canvas.height) {
+            const sliceHeight = Math.min(pageHeightPx, canvas.height - renderedHeight);
+            const pageCanvas = document.createElement('canvas');
+            pageCanvas.width = canvas.width;
+            pageCanvas.height = sliceHeight;
+            const ctx = pageCanvas.getContext('2d')!;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+            ctx.drawImage(
+              canvas,
+              0, renderedHeight, canvas.width, sliceHeight,
+              0, 0, canvas.width, sliceHeight
+            );
+            const imgData = pageCanvas.toDataURL('image/jpeg', 0.95);
+            const sliceHeightMm = sliceHeight / pxPerMm;
+            if (pageIndex > 0) pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfPageWidthMm, sliceHeightMm);
+            renderedHeight += sliceHeight;
+            pageIndex++;
+          }
 
-          const imgData = canvas.toDataURL('image/jpeg', 0.95);
-          pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidthMm, pdfHeightMm);
-
-          const pdfName = filename.replace(/\.(html?|txt)$/i, '') + '.pdf';
-          pdf.save(pdfName);
-
-          document.body.removeChild(wrapper);
-          document.body.removeChild(iframe);
+          pdf.save(buildPdfFilename(label));
+          toast({ title: 'PDF descargado', description: `${label} lista para imprimir (A4).` });
           return;
         }
-
-
       }
 
+      // Non-HTML: direct download
       const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -514,9 +565,19 @@ export function PolicyDetailsDialog({
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(downloadUrl);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error descargando documento:', error);
+      toast({
+        title: 'Error al generar PDF',
+        description: error?.message || 'No se pudo generar el PDF. Se abrirá el documento en una pestaña nueva.',
+        variant: 'destructive',
+      });
       window.open(url, '_blank', 'noopener,noreferrer');
+    } finally {
+      injectedNodes.forEach((n) => n.parentNode?.removeChild(n));
+      if (wrapper && wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+      if (iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe);
+      setDownloadingUrl(null);
     }
   };
 
