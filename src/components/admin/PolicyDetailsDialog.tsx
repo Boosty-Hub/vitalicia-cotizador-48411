@@ -459,7 +459,8 @@ export function PolicyDetailsDialog({
           if (isCarnet) {
             // CARNET: capture each .card element individually (no layout overrides)
             // so the PDF matches the HTML pixel-for-pixel, then place one per A4 page.
-            applyCarnetPdfSafeCss(iframeDoc);
+            // No CSS overrides: render exactly as displayed in the Carnet tab.
+
             try {
               const fontSet = (iframeDoc as any).fonts;
               await fontSet?.load?.('700 12px "Helvetica Neue"');
@@ -503,8 +504,8 @@ export function PolicyDetailsDialog({
                 windowHeight: iframeDoc.documentElement.scrollHeight,
                 scrollX: 0,
                 scrollY: 0,
-                onclone: (clonedDoc) => applyCarnetPdfSafeCss(clonedDoc),
               });
+
 
               const side = i === 0 ? 'anverso' : i === 1 ? 'reverso' : `cara-${i + 1}`;
               const baseName = buildPdfFilename(label).replace(/\.pdf$/i, '');
