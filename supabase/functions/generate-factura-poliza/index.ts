@@ -540,8 +540,8 @@ html,body{margin:0;padding:0;background:var(--bg);font-family:'Roboto Mono',ui-m
 
 <div style="margin-top:6px;font-size:9px;font-weight:700;letter-spacing:.3px;">FORMAN PARTE DE LA POLIZA LAS CLAUSULAS Y ANEXOS</div>
 <table class="cobro">
-<div class="stamp-wrap">
-  <span class="stamp-pagado">PAGADO</span>
+<div style="display:flex;justify-content:flex-end;margin-top:-26px;margin-right:14px;margin-bottom:10px;">
+  <img src="${PAGADO_STAMP}" alt="PAGADO" style="width:110px;height:auto;transform:rotate(-8deg);opacity:.95;" />
 </div>
 <div style="display:flex;justify-content:flex-end;margin-top:-26px;margin-right:14px;margin-bottom:10px;">
   <img src="${PAGADO_STAMP}" alt="PAGADO" style="width:110px;height:auto;transform:rotate(-8deg);opacity:.95;" />
