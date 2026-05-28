@@ -585,9 +585,33 @@ export function PolicyDetailsDialog({
           } catch {}
           await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-          const naturalHeight = Math.ceil(
-            Math.max(wrapper.scrollHeight, wrapper.getBoundingClientRect().height)
-          ) + (isCarnet ? 28 : 0);
+          // Measure natural height precisely (last child bottom relative to wrapper)
+          const wrapperRect = wrapper.getBoundingClientRect();
+          const innerNodes = Array.from(wrapper.querySelectorAll<HTMLElement>(':scope > .pdf-body > *'));
+          let measuredHeight = wrapper.scrollHeight;
+          if (innerNodes.length > 0) {
+            const lastBottom = Math.max(
+              ...innerNodes.map((n) => n.getBoundingClientRect().bottom - wrapperRect.top)
+            );
+            measuredHeight = Math.max(measuredHeight, Math.ceil(lastBottom));
+          }
+          // Tiny safety pad to absorb sub-pixel rounding (no magic +28 anymore)
+          const naturalHeight = measuredHeight + 4;
+
+          // For carnet: capture per-card bottoms so pagination doesn't split a card
+          const carnetCardBottomsPx: number[] = [];
+          const CARNET_SCALE = 2.5;
+          const FACTURA_SCALE = 2;
+          const scale = isCarnet ? CARNET_SCALE : FACTURA_SCALE;
+          if (isCarnet) {
+            const cards = Array.from(wrapper.querySelectorAll<HTMLElement>('.card-wrap'));
+            cards.forEach((c) => {
+              const r = c.getBoundingClientRect();
+              const bottomCss = r.bottom - wrapperRect.top;
+              // Add small breathing room below each card so the cut isn't flush against the border
+              carnetCardBottomsPx.push(Math.ceil((bottomCss + 12) * scale));
+            });
+          }
 
           const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
             import('html2canvas'),
@@ -595,8 +619,9 @@ export function PolicyDetailsDialog({
           ]);
 
           const canvas = await html2canvas(wrapper, {
-            scale: isCarnet ? 3 : 2,
+            scale,
             useCORS: true,
+            allowTaint: false,
             backgroundColor: '#ffffff',
             windowWidth: A4_WIDTH_PX,
             windowHeight: naturalHeight,
@@ -611,10 +636,29 @@ export function PolicyDetailsDialog({
           const pxPerMm = canvas.width / pdfPageWidthMm; // canvas px per mm
           const pageHeightPx = Math.floor(pdfPageHeightMm * pxPerMm);
 
+          // Build cut points. For carnet, snap each cut to a card boundary when possible
+          // to avoid splitting a card across two pages.
+          const computeNextCut = (cursor: number): number => {
+            const maxCut = Math.min(cursor + pageHeightPx, canvas.height);
+            if (!isCarnet || carnetCardBottomsPx.length === 0) return maxCut;
+            // Greedy: pick the largest card bottom that fits in [cursor, cursor + pageHeightPx]
+            let chosen = -1;
+            for (let i = 0; i < carnetCardBottomsPx.length; i++) {
+              const b = carnetCardBottomsPx[i];
+              if (b <= cursor) continue;
+              if (b <= maxCut) chosen = b;
+              else break;
+            }
+            if (chosen > cursor) return chosen;
+            // If no card fits (a single card is taller than a page), fall back to max cut
+            return maxCut;
+          };
+
           let renderedHeight = 0;
           let pageIndex = 0;
           while (renderedHeight < canvas.height) {
-            const sliceHeight = Math.min(pageHeightPx, canvas.height - renderedHeight);
+            const cutAt = computeNextCut(renderedHeight);
+            const sliceHeight = Math.max(1, cutAt - renderedHeight);
             const pageCanvas = document.createElement('canvas');
             pageCanvas.width = canvas.width;
             pageCanvas.height = sliceHeight;
@@ -626,11 +670,15 @@ export function PolicyDetailsDialog({
               0, renderedHeight, canvas.width, sliceHeight,
               0, 0, canvas.width, sliceHeight
             );
-            const imgData = pageCanvas.toDataURL('image/jpeg', 0.95);
+            // PNG for carnet (sharp text on navy/gold), JPEG for factura (smaller, mostly white)
+            const imgData = isCarnet
+              ? pageCanvas.toDataURL('image/png')
+              : pageCanvas.toDataURL('image/jpeg', 0.95);
+            const imgFormat: 'PNG' | 'JPEG' = isCarnet ? 'PNG' : 'JPEG';
             const sliceHeightMm = sliceHeight / pxPerMm;
             if (pageIndex > 0) pdf.addPage();
-            pdf.addImage(imgData, 'JPEG', 0, 0, pdfPageWidthMm, sliceHeightMm);
-            renderedHeight += sliceHeight;
+            pdf.addImage(imgData, imgFormat, 0, 0, pdfPageWidthMm, sliceHeightMm);
+            renderedHeight = cutAt;
             pageIndex++;
           }
 
