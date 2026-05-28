@@ -85,9 +85,9 @@ html,body{margin:0;padding:0;background:radial-gradient(1200px 600px at 50% -100
 .body{padding:10px 20px 0 20px;display:grid;grid-template-columns:1.05fr 1fr;gap:7px 18px}
 .field{display:flex;flex-direction:column;gap:0;min-width:0}
 .field .lbl{font-size:6.8px;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
-.field .val{display:block;font-size:11.5px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.34;min-height:17px;padding:1px 0 2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.field.mono .val{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:10.5px;letter-spacing:.3px;min-height:16px}
-.field.big .val{font-size:14px}
+.field .val{display:block;font-size:11.5px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.45;min-height:18px;padding:0 0 2px;overflow:visible;text-overflow:clip;white-space:nowrap}
+.field.mono .val{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:10.5px;letter-spacing:.3px;line-height:1.4;min-height:17px}
+.field.big .val{font-size:14px;line-height:1.25;min-height:18px}
 .field.span-2{grid-column:span 2}
 .section-tag{grid-column:1/-1;display:flex;align-items:center;gap:8px;margin-top:1px;margin-bottom:-3px}
 .section-tag .dot{width:5px;height:5px;background:var(--accent);border-radius:50%}
