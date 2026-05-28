@@ -434,6 +434,61 @@ export function PolicyDetailsDialog({
 
           const iframeDoc = iframe.contentDocument!;
 
+          if (isCarnet) {
+            const pdfSafeStyle = iframeDoc.createElement('style');
+            pdfSafeStyle.setAttribute('data-pdf-safe', 'carnet');
+            pdfSafeStyle.textContent = `
+              html, body {
+                width: ${A4_WIDTH_PX}px !important;
+                min-height: auto !important;
+                height: auto !important;
+                overflow: visible !important;
+                background: #ffffff !important;
+                -webkit-font-smoothing: antialiased;
+                text-rendering: geometricPrecision;
+              }
+              .stage {
+                width: 100% !important;
+                flex-direction: column !important;
+                flex-wrap: nowrap !important;
+                align-items: center !important;
+                justify-content: flex-start !important;
+                gap: 24px !important;
+              }
+              .card-wrap {
+                width: 540px !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+              .field, .field .lbl, .field .val,
+              .doctype *, .titleband *, .vigencia *, .back .blk *,
+              .back .contact *, .back .legal *, .caption {
+                transform: none !important;
+              }
+              .field .lbl {
+                display: block !important;
+                line-height: 1.35 !important;
+                padding-bottom: 1px !important;
+                overflow: visible !important;
+              }
+              .field .val {
+                display: block !important;
+                line-height: 1.38 !important;
+                min-height: 16px !important;
+                padding: 1px 0 2px !important;
+                overflow: hidden !important;
+              }
+              .field.mono .val { min-height: 15px !important; }
+              .titleband, .titleband *, .doctype *, .vigencia *,
+              .back .blk *, .back .contact .row *, .back .legal *, .caption {
+                line-height: 1.3 !important;
+              }
+              .body { gap: 4px 18px !important; padding-top: 8px !important; }
+              .section-tag { margin-bottom: -1px !important; }
+            `;
+            iframeDoc.head.appendChild(pdfSafeStyle);
+          }
+
           // Wait for iframe fonts
           try {
             // @ts-ignore
@@ -494,8 +549,22 @@ export function PolicyDetailsDialog({
           wrapper.style.top = '0';
           wrapper.style.width = A4_WIDTH_PX + 'px';
           wrapper.style.background = '#ffffff';
+          const carnetBodyStyle = [
+            `width:${A4_WIDTH_PX}px`,
+            'min-height:auto',
+            'margin:0',
+            'background:#ffffff',
+            'padding:40px 20px 46px',
+            'display:flex',
+            'flex-direction:column',
+            'align-items:center',
+            'gap:26px',
+            'font-family:"Helvetica Neue",Helvetica,Arial,sans-serif',
+            'color:#0f1a2b',
+            'overflow:visible',
+          ].join(';');
           wrapper.innerHTML = `
-            <div class="pdf-body" style="${bodyInlineStyle};width:${A4_WIDTH_PX}px;margin:0;background:#ffffff;">
+            <div class="pdf-body" style="${isCarnet ? carnetBodyStyle : `${bodyInlineStyle};width:${A4_WIDTH_PX}px;margin:0;background:#ffffff;`}">
               ${bodyHtml}
             </div>
           `;
