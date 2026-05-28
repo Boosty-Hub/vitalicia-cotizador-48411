@@ -486,20 +486,7 @@ export function PolicyDetailsDialog({
             );
             if (cards.length === 0) throw new Error('No se encontraron tarjetas del carnet');
 
-            const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-              import('html2canvas'),
-              import('jspdf'),
-            ]);
-
-            const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-            const pageWmm = 210;
-            const pageHmm = 297;
-            // Card native size: 540 x 340 px (aspect 1.588)
-            // Two cards per A4 page stacked vertically with margin/gap.
-            const marginMm = 14;
-            const gapMm = 12;
-            const innerWmm = pageWmm - marginMm * 2;
-            const cardHmm = (innerWmm * 340) / 540;
+            const { default: html2canvas } = await import('html2canvas');
 
             for (let i = 0; i < cards.length; i++) {
               const card = cards[i];
@@ -518,21 +505,31 @@ export function PolicyDetailsDialog({
                 scrollY: 0,
                 onclone: (clonedDoc) => applyCarnetPdfSafeCss(clonedDoc),
               });
-              const imgData = canvas.toDataURL('image/png');
 
-              // Two cards per page: indices 0,1 on page 1; 2,3 on page 2; etc.
-              const slotOnPage = i % 2;
-              if (i > 0 && slotOnPage === 0) pdf.addPage();
-              const totalContentH = cardHmm * 2 + gapMm;
-              const topOffset = (pageHmm - totalContentH) / 2;
-              const y = topOffset + slotOnPage * (cardHmm + gapMm);
-              pdf.addImage(imgData, 'PNG', marginMm, y, innerWmm, cardHmm, undefined, 'FAST');
+              const side = i === 0 ? 'anverso' : i === 1 ? 'reverso' : `cara-${i + 1}`;
+              const baseName = buildPdfFilename(label).replace(/\.pdf$/i, '');
+              const pngName = `${baseName}-${side}.png`;
+
+              await new Promise<void>((resolve) => {
+                canvas.toBlob((blob) => {
+                  if (!blob) { resolve(); return; }
+                  const blobUrl = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = blobUrl;
+                  a.download = pngName;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+                  resolve();
+                }, 'image/png');
+              });
             }
 
-            pdf.save(buildPdfFilename(label));
-            toast({ title: 'PDF descargado', description: `${label} lista para imprimir (A4).` });
+            toast({ title: 'PNG descargado', description: `${label} descargado como imagen(es) PNG.` });
             return;
           }
+
 
           // ===== FACTURA (and other HTML docs): existing flow =====
 
