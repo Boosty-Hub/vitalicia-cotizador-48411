@@ -387,184 +387,255 @@ function buildHtml(p: any): string {
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
+<meta content="width=device-width, initial-scale=1.0" name="viewport" />
 <title>Cuadro Póliza Recibo — ${esc(numPoliza)}</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
-:root{--ink:#000;--brand:#003399;--brand-soft:#dbeafe;--line:#000;--paper:#fff;--bg:#f3f4f6;}
-*{box-sizing:border-box}
-html,body{margin:0;padding:0;background:var(--bg);font-family:'Roboto Mono',ui-monospace,Menlo,Consolas,monospace;color:var(--ink);font-size:10px;line-height:1.2}
-.page{width:850px;min-height:1100px;margin:20px auto;background:var(--paper);padding:30px;box-shadow:0 0 15px rgba(0,0,0,.1);position:relative}
-.page::before{content:"";position:absolute;inset:0;background:url('${LOGO_URL}') no-repeat center 55%/520px auto;opacity:.05;pointer-events:none;z-index:0}
-.page>*{position:relative;z-index:1}
-.sheet{padding:0}
-.top{display:grid;grid-template-columns:260px 1fr;align-items:center;gap:8px;padding:4px 4px 10px;margin-bottom:4px}
-.top .logo{width:240px;height:auto;display:block}
-.top .title{text-align:center;padding-right:40px}
-.top .title .t1{font-size:14px;font-weight:700;letter-spacing:.5px;color:var(--brand);margin-bottom:2px}
-.top .title .t2{font-size:11px;font-weight:700;color:var(--brand);letter-spacing:.5px}
-.mov-bar{display:grid;grid-template-columns:1.2fr 1fr 1fr;border:1px solid var(--line);margin-top:4px}
-.mov-bar .cell{padding:5px 8px;border-right:1px solid var(--line);display:flex;align-items:center;gap:8px}
-.mov-bar .cell:last-child{border-right:0}
-.mov-bar .label{font-weight:700;font-size:9px;letter-spacing:.3px;color:var(--brand)}
-.mov-bar .value{font-weight:700;font-size:10.5px}
-.section{margin-top:6px;border:1px solid var(--line)}
-.section-head{background:var(--brand-soft);color:var(--brand);text-align:center;font-weight:700;padding:3px 8px;font-size:10px;letter-spacing:1px;text-transform:uppercase}
-.grid{width:100%;border-collapse:collapse}
-.grid td{border-top:1px solid var(--line);border-right:1px solid var(--line);padding:3px 6px;vertical-align:middle;line-height:1.2}
-.grid tr:first-child td{border-top:0}
-.grid td:last-child{border-right:0}
-.grid .lbl{font-weight:700;font-size:9px;color:var(--brand);white-space:nowrap;background:#fafbff;width:1%}
-.grid .val{font-size:10px;font-weight:400;color:#000}
-.grid .val.strong{font-weight:700}
-.cob{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-.cob thead th{background:var(--brand-soft);color:var(--brand);border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:4px 8px;font-size:9px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.5px}
-.cob thead th:last-child{border-right:0}
-.cob thead th.num{text-align:right}
-.cob tbody td{padding:3px 8px;font-size:10px;border-right:1px solid var(--line);border-bottom:1px solid #ddd}
-.cob tbody td:last-child{border-right:0}
-.cob tbody td.num{text-align:right}
-.cob tfoot td{padding:4px 8px;font-size:10px;border-top:1px solid var(--line);border-right:1px solid var(--line);font-weight:700;color:var(--brand)}
-.cob tfoot td:last-child{border-right:0}
-.cob tfoot td.num{text-align:right;color:#000}
-.cob tfoot td.lbl{text-align:right}
-.cob tfoot tr.total td{border-top:2px solid var(--line);font-size:11px}
-.cobro{width:100%;border-collapse:collapse;margin-top:3px}
-.cobro th{background:var(--brand-soft);color:var(--brand);border:1px solid var(--line);padding:4px 6px;font-size:9px;font-weight:700;text-align:center;letter-spacing:.5px;text-transform:uppercase}
-.cobro td{border:1px solid var(--line);height:28px;padding:4px 6px}
-.stamp-wrap{display:flex;justify-content:flex-end;margin-top:-30px;margin-right:30px;margin-bottom:14px;height:0}
-.stamp-pagado{border:3px solid #ef4444;color:#ef4444;font-weight:700;font-size:24px;padding:5px 18px;border-radius:8px;display:inline-block;transform:rotate(-2deg);letter-spacing:3px;background:rgba(255,255,255,.85);font-family:'Roboto Mono',monospace}
-.firmas{display:grid;grid-template-columns:1fr 1fr;gap:60px;margin-top:36px;margin-bottom:14px;align-items:end}
-.firma{text-align:center;display:flex;flex-direction:column;justify-content:flex-end}
-.firma .line{border-top:1px solid #000;margin:0 30px 4px;padding-top:4px}
-.firma .lbl{font-size:9px;font-weight:600;color:var(--brand)}
-.firma .sig-logo{display:flex;justify-content:center;margin-bottom:2px;height:38px}
-.firma .sig-logo img{height:38px;width:auto}
-.legal{margin-top:10px;font-size:7.5px;line-height:1.45;text-align:justify;color:#000}
-.legal p{margin:0 0 4px}
-.footer{margin-top:8px;border-top:1px solid #000;padding-top:6px;font-size:7.5px;color:#000;text-align:center;line-height:1.4}
-.tag-emision{display:inline-block;border:1px solid var(--brand);color:var(--brand);padding:1px 8px;font-size:9.5px;font-weight:700;letter-spacing:1px;background:#fff;border-radius:3px}
-.swatch{display:inline-block;width:10px;height:10px;background:#1a4fa0;border:1px solid #000;vertical-align:-1px;margin-right:4px}
-@media print{body{background:#fff}.page{box-shadow:none;margin:0}}
+
+body {
+  font-family: 'Roboto Mono', monospace;
+  background-color: #f3f4f6;
+}
+
+.document-container {
+  width: 850px;
+  margin: 20px auto;
+  background-color: white;
+  padding: 30px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.1);
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.header-title {
+  color: #003399;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.section-header {
+  background-color: #99D9EA;
+  color: #003399;
+  text-align: center;
+  font-weight: bold;
+  padding: 2px 0;
+  margin-top: 5px;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  border: 1px solid #000;
+}
+
+.label {
+  color: #003399;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.data-value {
+  color: #000;
+}
+
+.border-custom {
+  border: 1px solid #000;
+}
+
+.stamp-pagado {
+  border: 3px solid #ef4444;
+  color: #ef4444;
+  font-weight: bold;
+  font-size: 24px;
+  padding: 5px 15px;
+  border-radius: 8px;
+  display: inline-block;
+  transform: rotate(-2deg);
+}
+
+@media print {
+  body { background: #fff; }
+  .document-container { box-shadow: none; margin: 0; }
+}
 </style>
 </head>
 <body>
-<div class="page"><div class="sheet">
-<div class="top">
-  <img class="logo" src="${LOGO_URL}" alt="Seguros La Vitalicia" />
-  <div class="title">
-    <div class="t1">CUADRO PÓLIZA RECIBO</div>
-    <div class="t2">SEGURO DE VEHÍCULO TERRESTRES</div>
+<div class="document-container" id="invoice-document">
+<!-- BEGIN: MainHeader -->
+<header class="grid grid-cols-12 items-center mb-6">
+  <div class="col-span-4">
+    <img alt="Seguros La Vitalicia" class="h-14 object-contain" src="${LOGO_URL}">
   </div>
+  <div class="col-span-4 text-center leading-tight">
+    <h1 class="text-[#003399] font-bold text-[14px] uppercase">CUADRO PÓLIZA RECIBO</h1>
+    <h2 class="text-[#003399] font-bold text-[14px] uppercase">SEGURO DE VEHICULOS TERRESTRES</h2>
+  </div>
+  <div class="col-span-4 text-right text-[10px] text-[#003399]">
+    <p class="font-bold">TIPO DE MOVIMIENTO</p>
+    <p class="font-bold text-[11px]">EMISIÓN</p>
+    <p class="font-bold">${fmtDate(fechaEmision)} - ${new Date().toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })}</p>
+  </div>
+</header>
+<!-- END: MainHeader -->
+<!-- BEGIN: DatosGenerales -->
+<section data-purpose="datos-generales">
+<div class="section-header">DATOS GENERALES</div>
+<div class="grid grid-cols-12 gap-x-2 py-1">
+<div class="col-span-4"><span class="label">TOMADOR :</span> <span class="data-value">${esc(tomador)}</span></div>
+<div class="col-span-5"></div>
+<div class="col-span-3 text-right"><span class="label">CÉDULA/RIF :</span> <span class="data-value">${esc(cedRif)}</span></div>
+<div class="col-span-3"><span class="label">DIRECCIÓN COBRO :</span> <span class="data-value">${esc(direccion)}</span></div>
+<div class="col-span-3"><span class="label">ESTADO :</span> <span class="data-value">${esc(estado)}</span></div>
+<div class="col-span-3"><span class="label">MUNICIPIO :</span> <span class="data-value">${esc(municipio)}</span></div>
+<div class="col-span-3 text-right"><span class="label">TELÉFONO :</span> <span class="data-value">${esc(tel)}</span></div>
+<div class="col-span-3"><span class="label">CIUDAD :</span> <span class="data-value">${esc(ciudad)}</span></div>
+<div class="col-span-6"></div>
+<div class="col-span-3 text-right"><span class="label">ZONA POSTAL :</span> <span class="data-value">${esc(zonaPostal)}</span></div>
+<div class="col-span-12 border-b border-gray-300 my-1"></div>
+<div class="col-span-4"><span class="label">ASEGURADO :</span> <span class="data-value">${esc(tomador)}</span></div>
+<div class="col-span-5"></div>
+<div class="col-span-3 text-right"><span class="label">CÉDULA/RIF :</span> <span class="data-value">${esc(cedRif)}</span></div>
+<div class="col-span-3"><span class="label">DIRECCIÓN HAB. :</span> <span class="data-value">${esc(direccion)}</span></div>
+<div class="col-span-3"><span class="label">ESTADO :</span> <span class="data-value">${esc(estado)}</span></div>
+<div class="col-span-3"><span class="label">MUNICIPIO :</span> <span class="data-value">${esc(municipio)}</span></div>
+<div class="col-span-3 text-right"><span class="label">TELÉFONO :</span> <span class="data-value">${esc(tel)}</span></div>
+<div class="col-span-3"><span class="label">CIUDAD :</span> <span class="data-value">${esc(ciudad)}</span></div>
+<div class="col-span-6"></div>
+<div class="col-span-3 text-right"><span class="label">ZONA POSTAL :</span> <span class="data-value">${esc(zonaPostal)}</span></div>
+<div class="col-span-12 mt-1"><span class="label">BNF.PREFERENCIA :</span></div>
 </div>
-
-<div class="mov-bar">
-  <div class="cell"><span class="label">TIPO DE MOVIMIENTO:</span><span class="tag-emision">EMISIÓN</span></div>
-  <div class="cell"><span class="label">FECHA:</span><span class="value">${fmtDate(fechaEmision)}</span></div>
-  <div class="cell"><span class="label">N° PÓLIZA:</span><span class="value">${esc(numPoliza)}</span></div>
+</section>
+<!-- END: DatosGenerales -->
+<!-- BEGIN: DatosPolizaRecibo -->
+<section data-purpose="datos-poliza-recibo">
+<div class="section-header" style="background: linear-gradient(to right, rgb(153, 217, 242), rgb(127, 198, 242)); color: rgb(0, 0, 128); border-width: medium medium 1px; border-style: none none solid; border-color: currentcolor currentcolor rgb(0, 0, 0);">DATOS DE LA PÓLIZA Y DEL RECIBO</div>
+<div class="grid grid-cols-12 gap-x-2 py-1">
+<div class="col-span-2"><span class="label">No. PÓLIZA :</span> <span class="data-value">${esc(numPoliza)}</span></div>
+<div class="col-span-4"><span class="label">No. PÓLIZA ANTERIOR :</span></div>
+<div class="col-span-3"><span class="label">No.RECIBO :</span> <span class="data-value">${esc(numRecibo)}</span></div>
+<div class="col-span-3 text-right"><span class="label">VIGENCIA DE LA POLIZA</span></div>
+<div class="col-span-2"><span class="label">No. FACTURA :</span> <span class="data-value">${esc(numFactura)}</span></div>
+<div class="col-span-4"></div>
+<div class="col-span-3"><span class="label">CERTIFICADO :</span> <span class="data-value">${esc(p.n_serialcertif || "0001")}</span></div>
+<div class="col-span-3 text-right"><span class="label">DESDE :</span> <span class="data-value">${fmtDate(fechaEmision)}</span></div>
+<div class="col-span-6"><span class="label">SUCURSAL EMISIÓN :</span> <span class="data-value">OFICINA PRINCIPAL CARACAS</span></div>
+<div class="col-span-3"><span class="label">FREQ. PAGO :</span> <span class="data-value">ANUAL</span></div>
+<div class="col-span-3 text-right"><span class="label">HASTA :</span> <span class="data-value">${fmtDate(fechaVencimiento)}</span></div>
+<div class="col-span-6"><span class="label">SUC. SUSCRIPTORA :</span> <span class="data-value">OFICINA PRINCIPAL CARACAS</span></div>
+<div class="col-span-3"></div>
+<div class="col-span-3 text-right"><span class="label">VIGENCIA DEL RECIBO</span></div>
+<div class="col-span-6"><span class="label">INTERMEDIARIO :</span> <span class="data-value">40001 - DIRECTO SIN INTERMEDIARIO</span></div>
+<div class="col-span-3"><span class="label">% PARTIC. :</span> <span class="data-value">100.00</span></div>
+<div class="col-span-3 text-right"><span class="label">DESDE :</span> <span class="data-value">${fmtDate(reciboDesde)}</span></div>
+<div class="col-span-9"></div>
+<div class="col-span-3 text-right"><span class="label">HASTA :</span> <span class="data-value">${fmtDate(reciboHasta)}</span></div>
+<div class="col-span-9"></div>
+<div class="col-span-3 text-right"><span class="label">MONEDA :</span> <span class="data-value">DL</span></div>
 </div>
-
-<div class="section">
-  <div class="section-head">DATOS GENERALES</div>
-  <table class="grid"><tbody>
-    <tr><td class="lbl">TOMADOR:</td><td class="val strong" colspan="3">${esc(tomador)}</td><td class="lbl" colspan="2">CÉDULA/RIF:</td><td class="val strong" colspan="2">${esc(cedRif)}</td></tr>
-    <tr><td class="lbl">DIRECCIÓN COBRO:</td><td class="val" colspan="3">${esc(direccion)}</td><td class="lbl" colspan="2">TELÉFONO:</td><td class="val" colspan="2">${esc(tel)}</td></tr>
-    <tr><td class="lbl">CIUDAD:</td><td class="val">${esc(ciudad)}</td><td class="lbl">ESTADO:</td><td class="val">${esc(estado)}</td><td class="lbl">MUNICIPIO:</td><td class="val">${esc(municipio)}</td><td class="lbl">ZONA POSTAL:</td><td class="val">${esc(zonaPostal)}</td></tr>
-    <tr><td class="lbl">ASEGURADO:</td><td class="val strong" colspan="3">${esc(tomador)}</td><td class="lbl" colspan="2">CÉDULA/RIF:</td><td class="val strong" colspan="2">${esc(cedRif)}</td></tr>
-    <tr><td class="lbl">DIRECCIÓN HAB.:</td><td class="val" colspan="3">${esc(direccion)}</td><td class="lbl" colspan="2">TELÉFONO:</td><td class="val" colspan="2">${esc(tel)}</td></tr>
-    <tr><td class="lbl">CIUDAD:</td><td class="val">${esc(ciudad)}</td><td class="lbl">ESTADO:</td><td class="val">${esc(estado)}</td><td class="lbl">MUNICIPIO:</td><td class="val">${esc(municipio)}</td><td class="lbl">ZONA POSTAL:</td><td class="val">${esc(zonaPostal)}</td></tr>
-    <tr><td class="lbl">BNF. PREFERENCIA:</td><td class="val" colspan="7">&nbsp;</td></tr>
-  </tbody></table>
-</div>
-
-<div class="section">
-  <div class="section-head">DATOS DE LA PÓLIZA Y DEL RECIBO</div>
-  <table class="grid"><tbody>
-    <tr>
-      <td class="lbl" style="width:90px;">N° PÓLIZA:</td><td class="val strong" style="width:120px;">${esc(numPoliza)}</td>
-      <td class="lbl" style="width:90px;">N° RECIBO:</td><td class="val strong" style="width:120px;">${esc(numRecibo)}</td>
-      <td class="lbl" style="width:130px;">VIGENCIA DE LA POLIZA</td>
-      <td class="lbl" style="width:55px;">DESDE:</td><td class="val">${fmtDate(fechaEmision)}</td>
-    </tr>
-    <tr>
-      <td class="lbl">N° FACTURA:</td><td class="val strong">${esc(numFactura)}</td>
-      <td class="lbl">CERTIFICADO:</td><td class="val">${esc(p.n_serialcertif || "")}</td>
-      <td class="lbl">&nbsp;</td>
-      <td class="lbl">HASTA:</td><td class="val">${fmtDate(fechaVencimiento)}</td>
-    </tr>
-    <tr>
-      <td class="lbl">SUCURSAL EMISIÓN:</td><td class="val" colspan="2">OFICINA PRINCIPAL CARACAS</td>
-      <td class="lbl">FREQ. PAGO:</td><td class="val">ANUAL</td>
-      <td class="lbl" colspan="2">VIGENCIA DEL RECIBO</td>
-    </tr>
-    <tr>
-      <td class="lbl">SUC. SUSCRIPTORA:</td><td class="val" colspan="2">OFICINA PRINCIPAL CARACAS</td>
-      <td class="lbl">DESDE:</td><td class="val">${fmtDate(reciboDesde)}</td>
-      <td class="lbl">HASTA:</td><td class="val">${fmtDate(reciboHasta)}</td>
-    </tr>
-
-    <tr>
-      <td class="lbl">INTERMEDIARIO:</td><td class="val" colspan="3">0001 - SEGUROS LA VITALICIA, C.A.</td>
-      <td class="lbl">% PARTIC.:</td><td class="val">100</td>
-      <td class="lbl"><span style="background:var(--brand);color:#fff;padding:0 6px;">MONEDA: DL</span></td>
-    </tr>
-  </tbody></table>
-</div>
-
-<div class="section">
-  <div class="section-head">DATOS PARTICULARES DEL VEHÍCULO</div>
-  <table class="grid"><tbody>
-    <tr><td class="lbl">MARCA:</td><td class="val strong">${esc(p.s_marca)}</td><td class="lbl">TIPO VEHÍCULO:</td><td class="val">MOTOCICLETAS</td></tr>
-    <tr><td class="lbl">MODELO:</td><td class="val">${esc(p.s_modelo)}</td><td class="lbl">USO:</td><td class="val">NO POSEE / NO APLICA</td></tr>
-    <tr><td class="lbl">VERSIÓN:</td><td class="val">${esc(p.s_version || p.s_modelo)}</td><td class="lbl">COLOR:</td><td class="val"><span class="swatch"></span>${esc(p.s_color)}</td></tr>
-    <tr><td class="lbl">SER. CARROCERIA:</td><td class="val">${esc(p.c_carroceria || p.serial_carroceria_monday)}</td><td class="lbl">TRANSMISIÓN:</td><td class="val">${esc(p.transmision_empire_monday || "0")}</td></tr>
-    <tr><td class="lbl">SERIAL MOTOR:</td><td class="val">${esc(p.c_motor || p.serial_motor_monday)}</td><td class="lbl">CAP. PASAJE:</td><td class="val">&nbsp;</td></tr>
-    <tr><td class="lbl">PLACA:</td><td class="val">${esc(p.c_placa || p.placa_monday)}</td><td class="lbl">CAP. CARGA:</td><td class="val">0</td></tr>
-    <tr><td class="lbl">AÑO:</td><td class="val">${esc(p.n_anio || p.año_monday)}</td><td class="lbl">&nbsp;</td><td class="val">&nbsp;</td></tr>
-  </tbody></table>
-</div>
-
-<div class="section">
-  <div class="section-head">DETALLE DEL RAMO - COBERTURAS</div>
-  <table class="cob">
-    <thead><tr><th style="width:56%">RAMO - COBERTURAS</th><th class="num" style="width:18%">SUMA ASEGURADA</th><th class="num" style="width:12%">TASA</th><th class="num" style="width:14%">PRIMA</th></tr></thead>
-    <tbody>
-      ${coberturasRows || '<tr><td colspan="4" style="text-align:center;color:#777">Sin coberturas registradas</td></tr>'}
-    </tbody>
-    <tfoot>
-      <tr><td class="lbl" colspan="3">TOTAL:</td><td class="num">${fmtNum(totalPrima)}</td></tr>
-      <tr><td class="lbl" colspan="3">TOTAL IGTF (3%):</td><td class="num">${fmtNum(igtfNum)}</td></tr>
-      <tr class="total"><td class="lbl" colspan="3">__ EN MONEDA: DL __ TOTAL A COBRAR:</td><td class="num">${fmtNum(totalCobrarNum)}</td></tr>
-    </tfoot>
-  </table>
-</div>
-
-<div style="margin-top:6px;font-size:9px;font-weight:700;letter-spacing:.3px;">FORMAN PARTE DE LA POLIZA LAS CLAUSULAS Y ANEXOS</div>
-<table class="cobro">
-  <thead><tr><th>FECHA DE COBRO</th><th>DEL COBRADOR</th><th>N° DE CHEQUE</th><th>BANCO</th></tr></thead>
-  <tbody><tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr></tbody>
+</section>
+<!-- END: DatosPolizaRecibo -->
+<!-- BEGIN: DatosVehiculo -->
+<section data-purpose="datos-vehiculo">
+  <div class="section-header">DATOS PARTICULARES DEL VEHÍCULO</div>
+  <div class="grid grid-cols-2 gap-x-4 py-2 text-[#000080] font-bold">
+    <div class="space-y-1">
+      <div class="flex"><span class="w-28">MARCA :</span> <span class="text-black">${esc(p.s_marca)}</span></div>
+      <div class="flex"><span class="w-28">MODELO :</span> <span class="text-black">${esc(p.s_modelo)}</span></div>
+      <div class="flex"><span class="w-28">VERSIÓN :</span> <span class="text-black">${esc(p.s_version || p.s_modelo)}</span></div>
+      <div class="flex"><span class="w-28">SER. CARROCERIA :</span> <span class="text-black">${esc(p.c_carroceria || p.serial_carroceria_monday)}</span></div>
+      <div class="flex"><span class="w-28">SERIAL MOTOR :</span> <span class="text-black">${esc(p.c_motor || p.serial_motor_monday)}</span></div>
+      <div class="flex"><span class="w-28">PLACAS :</span> <span class="text-black">${esc(p.c_placa || p.placa_monday)}</span></div>
+      <div class="flex"><span class="w-28">AÑO :</span> <span class="text-black">${esc(p.n_anio || p.año_monday)}</span></div>
+    </div>
+    <div class="space-y-1">
+      <div class="flex"><span class="w-32">TIPO VEHÍCULO :</span> <span class="text-black">MOTOCICLETAS</span></div>
+      <div class="flex"><span class="w-32">USO :</span> <span class="text-black">NO POSEE / NO APLICA</span></div>
+      <div class="flex"><span class="w-32">COLOR :</span> <span class="text-black">${esc(p.s_color)}</span></div>
+      <div class="flex"><span class="w-32">TRANSMISIÓN :</span> <span class="text-black">${esc(p.transmision_empire_monday || "Sincrónica")}</span></div>
+      <div class="flex"><span class="w-32">CAP. PASAJE :</span> <span class="text-black">2</span></div>
+      <div class="flex"><span class="w-32">CAP. CARGA :</span> <span class="text-black">150</span></div>
+    </div>
+  </div>
+</section>
+<!-- END: DatosVehiculo -->
+<!-- BEGIN: Coberturas -->
+<section data-purpose="detalle-coberturas">
+<div class="section-header" style="background-color: rgb(153, 217, 234); color: rgb(0, 0, 255); padding: 4px 0px; border: 1px solid rgb(0, 0, 0);">DETALLE DEL RAMO - COBERTURAS</div>
+<table class="w-full text-left mt-1 border-collapse">
+<thead>
+<tr class="label border-b border-black text-[#0000FF]" style="border-bottom: 1px solid #000;">
+<th class="font-bold text-[#0000FF] uppercase py-1">RAMO - COBERTURAS</th>
+<th class="font-bold text-[#0000FF] uppercase py-1 text-right">SUMA ASEGURADA</th>
+<th class="font-bold text-[#0000FF] uppercase py-1 text-right">TASA</th>
+<th class="font-bold text-[#0000FF] uppercase py-1 text-right">PRIMA</th>
+</tr>
+</thead>
+<tbody class="font-bold text-[#3366FF]">
+${coberturasRows || '<tr><td colspan="4" style="text-align:center;color:#777">Sin coberturas registradas</td></tr>'}
+</tbody>
 </table>
-<div style="display:flex;justify-content:flex-end;margin-top:-26px;margin-right:14px;margin-bottom:10px;">
-  <img src="${PAGADO_STAMP}" alt="PAGADO" style="width:110px;height:auto;transform:rotate(-8deg);opacity:.95;" />
+<div class="flex justify-end items-center mt-4 gap-8">
+<div class="font-bold text-lg">__ EN MONEDA : DL</div>
+<div class="font-bold text-lg">__ TOTAL A COBRAR : <span class="text-[#003399]">${fmtNum(totalCobrarNum)}</span></div>
 </div>
-
-<div class="firmas">
-  <div class="firma"><div class="line"></div><div class="lbl">Firma del Asegurado / Tomador</div></div>
-  <div class="firma"><div class="sig-logo"><img src="${LOGO_URL}" alt="Seguros La Vitalicia" /></div><div class="line"></div><div class="lbl">Firma por La Empresa</div></div>
+</section>
+<!-- END: Coberturas -->
+<!-- BEGIN: FooterSections -->
+<footer class="mt-12" data-purpose="footer-clauses">
+<div class="section-header text-[9px]">FORMAN PARTE DE LA POLIZA LAS CLAUSULAS Y ANEXOS:</div>
+<!-- Payments Table -->
+<table class="w-full border-t border-black text-center mt-1">
+<thead class="label text-[9px]">
+<tr>
+<th class="border-r border-black w-1/4">FECHA DE COBRO</th>
+<th class="border-r border-black w-1/4">DEL COBRADOR</th>
+<th class="border-r border-black w-1/4">No. DE CHEQUE</th>
+<th class="w-1/4">BANCO</th>
+</tr>
+</thead>
+<tbody class="font-bold text-[#3366FF]">
+<tr class="h-8">
+<td class="py-0.5 text-left"></td>
+<td class="py-0.5 text-right"></td>
+<td class="py-0.5 text-right"></td>
+<td class="py-0.5 text-right"></td>
+</tr>
+</tbody>
+</table>
+<!-- Verification and Stamp Section -->
+<div class="relative border-t border-black pt-2 px-4 flex justify-between items-start">
+<div class="text-center font-bold text-[11px] flex-grow">
+          Para tener validez, este Recibo debe ser sellado y firmado por la Persona Autorizada.
+        </div>
+<div class="absolute right-4 top-2">
+<img src="${PAGADO_STAMP}" alt="PAGADO" style="width:110px;height:auto;transform:rotate(-8deg);opacity:.95;" />
 </div>
 </div>
-
-<div class="legal">
-  <p>Yo, <strong>${esc(tomador)}</strong> portador de la cédula de identidad n° ${esc(cedRif)}. El arriba identificado como asegurado propuesto, como solicitante de la póliza o en representación de este, al presionar enviar en la página web www.lavitalicia.com.ve, declaro que la información aquí suministrada es exacta, sin omisión alguna de detalle, hecho o circunstancia, con el propósito de aminorar el riesgo, en el entendido que esta servirá de base a Seguros La Vitalicia, S.A. para la emisión de la póliza.</p>
-  <p>Doy fé que el dinero utilizado para el pago de la prima proviene de una fuente lícita y por lo tanto, no tiene relación alguna con dinero, capitales, bienes, haberes, valores o títulos producto de las actividades o acciones derivadas de operaciones ilícitas previstas en las Normas sobre Administración de Riesgo de Legitimación de Capitales, Financiamiento al Terrorismo y Financiamiento de la Proliferación de Armas de Destrucción Masiva en la Actividad Aseguradora.</p>
-  <p>El Asegurador coloca a disposición del Tomador este Cuadro Póliza Recibo, junto con las Condiciones Generales, las Condiciones Particulares, los Anexos, si los hubiere, en la página web de La Vitalicia www.lavitalicia.com.ve</p>
-  <p>El Tomador, Asegurado o Beneficiario de la Póliza, que sienta vulneración de sus Derechos, y requieran presentar cualquier denuncia, queja, reclamo solicitud escrita; surgida con ocasión de este contrato de seguros, puede acudir a la Oficina de la Defensoría del Asegurado de la Superintendencia de la Actividad Aseguradora, o comunicarlo a través de la página web www.sudeaseg.com.ve.</p>
+<div class="flex justify-center mt-4 mb-2">
+<img alt="La Vitalicia Small Logo" class="h-10 opacity-70" src="${LOGO_URL}">
 </div>
-
-<div class="footer">
-  <div><strong>Seguros La Vitalicia, S.A.</strong> Inscrita ante el Registro Mercantil Primero de la Circunscripción Judicial del Distrito Capital y Estado Miranda, en fecha 13 de junio del 2001, Bajo el No.30, Tomo 106.A-PRO.</div>
-  <div>Aprobado por la Superintendencia de la Actividad Aseguradora mediante Oficio Nro. ____________________ de fecha ____________</div>
+<!-- Signatures -->
+<div class="grid grid-cols-2 mt-8 mb-4">
+<div class="text-center">
+<div class="w-2/3 mx-auto border-t border-black mb-1"></div>
+<p class="font-bold">Firma del Asegurado / Tomador</p>
 </div>
-
+<div class="text-center">
+<div class="w-2/3 mx-auto border-t border-black mb-1"></div>
+<p class="font-bold">Firma por La Empresa</p>
+</div>
+</div>
+<!-- Legal Text -->
+<div class="text-[8px] leading-tight text-center mt-4 px-4">
+<p class="font-bold text-[12px] mb-2">Yo, ${esc(tomador)} portador de la cédula de identidad nº ${esc(cedRif)}.</p>
+<p class="">El arriba identificado como asegurado propuesto, como solicitante de la póliza o en representación de este, al presionar enviar en la página web www.lavitalicia.com.ve, declaro que la las actividades o acciones derivadas de operaciones ilícitas previstas en las Normas sobre Administración de Riesgo de Legitimación de Capitales, Financiamiento al Terrorismo y Financiamiento de la Proliferación de Armas de Destrucción Masiva en la Actividad Aseguradora.</p>
+<p class="mt-1">Doy fe que el dinero utilizado para el pago de la prima proviene de una fuente lícita y por lo tanto, no tiene relación alguna con dinero, capitales, bienes, haberes, valores o títulos producto de las actividades o acciones derivadas de operaciones ilícitas previstas en las Normas sobre Administración de Riesgo de Legitimación de Capitales, Financiamiento al Terrorismo y Financiamiento de la Proliferación de Armas de Destrucción Masiva en la Actividad Aseguradora.</p>
+<p class="mt-1">El Asegurador coloca a disposición del Tomador este Cuadro Póliza Recibo, junto con las Condiciones Generales, las Condiciones Particulares, los Anexos, si los hubiere, en la página web de La Vitalicia www.lavitalicia.com.ve</p>
+<p class="mt-1">El Tomador, Asegurado o Beneficiario de la Póliza, que sienta vulneración de sus Derechos, y requieran presentar cualquier denuncia, queja, reclamo solicitud escrita; surgida con ocasión de este contrato de seguros, puede acudir a la Oficina de la Defensoría del Asegurado de la Superintendencia de la Actividad Aseguradora, o comunicarlo a través de la página web www.sudeaseg.com.ve.</p>
+<p class="mt-2 font-bold uppercase">Seguros La Vitalicia, S.A. Inscrita ante el Registro Mercantil Primero de la Circunscripción Judicial del Distrito Capital y Estado Miranda, en fecha 13 de junio del 2001, Bajo el No.30, Tomo 106.A-PRO.</p>
+<p class="mt-1">Aprobado por la Superintendencia de la Actividad Aseguradora mediante Oficio Nro. ____________________ de fecha ____________________</p>
+<p class="">Av Blandin CC San Ignacio Nivel Oficina TE-P8-01 Sector La Castellana Caracas (Chacao) Miranda Zona Postal 1060. Inscrita en la Superintendencia de la Actividad Aseguradora bajo el No. S-119., Capital suscrito y pagado Bs. 29.932.500,00</p>
+</div>
+</footer>
+<!-- END: FooterSections -->
 </div>
 </body>
 </html>`;
