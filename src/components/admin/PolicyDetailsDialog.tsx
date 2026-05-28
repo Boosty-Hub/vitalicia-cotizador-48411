@@ -617,12 +617,12 @@ export function PolicyDetailsDialog({
           <p className="text-sm font-medium truncate">{label}</p>
           <p className="text-xs text-muted-foreground truncate">{filename}</p>
         </div>
-        <div className="flex items-center gap-1">
-          <a 
-            href={viewUrl || url} 
-            target="_blank" 
+        <div className="flex items-center gap-2">
+          <a
+            href={viewUrl || url}
+            target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+            className="flex items-center justify-center w-9 h-9 rounded-full bg-navy/10 text-navy hover:bg-navy hover:text-navy-foreground transition-all duration-300"
             title="Ver documento"
           >
             <ExternalLink className="h-4 w-4" />
@@ -630,10 +630,20 @@ export function PolicyDetailsDialog({
           <button
             onClick={() => handleDownloadDocument(url, filename)}
             disabled={downloadingUrl === url}
-            className="flex items-center justify-center w-9 h-9 rounded-lg bg-muted hover:bg-emerald-500 hover:text-white transition-all duration-200 disabled:opacity-60 disabled:cursor-wait"
+            className="flex items-center gap-1.5 pl-3 pr-3.5 py-1.5 rounded-full bg-navy text-gold text-[10px] font-bold uppercase tracking-[0.18em] border border-gold/30 hover:scale-105 hover:border-gold hover:shadow-md hover:shadow-navy/30 active:scale-95 transition-all duration-300 disabled:opacity-60 disabled:cursor-wait disabled:hover:scale-100 disabled:hover:border-gold/30 disabled:hover:shadow-none"
             title={downloadingUrl === url ? 'Generando PDF...' : 'Descargar PDF'}
           >
-            {downloadingUrl === url ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            {downloadingUrl === url ? (
+              <>
+                <Loader2 className="h-3 w-3 animate-spin" />
+                <span>GENERANDO</span>
+              </>
+            ) : (
+              <>
+                <Download className="h-3 w-3" />
+                <span>PDF</span>
+              </>
+            )}
           </button>
         </div>
       </div>
