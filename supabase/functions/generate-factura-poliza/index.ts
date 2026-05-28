@@ -609,16 +609,14 @@ ${coberturasRows || '<tr><td colspan="4" style="text-align:center;color:#777">Si
 <img src="${PAGADO_STAMP}" alt="PAGADO" style="width:110px;height:auto;transform:rotate(-8deg);opacity:.95;" />
 </div>
 </div>
-<div class="flex justify-center mt-4 mb-2">
-<img alt="La Vitalicia Small Logo" class="h-10 opacity-70" src="${LOGO_URL}">
-</div>
 <!-- Signatures -->
 <div class="grid grid-cols-2 mt-8 mb-4">
 <div class="text-center">
-<div class="w-2/3 mx-auto border-t border-black mb-1"></div>
+<div class="w-2/3 mx-auto border-t border-black mb-1 mt-10"></div>
 <p class="font-bold">Firma del Asegurado / Tomador</p>
 </div>
 <div class="text-center">
+<img alt="La Vitalicia Logo" class="h-10 opacity-70 mx-auto mb-1" src="${LOGO_URL}">
 <div class="w-2/3 mx-auto border-t border-black mb-1"></div>
 <p class="font-bold">Firma por La Empresa</p>
 </div>
