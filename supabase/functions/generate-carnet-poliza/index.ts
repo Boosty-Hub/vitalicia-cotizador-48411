@@ -67,10 +67,13 @@ function buildHtml(p: any, verifyUrl: string): string {
 <head>
 <meta charset="UTF-8" />
 <title>Carnet RCV — Póliza ${esc(numPoliza)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
 :root{--ink:#0f1a2b;--ink-soft:#4a5366;--line:#1a2a44;--line-soft:#cfd5df;--bg:#e7e8e4;--paper:#fff;--band:#0b3b6f;--band-deep:#062448;--accent:#c8102e;--gold:#c9a24a;}
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;background:radial-gradient(1200px 600px at 50% -100px,#f0f1ed 0%,var(--bg) 60%);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;color:var(--ink);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:40px 20px;gap:28px}
+html,body{margin:0;padding:0;background:radial-gradient(1200px 600px at 50% -100px,#f0f1ed 0%,var(--bg) 60%);font-family:"Inter","Helvetica Neue",Helvetica,Arial,sans-serif;color:var(--ink);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:40px 20px;gap:28px}
 .stage{display:flex;gap:32px;flex-wrap:wrap;justify-content:center}
 .card{width:540px;height:340px;background:var(--paper);border-radius:14px;box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 2px 4px rgba(0,0,0,.06),0 18px 40px -12px rgba(11,59,111,.25),0 30px 60px -20px rgba(0,0,0,.18);position:relative;overflow:hidden;color:var(--ink)}
 .front .topbar{position:relative;height:76px;background:#fff;color:var(--ink);padding:10px 20px;display:flex;align-items:center;gap:14px;overflow:hidden;border-bottom:2px solid var(--gold)}
@@ -81,12 +84,12 @@ html,body{margin:0;padding:0;background:radial-gradient(1200px 600px at 50% -100
 .doctype .badge{display:inline-block;margin-top:5px;border:1px solid var(--band);color:var(--band);font-size:9px;letter-spacing:2px;padding:2px 8px;border-radius:2px;text-transform:uppercase;font-weight:700}
 .titleband{background:#06203f;color:#fff;padding:6px 20px;font-size:9.5px;letter-spacing:2.2px;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--gold)}
 .titleband .left{font-weight:600}
-.titleband .right{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:11px;letter-spacing:1.5px;color:var(--gold);font-weight:700}
+.titleband .right{font-family:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;font-size:11px;letter-spacing:1.5px;color:var(--gold);font-weight:700}
 .body{padding:10px 20px 0 20px;display:grid;grid-template-columns:1.05fr 1fr;gap:7px 18px}
 .field{display:flex;flex-direction:column;gap:0;min-width:0}
 .field .lbl{font-size:6.8px;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
 .field .val{display:block;font-size:11.5px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.45;min-height:18px;padding:0 0 2px;overflow:visible;text-overflow:clip;white-space:nowrap}
-.field.mono .val{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:10.5px;letter-spacing:.3px;line-height:1.4;min-height:17px}
+.field.mono .val{font-family:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;font-size:10.5px;letter-spacing:.3px;line-height:1.4;min-height:17px}
 .field.big .val{font-size:14px;line-height:1.25;min-height:18px}
 .field.span-2{grid-column:span 2}
 .section-tag{grid-column:1/-1;display:flex;align-items:center;gap:8px;margin-top:1px;margin-bottom:-3px}
@@ -105,7 +108,7 @@ html,body{margin:0;padding:0;background:radial-gradient(1200px 600px at 50% -100
 .back .reverso-head{position:relative;z-index:2;padding:22px 26px 0 26px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
 .back .reverso-head .blk:last-child{padding-right:64px}
 .back .blk .k{font-size:7.5px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.55);font-weight:600}
-.back .blk .v{font-size:13px;font-weight:700;color:#fff;margin-top:3px;font-family:"SF Mono",Menlo,Consolas,monospace;letter-spacing:.5px;line-height:1.28}
+.back .blk .v{font-size:13px;font-weight:700;color:#fff;margin-top:3px;font-family:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;letter-spacing:.5px;line-height:1.28}
 .back .contact{position:relative;z-index:2;margin-top:18px;padding:0 26px;display:grid;grid-template-columns:1fr 125px;gap:14px;align-items:start}
 .back .contact .info{display:grid;grid-template-columns:1fr;gap:6px}
 .back .contact .qr{background:#fff;padding:5px;border-radius:4px;border:1px solid rgba(255,255,255,.4);display:flex;flex-direction:column;align-items:center}
@@ -120,7 +123,7 @@ html,body{margin:0;padding:0;background:radial-gradient(1200px 600px at 50% -100
 .back .legal .left .kicker{font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:2px}
 .back .legal .right{text-align:right}
 .back .legal .right .kicker{font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:2px}
-.back .legal .right .v{font-family:"SF Mono",Menlo,Consolas,monospace;color:#fff;font-size:10px;letter-spacing:1px;line-height:1.3}
+.back .legal .right .v{font-family:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;color:#fff;font-size:10px;letter-spacing:1px;line-height:1.3}
 .back .corner{position:absolute;right:0;top:0;width:70px;height:70px;background:var(--gold);clip-path:polygon(100% 0,100% 100%,0 0);z-index:1}
 .back .corner-label{position:absolute;top:12px;right:10px;z-index:3;color:var(--band-deep);font-size:7px;font-weight:800;letter-spacing:1.6px;transform:rotate(45deg);transform-origin:100% 0;width:22px;text-align:left;padding:11px}
 .caption{font-size:11px;color:var(--ink-soft);letter-spacing:1.6px;text-transform:uppercase;text-align:center;margin-top:8px;font-weight:600}
