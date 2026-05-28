@@ -493,8 +493,8 @@ export function PolicyDetailsDialog({
             for (let i = 0; i < cards.length; i++) {
               const card = cards[i];
               const rect = card.getBoundingClientRect();
-              const captureWidth = Math.max(Math.ceil(rect.width), card.scrollWidth);
-              const captureHeight = Math.max(Math.ceil(rect.height), card.scrollHeight);
+              const captureWidth = Math.ceil(rect.width);
+              const captureHeight = Math.ceil(rect.height);
               const canvas = await html2canvas(card, {
                 scale: 3,
                 useCORS: true,
