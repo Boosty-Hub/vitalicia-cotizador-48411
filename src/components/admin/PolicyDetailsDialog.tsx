@@ -457,14 +457,13 @@ export function PolicyDetailsDialog({
           const iframeDoc = iframe.contentDocument!;
 
           if (isCarnet) {
-            // CARNET: capture each .card element individually (no layout overrides)
-            // so the PDF matches the HTML pixel-for-pixel, then place one per A4 page.
-            // No CSS overrides: render exactly as displayed in the Carnet tab.
+            // CARNET: capture each .card individually so the PNG matches the HTML pixel-for-pixel.
 
             try {
               const fontSet = (iframeDoc as any).fonts;
-              await fontSet?.load?.('700 12px "Helvetica Neue"');
-              await fontSet?.load?.('700 11px "SF Mono"');
+              await fontSet?.load?.('700 12px "Inter"');
+              await fontSet?.load?.('800 13px "Inter"');
+              await fontSet?.load?.('700 11px "JetBrains Mono"');
               if (fontSet?.ready) await fontSet.ready;
             } catch {}
 
@@ -480,6 +479,8 @@ export function PolicyDetailsDialog({
                     })
               )
             );
+            // Extra settle time for webfont swap
+            await new Promise((r) => setTimeout(r, 300));
             await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
             const cards = Array.from(
@@ -492,18 +493,23 @@ export function PolicyDetailsDialog({
             for (let i = 0; i < cards.length; i++) {
               const card = cards[i];
               const rect = card.getBoundingClientRect();
+              const captureWidth = Math.max(Math.ceil(rect.width), card.scrollWidth);
+              const captureHeight = Math.max(Math.ceil(rect.height), card.scrollHeight);
               const canvas = await html2canvas(card, {
                 scale: 3,
                 useCORS: true,
                 allowTaint: false,
                 backgroundColor: null,
                 logging: false,
-                width: Math.ceil(rect.width),
-                height: Math.ceil(rect.height),
+                width: captureWidth,
+                height: captureHeight,
                 windowWidth: iframeDoc.documentElement.scrollWidth,
                 windowHeight: iframeDoc.documentElement.scrollHeight,
                 scrollX: 0,
                 scrollY: 0,
+                onclone: (clonedDoc) => {
+                  applyCarnetPdfSafeCss(clonedDoc);
+                },
               });
 
 
@@ -530,6 +536,7 @@ export function PolicyDetailsDialog({
             toast({ title: 'PNG descargado', description: `${label} descargado como imagen(es) PNG.` });
             return;
           }
+
 
 
           // ===== FACTURA (and other HTML docs): existing flow =====
