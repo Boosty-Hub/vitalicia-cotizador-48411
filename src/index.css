@@ -115,6 +115,12 @@ All colors MUST be HSL.
     --input: 212 40% 15%;
     --ring: 212 95% 55%;
 
+    /* Document Brand — dark variants */
+    --navy: 210 60% 18%;
+    --navy-foreground: 0 0% 100%;
+    --gold: 42 50% 48%;
+    --gold-foreground: 0 0% 100%;
+
     --gradient-primary: linear-gradient(135deg, hsl(212 95% 55%), hsl(212 100% 45%));
     --gradient-secondary: linear-gradient(135deg, hsl(158 54% 42%), hsl(158 60% 32%));
     --gradient-hero: linear-gradient(135deg, hsl(212 95% 55%), hsl(158 54% 42%));
