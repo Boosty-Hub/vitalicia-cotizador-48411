@@ -43,6 +43,12 @@ All colors MUST be HSL.
     --input: 210 25% 95%;
     --ring: 212 95% 45%;
 
+    /* Document Brand — Carnet/Factura identity */
+    --navy: 210 78% 24%;
+    --navy-foreground: 0 0% 100%;
+    --gold: 42 55% 54%;
+    --gold-foreground: 210 78% 12%;
+
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(212 95% 45%), hsl(212 100% 35%));
     --gradient-secondary: linear-gradient(135deg, hsl(158 64% 52%), hsl(158 70% 42%));
