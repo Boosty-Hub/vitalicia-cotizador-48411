@@ -391,7 +391,7 @@ export function PolicyDetailsDialog({
 
   const carnetPdfSafeCss = `
     html, body { -webkit-font-smoothing: antialiased !important; text-rendering: geometricPrecision !important; }
-    .card { width: 540px !important; height: 340px !important; min-width: 540px !important; min-height: 340px !important; max-width: 540px !important; max-height: 340px !important; }
+    .card { width: 540px !important; height: 340px !important; min-width: 540px !important; min-height: 340px !important; max-width: 540px !important; max-height: 340px !important; border-radius: 0 !important; box-shadow: none !important; }
     .doctype .kicker { line-height: 1.25 !important; }
     .doctype .name { line-height: 1.15 !important; }
     .doctype .badge { line-height: 1.25 !important; padding-top: 3px !important; padding-bottom: 2px !important; }
