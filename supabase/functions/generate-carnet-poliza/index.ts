@@ -85,18 +85,18 @@ html,body{margin:0;padding:0;background:radial-gradient(1200px 600px at 50% -100
 .titleband{background:#06203f;color:#fff;padding:6px 20px;font-size:9.5px;letter-spacing:2.2px;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--gold)}
 .titleband .left{font-weight:600}
 .titleband .right{font-family:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;font-size:11px;letter-spacing:1.5px;color:var(--gold);font-weight:700}
-.body{padding:10px 20px 64px 20px;display:grid;grid-template-columns:1.05fr 1fr;gap:7px 18px}
+.body{padding:8px 20px 70px 20px;display:grid;grid-template-columns:1.05fr 1fr;gap:4px 18px;overflow:hidden}
 .field{display:flex;flex-direction:column;gap:0;min-width:0}
-.field .lbl{font-size:6.8px;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
-.field .val{display:block;font-size:11.5px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.45;min-height:18px;padding:0 0 2px;overflow:visible;text-overflow:clip;white-space:nowrap}
-.field.mono .val{font-family:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;font-size:10.5px;letter-spacing:.3px;line-height:1.4;min-height:17px}
-.field.big .val{font-size:14px;line-height:1.25;min-height:18px}
+.field .lbl{font-size:6.8px;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-soft);font-weight:600;line-height:1.2}
+.field .val{display:block;font-size:11px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.3;min-height:0;padding:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.field.mono .val{font-family:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;font-size:10px;letter-spacing:.3px;line-height:1.3;min-height:0}
+.field.big .val{font-size:12.5px;line-height:1.2;min-height:0}
 .field.span-2{grid-column:span 2}
-.section-tag{grid-column:1/-1;display:flex;align-items:center;gap:8px;margin-top:1px;margin-bottom:-3px}
+.section-tag{grid-column:1/-1;display:flex;align-items:center;gap:8px;margin-top:0;margin-bottom:-2px}
 .section-tag .dot{width:5px;height:5px;background:var(--accent);border-radius:50%}
-.section-tag .label{font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--band);font-weight:700}
+.section-tag .label{font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--band);font-weight:700;line-height:1.2}
 .section-tag .rule{flex:1;height:1px;background:linear-gradient(to right,var(--line-soft),transparent)}
-.vigencia{position:absolute;left:20px;right:20px;bottom:10px;display:flex;justify-content:space-between;align-items:center;background:#f6f8fb;border:1px solid var(--line-soft);border-left:3px solid var(--gold);border-radius:4px;padding:5px 12px}
+.vigencia{position:absolute;left:20px;right:20px;bottom:10px;display:flex;justify-content:space-between;align-items:center;background:#f6f8fb;border:1px solid var(--line-soft);border-left:3px solid var(--gold);border-radius:4px;padding:5px 12px;z-index:2}
 .vigencia .vlabel{font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:var(--ink-soft);font-weight:700}
 .vigencia .vdates{display:flex;align-items:center;gap:12px}
 .vigencia .vdates .d{display:flex;flex-direction:column;align-items:flex-end}
