@@ -67,10 +67,13 @@ function buildHtml(p: any, verifyUrl: string): string {
 <head>
 <meta charset="UTF-8" />
 <title>Carnet RCV — Póliza ${esc(numPoliza)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
 :root{--ink:#0f1a2b;--ink-soft:#4a5366;--line:#1a2a44;--line-soft:#cfd5df;--bg:#e7e8e4;--paper:#fff;--band:#0b3b6f;--band-deep:#062448;--accent:#c8102e;--gold:#c9a24a;}
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;background:radial-gradient(1200px 600px at 50% -100px,#f0f1ed 0%,var(--bg) 60%);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;color:var(--ink);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:40px 20px;gap:28px}
+html,body{margin:0;padding:0;background:radial-gradient(1200px 600px at 50% -100px,#f0f1ed 0%,var(--bg) 60%);font-family:"Inter","Helvetica Neue",Helvetica,Arial,sans-serif;color:var(--ink);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:40px 20px;gap:28px}
 .stage{display:flex;gap:32px;flex-wrap:wrap;justify-content:center}
 .card{width:540px;height:340px;background:var(--paper);border-radius:14px;box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 2px 4px rgba(0,0,0,.06),0 18px 40px -12px rgba(11,59,111,.25),0 30px 60px -20px rgba(0,0,0,.18);position:relative;overflow:hidden;color:var(--ink)}
 .front .topbar{position:relative;height:76px;background:#fff;color:var(--ink);padding:10px 20px;display:flex;align-items:center;gap:14px;overflow:hidden;border-bottom:2px solid var(--gold)}
