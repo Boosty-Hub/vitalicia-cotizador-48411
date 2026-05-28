@@ -396,10 +396,12 @@ export function PolicyDetailsDialog({
     .doctype .name { line-height: 1.15 !important; }
     .doctype .badge { line-height: 1.25 !important; padding-top: 3px !important; padding-bottom: 2px !important; }
     .titleband, .titleband .left, .titleband .right { line-height: 1.25 !important; }
-    .field .lbl, .section-tag .label { line-height: 1.25 !important; }
-    .field .val { line-height: 1.45 !important; min-height: 18px !important; padding-top: 0 !important; padding-bottom: 2px !important; overflow: visible !important; text-overflow: clip !important; }
-    .field.mono .val { line-height: 1.4 !important; min-height: 17px !important; }
-    .field.big .val { line-height: 1.25 !important; min-height: 18px !important; }
+    .body { padding: 8px 20px 70px 20px !important; gap: 4px 18px !important; overflow: hidden !important; }
+    .field .lbl, .section-tag .label { line-height: 1.2 !important; }
+    .field .val { line-height: 1.3 !important; min-height: 0 !important; padding: 0 !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
+    .field.mono .val { line-height: 1.3 !important; min-height: 0 !important; }
+    .field.big .val { line-height: 1.2 !important; min-height: 0 !important; }
+    .vigencia { z-index: 2 !important; }
     .vigencia .vlabel, .vigencia .k, .vigencia .v { line-height: 1.25 !important; }
     .back .blk .k, .back .blk .v, .back .contact .row, .back .contact .row .lbl, .back .contact .row .v, .back .legal, .back .legal .left, .back .legal .right .v, .back .contact .qr .caption { line-height: 1.3 !important; }
   `;
