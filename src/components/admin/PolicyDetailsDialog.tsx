@@ -459,7 +459,8 @@ export function PolicyDetailsDialog({
           if (isCarnet) {
             // CARNET: capture each .card element individually (no layout overrides)
             // so the PDF matches the HTML pixel-for-pixel, then place one per A4 page.
-            applyCarnetPdfSafeCss(iframeDoc);
+            // No CSS overrides: render exactly as displayed in the Carnet tab.
+
             try {
               const fontSet = (iframeDoc as any).fonts;
               await fontSet?.load?.('700 12px "Helvetica Neue"');
