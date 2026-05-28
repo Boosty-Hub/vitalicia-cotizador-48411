@@ -85,7 +85,7 @@ html,body{margin:0;padding:0;background:radial-gradient(1200px 600px at 50% -100
 .titleband{background:#06203f;color:#fff;padding:6px 20px;font-size:9.5px;letter-spacing:2.2px;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--gold)}
 .titleband .left{font-weight:600}
 .titleband .right{font-family:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;font-size:11px;letter-spacing:1.5px;color:var(--gold);font-weight:700}
-.body{padding:10px 20px 0 20px;display:grid;grid-template-columns:1.05fr 1fr;gap:7px 18px}
+.body{padding:10px 20px 64px 20px;display:grid;grid-template-columns:1.05fr 1fr;gap:7px 18px}
 .field{display:flex;flex-direction:column;gap:0;min-width:0}
 .field .lbl{font-size:6.8px;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
 .field .val{display:block;font-size:11.5px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.45;min-height:18px;padding:0 0 2px;overflow:visible;text-overflow:clip;white-space:nowrap}
