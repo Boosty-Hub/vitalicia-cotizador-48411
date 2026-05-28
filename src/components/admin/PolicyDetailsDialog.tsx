@@ -460,9 +460,7 @@ export function PolicyDetailsDialog({
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
               }
-              .field, .field .lbl, .field .val,
-              .doctype *, .titleband *, .vigencia *, .back .blk *,
-              .back .contact *, .back .legal *, .caption {
+              .field .lbl, .field .val {
                 transform: none !important;
               }
               .field .lbl {
