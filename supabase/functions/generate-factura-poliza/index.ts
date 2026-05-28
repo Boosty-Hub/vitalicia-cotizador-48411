@@ -389,14 +389,15 @@ function buildHtml(p: any): string {
 <meta charset="UTF-8" />
 <title>Cuadro Póliza Recibo — ${esc(numPoliza)}</title>
 <style>
-:root{--ink:#000;--brand:#133a8b;--line:#000;--paper:#fff;--bg:#d9d9d9;}
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
+:root{--ink:#000;--brand:#003399;--brand-soft:#dbeafe;--line:#000;--paper:#fff;--bg:#f3f4f6;}
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:var(--ink);font-size:9.5px;line-height:1.25}
-.page{width:816px;min-height:1056px;margin:24px auto;background:var(--paper);padding:30px 36px 32px;box-shadow:0 1px 3px rgba(0,0,0,.1),0 12px 32px rgba(0,0,0,.08);position:relative}
+html,body{margin:0;padding:0;background:var(--bg);font-family:'Roboto Mono',ui-monospace,Menlo,Consolas,monospace;color:var(--ink);font-size:10px;line-height:1.2}
+.page{width:850px;min-height:1100px;margin:20px auto;background:var(--paper);padding:30px;box-shadow:0 0 15px rgba(0,0,0,.1);position:relative}
 .page::before{content:"";position:absolute;inset:0;background:url('${LOGO_URL}') no-repeat center 55%/520px auto;opacity:.05;pointer-events:none;z-index:0}
 .page>*{position:relative;z-index:1}
-.sheet{border:1.5px solid var(--line);padding:10px}
-.top{display:grid;grid-template-columns:260px 1fr;align-items:center;gap:8px;padding:8px 14px;margin-bottom:4px}
+.sheet{padding:0}
+.top{display:grid;grid-template-columns:260px 1fr;align-items:center;gap:8px;padding:4px 4px 10px;margin-bottom:4px}
 .top .logo{width:240px;height:auto;display:block}
 .top .title{text-align:center;padding-right:40px}
 .top .title .t1{font-size:14px;font-weight:700;letter-spacing:.5px;color:var(--brand);margin-bottom:2px}
@@ -404,42 +405,44 @@ html,body{margin:0;padding:0;background:var(--bg);font-family:Arial,Helvetica,sa
 .mov-bar{display:grid;grid-template-columns:1.2fr 1fr 1fr;border:1px solid var(--line);margin-top:4px}
 .mov-bar .cell{padding:5px 8px;border-right:1px solid var(--line);display:flex;align-items:center;gap:8px}
 .mov-bar .cell:last-child{border-right:0}
-.mov-bar .label{font-weight:700;font-size:9px;letter-spacing:.3px}
+.mov-bar .label{font-weight:700;font-size:9px;letter-spacing:.3px;color:var(--brand)}
 .mov-bar .value{font-weight:700;font-size:10.5px}
 .section{margin-top:6px;border:1px solid var(--line)}
-.section-head{background:var(--brand);color:#fff;padding:3px 8px;font-size:9.5px;font-weight:700;letter-spacing:.8px}
+.section-head{background:var(--brand-soft);color:var(--brand);text-align:center;font-weight:700;padding:3px 8px;font-size:10px;letter-spacing:1px;text-transform:uppercase}
 .grid{width:100%;border-collapse:collapse}
 .grid td{border-top:1px solid var(--line);border-right:1px solid var(--line);padding:3px 6px;vertical-align:middle;line-height:1.2}
 .grid tr:first-child td{border-top:0}
 .grid td:last-child{border-right:0}
-.grid .lbl{font-weight:700;font-size:9px;color:#000;white-space:nowrap;background:#fafafa;width:1%}
+.grid .lbl{font-weight:700;font-size:9px;color:var(--brand);white-space:nowrap;background:#fafbff;width:1%}
 .grid .val{font-size:10px;font-weight:400;color:#000}
 .grid .val.strong{font-weight:700}
 .cob{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-.cob thead th{background:#f0f0f0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:4px 8px;font-size:9px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.3px}
+.cob thead th{background:var(--brand-soft);color:var(--brand);border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:4px 8px;font-size:9px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.5px}
 .cob thead th:last-child{border-right:0}
 .cob thead th.num{text-align:right}
 .cob tbody td{padding:3px 8px;font-size:10px;border-right:1px solid var(--line);border-bottom:1px solid #ddd}
 .cob tbody td:last-child{border-right:0}
 .cob tbody td.num{text-align:right}
-.cob tfoot td{padding:4px 8px;font-size:10px;border-top:1px solid var(--line);border-right:1px solid var(--line);font-weight:700}
+.cob tfoot td{padding:4px 8px;font-size:10px;border-top:1px solid var(--line);border-right:1px solid var(--line);font-weight:700;color:var(--brand)}
 .cob tfoot td:last-child{border-right:0}
-.cob tfoot td.num{text-align:right}
+.cob tfoot td.num{text-align:right;color:#000}
 .cob tfoot td.lbl{text-align:right}
 .cob tfoot tr.total td{border-top:2px solid var(--line);font-size:11px}
 .cobro{width:100%;border-collapse:collapse;margin-top:3px}
-.cobro th{background:#f0f0f0;border:1px solid var(--line);padding:4px 6px;font-size:9px;font-weight:700;text-align:center;letter-spacing:.3px}
+.cobro th{background:var(--brand-soft);color:var(--brand);border:1px solid var(--line);padding:4px 6px;font-size:9px;font-weight:700;text-align:center;letter-spacing:.5px;text-transform:uppercase}
 .cobro td{border:1px solid var(--line);height:28px;padding:4px 6px}
-.firmas{display:grid;grid-template-columns:1fr 1fr;gap:60px;margin-top:26px;margin-bottom:14px;align-items:end}
+.stamp-wrap{display:flex;justify-content:flex-end;margin-top:-30px;margin-right:30px;margin-bottom:14px;height:0}
+.stamp-pagado{border:3px solid #ef4444;color:#ef4444;font-weight:700;font-size:24px;padding:5px 18px;border-radius:8px;display:inline-block;transform:rotate(-2deg);letter-spacing:3px;background:rgba(255,255,255,.85);font-family:'Roboto Mono',monospace}
+.firmas{display:grid;grid-template-columns:1fr 1fr;gap:60px;margin-top:36px;margin-bottom:14px;align-items:end}
 .firma{text-align:center;display:flex;flex-direction:column;justify-content:flex-end}
 .firma .line{border-top:1px solid #000;margin:0 30px 4px;padding-top:4px}
-.firma .lbl{font-size:9px;font-weight:600}
+.firma .lbl{font-size:9px;font-weight:600;color:var(--brand)}
 .firma .sig-logo{display:flex;justify-content:center;margin-bottom:2px;height:38px}
 .firma .sig-logo img{height:38px;width:auto}
-.legal{margin-top:10px;font-size:7.5px;line-height:1.4;text-align:justify;color:#000}
+.legal{margin-top:10px;font-size:7.5px;line-height:1.45;text-align:justify;color:#000}
 .legal p{margin:0 0 4px}
 .footer{margin-top:8px;border-top:1px solid #000;padding-top:6px;font-size:7.5px;color:#000;text-align:center;line-height:1.4}
-.tag-emision{display:inline-block;border:1px solid #000;padding:1px 8px;font-size:9.5px;font-weight:700;letter-spacing:1px;background:#fff}
+.tag-emision{display:inline-block;border:1px solid var(--brand);color:var(--brand);padding:1px 8px;font-size:9.5px;font-weight:700;letter-spacing:1px;background:#fff;border-radius:3px}
 .swatch{display:inline-block;width:10px;height:10px;background:#1a4fa0;border:1px solid #000;vertical-align:-1px;margin-right:4px}
 @media print{body{background:#fff}.page{box-shadow:none;margin:0}}
 </style>
@@ -537,9 +540,9 @@ html,body{margin:0;padding:0;background:var(--bg);font-family:Arial,Helvetica,sa
 
 <div style="margin-top:6px;font-size:9px;font-weight:700;letter-spacing:.3px;">FORMAN PARTE DE LA POLIZA LAS CLAUSULAS Y ANEXOS</div>
 <table class="cobro">
-  <thead><tr><th>FECHA DE COBRO</th><th>DEL COBRADOR</th><th>N° DE CHEQUE</th><th>BANCO</th></tr></thead>
-  <tbody><tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr></tbody>
-</table>
+<div class="stamp-wrap">
+  <span class="stamp-pagado">PAGADO</span>
+</div>
 <div style="display:flex;justify-content:flex-end;margin-top:-26px;margin-right:14px;margin-bottom:10px;">
   <img src="${PAGADO_STAMP}" alt="PAGADO" style="width:110px;height:auto;transform:rotate(-8deg);opacity:.95;" />
 </div>
