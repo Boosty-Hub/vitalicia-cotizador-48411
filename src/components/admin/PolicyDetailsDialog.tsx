@@ -629,10 +629,11 @@ export function PolicyDetailsDialog({
           </a>
           <button
             onClick={() => handleDownloadDocument(url, filename)}
-            className="flex items-center justify-center w-9 h-9 rounded-lg bg-muted hover:bg-emerald-500 hover:text-white transition-all duration-200"
-            title="Descargar documento"
+            disabled={downloadingUrl === url}
+            className="flex items-center justify-center w-9 h-9 rounded-lg bg-muted hover:bg-emerald-500 hover:text-white transition-all duration-200 disabled:opacity-60 disabled:cursor-wait"
+            title={downloadingUrl === url ? 'Generando PDF...' : 'Descargar PDF'}
           >
-            <Download className="h-4 w-4" />
+            {downloadingUrl === url ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
           </button>
         </div>
       </div>
