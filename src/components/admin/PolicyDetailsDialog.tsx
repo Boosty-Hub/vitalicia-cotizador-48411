@@ -389,6 +389,28 @@ export function PolicyDetailsDialog({
     );
   };
 
+  const carnetPdfSafeCss = `
+    html, body { -webkit-font-smoothing: antialiased !important; text-rendering: geometricPrecision !important; }
+    .card { width: 540px !important; height: 340px !important; min-width: 540px !important; min-height: 340px !important; max-width: 540px !important; max-height: 340px !important; }
+    .doctype .kicker { line-height: 1.25 !important; }
+    .doctype .name { line-height: 1.15 !important; }
+    .doctype .badge { line-height: 1.25 !important; padding-top: 3px !important; padding-bottom: 2px !important; }
+    .titleband, .titleband .left, .titleband .right { line-height: 1.25 !important; }
+    .field .lbl, .section-tag .label { line-height: 1.25 !important; }
+    .field .val { line-height: 1.45 !important; min-height: 18px !important; padding-top: 0 !important; padding-bottom: 2px !important; overflow: visible !important; text-overflow: clip !important; }
+    .field.mono .val { line-height: 1.4 !important; min-height: 17px !important; }
+    .field.big .val { line-height: 1.25 !important; min-height: 18px !important; }
+    .vigencia .vlabel, .vigencia .k, .vigencia .v { line-height: 1.25 !important; }
+    .back .blk .k, .back .blk .v, .back .contact .row, .back .contact .row .lbl, .back .contact .row .v, .back .legal, .back .legal .left, .back .legal .right .v, .back .contact .qr .caption { line-height: 1.3 !important; }
+  `;
+
+  const applyCarnetPdfSafeCss = (doc: Document) => {
+    const style = doc.createElement('style');
+    style.setAttribute('data-carnet-pdf-safe', '1');
+    style.textContent = carnetPdfSafeCss;
+    doc.head.appendChild(style);
+  };
+
   const handleDownloadDocument = async (url: string, filename: string) => {
     if (downloadingUrl) return;
     setDownloadingUrl(url);
@@ -437,9 +459,12 @@ export function PolicyDetailsDialog({
           if (isCarnet) {
             // CARNET: capture each .card element individually (no layout overrides)
             // so the PDF matches the HTML pixel-for-pixel, then place one per A4 page.
+            applyCarnetPdfSafeCss(iframeDoc);
             try {
-              // @ts-ignore
-              if (iframeDoc.fonts?.ready) await iframeDoc.fonts.ready;
+              const fontSet = (iframeDoc as any).fonts;
+              await fontSet?.load?.('700 12px "Helvetica Neue"');
+              await fontSet?.load?.('700 11px "SF Mono"');
+              if (fontSet?.ready) await fontSet.ready;
             } catch {}
 
             const imgs = Array.from(iframeDoc.images || []);
@@ -478,16 +503,20 @@ export function PolicyDetailsDialog({
 
             for (let i = 0; i < cards.length; i++) {
               const card = cards[i];
+              const rect = card.getBoundingClientRect();
               const canvas = await html2canvas(card, {
                 scale: 3,
                 useCORS: true,
                 allowTaint: false,
                 backgroundColor: null,
                 logging: false,
-                width: card.offsetWidth,
-                height: card.offsetHeight,
+                width: Math.ceil(rect.width),
+                height: Math.ceil(rect.height),
                 windowWidth: iframeDoc.documentElement.scrollWidth,
                 windowHeight: iframeDoc.documentElement.scrollHeight,
+                scrollX: 0,
+                scrollY: 0,
+                onclone: (clonedDoc) => applyCarnetPdfSafeCss(clonedDoc),
               });
               const imgData = canvas.toDataURL('image/png');
 
