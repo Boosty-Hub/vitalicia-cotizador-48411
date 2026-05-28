@@ -569,11 +569,27 @@ export function PolicyDetailsDialog({
             </div>
           `;
           document.body.appendChild(wrapper);
-          await new Promise((r) => setTimeout(r, 200));
+          const wrapperImages = Array.from(wrapper.querySelectorAll('img')) as HTMLImageElement[];
+          await Promise.all(
+            wrapperImages.map((img) =>
+              img.complete && img.naturalWidth > 0
+                ? Promise.resolve()
+                : new Promise<void>((res) => {
+                    img.onload = () => res();
+                    img.onerror = () => res();
+                    setTimeout(() => res(), 4000);
+                  })
+            )
+          );
+          try {
+            // @ts-ignore
+            if (document.fonts?.ready) await document.fonts.ready;
+          } catch {}
+          await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
           const naturalHeight = Math.ceil(
             Math.max(wrapper.scrollHeight, wrapper.getBoundingClientRect().height)
-          );
+          ) + (isCarnet ? 28 : 0);
 
           const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
             import('html2canvas'),
@@ -581,11 +597,13 @@ export function PolicyDetailsDialog({
           ]);
 
           const canvas = await html2canvas(wrapper, {
-            scale: 2,
+            scale: isCarnet ? 3 : 2,
             useCORS: true,
             backgroundColor: '#ffffff',
             windowWidth: A4_WIDTH_PX,
             windowHeight: naturalHeight,
+            scrollX: 0,
+            scrollY: 0,
           });
 
           // 4) Paginate canvas into A4 pages
