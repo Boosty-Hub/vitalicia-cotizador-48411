@@ -118,7 +118,7 @@ async function buildHtml(p: any, verifyUrl: string): Promise<string> {
       <div class="px-2 text-sm grid grid-cols-[120px_1fr] gap-y-0.5">
         <span class="font-bold">Marca</span><span class="font-bold text-[#003399]">: ${esc(marca)}</span>
         <span class="font-bold">Modelo</span><span class="font-bold text-[#003399]">: ${esc(modelo)}</span>
-        <span class="font-bold">Placa :</span><span class="font-bold text-[#003399]">${esc(placa)}</span>
+        <span class="font-bold">Placa</span><span class="font-bold text-[#003399]">: ${esc(placa)}</span>
         <span class="font-bold">Año</span><span class="font-bold text-[#003399]">: ${esc(anio)}</span>
         <span class="font-bold">Color</span><span class="font-bold text-[#003399]">: ${esc(color)}</span>
         <span class="font-bold">Serial Carrocería</span><span class="font-bold text-[#003399]">: ${esc(serialCarroceria)}</span>
