@@ -90,10 +90,10 @@ async function buildHtml(p: any, verifyUrl: string): Promise<string> {
 <style>
   body { background-color:#f3f4f6; display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; padding:20px; }
   @media print {
-    @page { size: 1000px 400px; margin: 0; }
-    html, body { background:#fff !important; padding:0 !important; margin:0 !important; min-height:0 !important; display:block !important; }
-    body > div { min-height:0 !important; padding:0 !important; background:#fff !important; display:block !important; }
-    .carnet-card { box-shadow:none !important; border:0 !important; }
+    @page { size: A4 landscape; margin: 8mm; }
+    html, body { background:#fff !important; padding:0 !important; margin:0 !important; min-height:0 !important; }
+    body > div { min-height:0 !important; padding:0 !important; background:#fff !important; display:flex !important; align-items:center !important; justify-content:center !important; }
+    .carnet-card { box-shadow:none !important; }
     * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
   }
 </style>
