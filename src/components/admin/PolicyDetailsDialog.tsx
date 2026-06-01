@@ -564,6 +564,29 @@ export function PolicyDetailsDialog({
     }
   };
 
+  // Sube el PDF generado a Storage y guarda su URL en polizas_activas.
+  const persistGeneratedPdf = async (blob: Blob, kind: 'carnet' | 'factura') => {
+    const polizaId = (selectedPoliza as any)?.id;
+    if (!polizaId) return;
+    try {
+      const path = `${kind === 'carnet' ? 'carnets' : 'facturas'}/${polizaId}.pdf`;
+      const { error: upErr } = await supabase.storage
+        .from('poliza-documentos')
+        .upload(path, blob, { upsert: true, contentType: 'application/pdf' });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from('poliza-documentos').getPublicUrl(path);
+      const pdfUrl = pub?.publicUrl;
+      const col = kind === 'carnet' ? 'carnet_pdf_url' : 'factura_pdf_url';
+      await supabase.from('polizas_activas').update({ [col]: pdfUrl } as any).eq('id', polizaId);
+      setSelectedPoliza((prev) => (prev ? ({ ...prev, [col]: pdfUrl } as any) : prev));
+      setEditedPoliza((prev) => (prev ? ({ ...prev, [col]: pdfUrl } as any) : prev));
+      onPolicyUpdated?.();
+    } catch (e) {
+      console.error(`No se pudo guardar el PDF (${kind}) en la base de datos:`, e);
+      toast({ title: 'Aviso', description: 'El PDF se descargó pero no se pudo guardar en la base de datos.', variant: 'destructive' });
+    }
+  };
+
   const handleDownloadDocument = async (url: string, filename: string) => {
     if (downloadingUrl) return;
     setDownloadingUrl(url);
@@ -630,8 +653,10 @@ export function PolicyDetailsDialog({
             if (h > maxH) { h = maxH; w = h * ratio; }
             const x = (pageW - w) / 2, y = (pageH - h) / 2;
             pdf.addImage(canvas.toDataURL('image/png'), 'PNG', x, y, w, h, undefined, 'FAST');
+            const carnetBlob = pdf.output('blob');
             pdf.save(buildPdfFilename(label));
-            toast({ title: 'PDF descargado', description: 'Carnet descargado como PDF (A4).' });
+            await persistGeneratedPdf(carnetBlob, 'carnet');
+            toast({ title: 'PDF guardado', description: 'Carnet descargado y guardado en la base de datos.' });
             return;
           }
 
@@ -674,8 +699,10 @@ export function PolicyDetailsDialog({
               backgroundColor: '#ffffff',
               pageMode: 'a4',
             });
+            const facturaBlob = pdf.output('blob');
             pdf.save(buildPdfFilename(label));
-            toast({ title: 'PDF descargado', description: `${label} lista para imprimir (A4).` });
+            if (isFactura) await persistGeneratedPdf(facturaBlob, 'factura');
+            toast({ title: isFactura ? 'PDF guardado' : 'PDF descargado', description: isFactura ? 'Factura descargada y guardada en la base de datos.' : `${label} descargado (A4).` });
           } catch {
             window.open(url, '_blank', 'noopener,noreferrer');
           }

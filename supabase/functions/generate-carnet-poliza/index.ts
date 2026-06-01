@@ -153,6 +153,21 @@ async function buildHtml(p: any, verifyUrl: string): Promise<string> {
     </div>
   </div>
 </div>
+<script>
+  (function(){
+    function fit(){
+      var c=document.querySelector('.carnet-card'); if(!c) return;
+      c.style.transform='none'; c.style.transformOrigin='top center';
+      var avail=document.documentElement.clientWidth-16;
+      var s=avail/c.offsetWidth;
+      if(s<1){ c.style.transform='scale('+s+')'; document.body.style.height=(c.offsetHeight*s+16)+'px'; }
+      else { document.body.style.height=''; }
+    }
+    window.addEventListener('resize',fit);
+    window.addEventListener('load',fit);
+    if(document.readyState!=='loading') fit(); else document.addEventListener('DOMContentLoaded',fit);
+  })();
+</script>
 </body>
 </html>`;
 }
