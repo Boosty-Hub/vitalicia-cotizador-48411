@@ -103,7 +103,7 @@ async function buildHtml(p: any, verifyUrl: string): Promise<string> {
   <div class="carnet-card bg-white w-[1000px] flex shadow-lg border border-gray-300 font-sans pb-4" style="min-height:400px;">
     <div class="w-1/2 p-4 border-r border-gray-200 flex flex-col">
       <div class="flex items-center mb-2">
-        <img alt="Logo" class="h-12 w-32 object-contain" src="${LOGO_URL}" style="clip-path: inset(0px 75% 0px 0px);" />
+        <img alt="Logo" class="h-12 w-40 object-contain" src="${LOGO_URL}" />
         <h1 class="flex-1 text-center font-black text-xl leading-tight">PÓLIZA DE RESPONSABILIDAD CIVIL DE VEHÍCULOS RCV</h1>
       </div>
       <div class="text-center my-2"><h2 class="text-xl font-bold">PÓLIZA No. : ${esc(numPoliza)}</h2></div>
@@ -130,7 +130,7 @@ async function buildHtml(p: any, verifyUrl: string): Promise<string> {
     </div>
     <div class="w-1/2 p-4 flex">
       <div class="w-1/2 flex flex-col items-center pt-2">
-        <img alt="Logo" class="mb-4 h-12 w-32 object-contain" src="${LOGO_URL}" style="clip-path: inset(0px 75% 0px 0px);" />
+        <img alt="Logo" class="mb-4 h-12 w-40 object-contain" src="${LOGO_URL}" />
         <div class="text-center space-y-1 text-sm font-bold">
           <p class="mb-0.5">POLIZAS</p>
           <p>(0412.765.4927)</p>
