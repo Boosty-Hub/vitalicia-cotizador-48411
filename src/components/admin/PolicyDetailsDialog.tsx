@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -35,6 +35,18 @@ import { refreshPolizaConfig } from "@/utils/refreshPolizaConfig";
 
 type Poliza = Database["public"]["Tables"]["polizas_activas"]["Row"];
 
+type CaptureOpts = {
+  scale?: number;
+  useCORS?: boolean;
+  backgroundColor?: string | null;
+  orientation?: 'portrait' | 'landscape' | 'auto';
+  pageMode?: 'node-sized' | 'a4';
+  pageWidthMm?: number;
+  pageHeightMm?: number;
+  rowSelector?: string;
+  keepTogetherSelector?: string;
+};
+
 interface PolicyDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -60,6 +72,9 @@ export function PolicyDetailsDialog({
   const [facturaHtml, setFacturaHtml] = useState<string | null>(null);
   const [carnetHtml, setCarnetHtml] = useState<string | null>(null);
   const [downloadingUrl, setDownloadingUrl] = useState<string | null>(null);
+
+  const carnetIframeRef = useRef<HTMLIFrameElement>(null);
+  const facturaIframeRef = useRef<HTMLIFrameElement>(null);
 
   // Preload PDF libs when the dialog opens so the first click is instant
   useEffect(() => {
@@ -389,36 +404,160 @@ export function PolicyDetailsDialog({
     );
   };
 
-  const carnetPdfSafeCss = `
-    html, body { -webkit-font-smoothing: antialiased !important; text-rendering: geometricPrecision !important; }
-    .card { width: 540px !important; height: 340px !important; min-width: 540px !important; min-height: 340px !important; max-width: 540px !important; max-height: 340px !important; border-radius: 0 !important; box-shadow: none !important; }
-    .doctype .kicker { line-height: 1.25 !important; }
-    .doctype .name { line-height: 1.15 !important; }
-    .doctype .badge { line-height: 1.25 !important; padding-top: 3px !important; padding-bottom: 2px !important; }
-    .titleband, .titleband .left, .titleband .right { line-height: 1.25 !important; }
-    .body { padding: 8px 20px 70px 20px !important; gap: 4px 18px !important; overflow: hidden !important; }
-    .field .lbl, .section-tag .label { line-height: 1.2 !important; }
-    .field .val { line-height: 1.3 !important; min-height: 0 !important; padding: 0 !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
-    .field.mono .val { line-height: 1.3 !important; min-height: 0 !important; }
-    .field.big .val { line-height: 1.2 !important; min-height: 0 !important; }
-    .vigencia { z-index: 2 !important; }
-    .vigencia .vlabel, .vigencia .k, .vigencia .v { line-height: 1.25 !important; }
-    .back .blk .k, .back .blk .v, .back .contact .row, .back .contact .row .lbl, .back .contact .row .v, .back .legal, .back .legal .left, .back .legal .right .v, .back .contact .qr .caption { line-height: 1.3 !important; }
-  `;
+  const captureIframeNodesToPdf = async (
+    iframe: HTMLIFrameElement,
+    selector: string,
+    opts: CaptureOpts = {}
+  ) => {
+    const [{ jsPDF }, { default: html2canvas }] = await Promise.all([
+      import('jspdf'),
+      import('html2canvas'),
+    ]);
 
-  const applyCarnetPdfSafeCss = (doc: Document) => {
-    const style = doc.createElement('style');
-    style.setAttribute('data-carnet-pdf-safe', '1');
-    style.textContent = carnetPdfSafeCss;
-    doc.head.appendChild(style);
+    const doc = iframe.contentDocument!;
+
+    // Readiness gate: fonts + grid layout + images + double rAF
+    try {
+      await (doc as any).fonts?.load?.('400 10px "Roboto Mono"');
+      await (doc as any).fonts?.load?.('700 10px "Roboto Mono"');
+      await (doc as any).fonts?.ready;
+    } catch {}
+
+    // Poll until grid elements are actually computed (max 1500ms)
+    await Promise.race([
+      new Promise<void>((resolve) => {
+        const gridEl = doc.querySelector('.grid,[class*="grid-cols"]');
+        if (!gridEl) { resolve(); return; }
+        const check = () => {
+          const display = window.getComputedStyle(gridEl).display;
+          if (display.includes('grid')) { resolve(); return; }
+          requestAnimationFrame(check);
+        };
+        check();
+      }),
+      new Promise<void>((resolve) => setTimeout(resolve, 1500)),
+    ]);
+
+    // Wait for all images
+    const imgs = Array.from(doc.images || []);
+    await Promise.all(
+      imgs.map((img) =>
+        (img as HTMLImageElement).complete && (img as HTMLImageElement).naturalWidth > 0
+          ? Promise.resolve()
+          : new Promise<void>((res) => {
+              (img as HTMLImageElement).onload = () => res();
+              (img as HTMLImageElement).onerror = () => res();
+              setTimeout(() => res(), 4000);
+            })
+      )
+    );
+
+    // Double rAF settle
+    await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+
+    const pageMode = opts.pageMode ?? 'node-sized';
+
+    if (pageMode === 'node-sized') {
+      const nodes = Array.from(doc.querySelectorAll<HTMLElement>(selector));
+      if (nodes.length === 0) throw new Error('No se encontraron elementos para el PDF');
+
+      let pdf: InstanceType<typeof jsPDF> | null = null;
+
+      for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
+        const rect = node.getBoundingClientRect();
+        const wMm = rect.width * 25.4 / 96;
+        const hMm = rect.height * 25.4 / 96;
+        const orientation: 'landscape' | 'portrait' = wMm >= hMm ? 'landscape' : 'portrait';
+
+        if (i === 0) {
+          pdf = new jsPDF({ orientation, unit: 'mm', format: [wMm, hMm] });
+        } else {
+          pdf!.addPage([wMm, hMm], orientation);
+        }
+
+        const canvas = await html2canvas(node, {
+          scale: opts.scale ?? 3,
+          useCORS: opts.useCORS ?? true,
+          backgroundColor: opts.backgroundColor !== undefined ? opts.backgroundColor : null,
+        });
+
+        pdf!.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, wMm, hMm, undefined, 'FAST');
+      }
+
+      return pdf!;
+    } else {
+      // a4 mode (factura)
+      const node = doc.querySelector<HTMLElement>(selector);
+      if (!node) throw new Error('No se encontraron elementos para el PDF');
+
+      const scale = opts.scale ?? 2;
+      const canvas = await html2canvas(node, {
+        scale,
+        useCORS: opts.useCORS ?? true,
+        backgroundColor: opts.backgroundColor !== undefined ? opts.backgroundColor : '#ffffff',
+        windowWidth: node.scrollWidth,
+      });
+
+      const pageWidthMm = opts.pageWidthMm ?? 210;
+      const pageHeightMm = opts.pageHeightMm ?? 297;
+      const pxPerMm = canvas.width / pageWidthMm;
+      const pageHeightPx = Math.floor(pageHeightMm * pxPerMm);
+
+      // Compute break offsets from row/section elements
+      const rowSel = opts.rowSelector ?? 'tr, .section-header, header, footer, .firma, .stamp-pagado';
+      const keepSel = opts.keepTogetherSelector ?? '.firma, .stamp-pagado';
+      const breakOffsets: number[] = [];
+      node.querySelectorAll<HTMLElement>(rowSel).forEach((el) => {
+        breakOffsets.push((el.offsetTop + el.offsetHeight) * scale);
+      });
+      breakOffsets.sort((a, b) => a - b);
+
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      let y = 0;
+      let firstPage = true;
+
+      while (y < canvas.height) {
+        const hardLimit = y + pageHeightPx;
+        // Find the largest break point within (y, hardLimit]
+        let cut = breakOffsets.filter((b) => b > y && b <= hardLimit).pop() ?? Math.min(hardLimit, canvas.height);
+        if (cut === y) cut = Math.min(hardLimit, canvas.height); // safety
+
+        // Check if a keep-together element straddles the cut
+        node.querySelectorAll<HTMLElement>(keepSel).forEach((el) => {
+          const top = el.offsetTop * scale;
+          const bottom = (el.offsetTop + el.offsetHeight) * scale;
+          if (top < cut && bottom > cut) {
+            cut = Math.max(y + 1, top); // push cut before this block
+          }
+        });
+
+        const sliceHeight = cut - y;
+        if (sliceHeight <= 0) break;
+
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sliceHeight;
+        const ctx = pageCanvas.getContext('2d')!;
+        ctx.fillStyle = opts.backgroundColor ?? '#ffffff';
+        ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+        ctx.drawImage(canvas, 0, y, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+
+        const sliceHeightMm = sliceHeight / pxPerMm;
+        if (!firstPage) pdf.addPage();
+        pdf.addImage(pageCanvas.toDataURL('image/png'), 'PNG', 0, 0, pageWidthMm, sliceHeightMm, undefined, 'FAST');
+        firstPage = false;
+        y = cut;
+      }
+
+      return pdf;
+    }
   };
 
   const handleDownloadDocument = async (url: string, filename: string) => {
     if (downloadingUrl) return;
     setDownloadingUrl(url);
-    let iframe: HTMLIFrameElement | null = null;
-    let wrapper: HTMLDivElement | null = null;
-    const injectedNodes: Element[] = [];
+    let offscreenIframe: HTMLIFrameElement | null = null;
 
     try {
       const response = await fetch(url);
@@ -428,253 +567,100 @@ export function PolicyDetailsDialog({
       if (looksHtml) {
         const html = await response.text();
         if (/<html|<!doctype|<body|<div|<table/i.test(html)) {
-          const isFactura = /factura/i.test(filename) || /factura/i.test(url);
           const isCarnet = /carnet/i.test(filename) || /carnet/i.test(url);
+          const isFactura = /factura/i.test(filename) || /factura/i.test(url);
           const label: 'Factura' | 'Carnet' | 'Documento' = isFactura ? 'Factura' : isCarnet ? 'Carnet' : 'Documento';
 
-          // A4 portrait @ 96dpi
-          const A4_WIDTH_PX = 794;
-          const A4_HEIGHT_PX = 1123;
-
-          // 1) Render in hidden iframe to compute natural layout
-          iframe = document.createElement('iframe');
-          iframe.style.position = 'fixed';
-          iframe.style.left = '-10000px';
-          iframe.style.top = '0';
-          iframe.style.width = A4_WIDTH_PX + 'px';
-          iframe.style.height = A4_HEIGHT_PX + 'px';
-          iframe.style.border = '0';
-          iframe.style.background = '#ffffff';
-          document.body.appendChild(iframe);
-
-          await new Promise<void>((resolve) => {
-            iframe!.onload = () => resolve();
-            const doc = iframe!.contentDocument!;
-            doc.open();
-            doc.write(html);
-            doc.close();
-            setTimeout(() => resolve(), 800);
-          });
-
-          const iframeDoc = iframe.contentDocument!;
-
+          // ===== CARNET =====
           if (isCarnet) {
-            // CARNET: capture each .card individually so the PNG matches the HTML pixel-for-pixel.
+            const previewIframe = carnetIframeRef.current;
+            const previewDoc = previewIframe?.contentDocument;
+            const previewCards = previewDoc
+              ? Array.from(previewDoc.querySelectorAll<HTMLElement>('.card'))
+              : [];
+            const previewReady =
+              previewCards.length > 0 &&
+              previewCards[0].getBoundingClientRect().width > 0;
 
-            try {
-              const fontSet = (iframeDoc as any).fonts;
-              await fontSet?.load?.('700 12px "Inter"');
-              await fontSet?.load?.('800 13px "Inter"');
-              await fontSet?.load?.('700 11px "JetBrains Mono"');
-              if (fontSet?.ready) await fontSet.ready;
-            } catch {}
-
-            const imgs = Array.from(iframeDoc.images || []);
-            await Promise.all(
-              imgs.map((img) =>
-                (img as HTMLImageElement).complete && (img as HTMLImageElement).naturalWidth > 0
-                  ? Promise.resolve()
-                  : new Promise<void>((res) => {
-                      (img as HTMLImageElement).onload = () => res();
-                      (img as HTMLImageElement).onerror = () => res();
-                      setTimeout(() => res(), 4000);
-                    })
-              )
-            );
-            // Extra settle time for webfont swap
-            await new Promise((r) => setTimeout(r, 300));
-            await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-            const cards = Array.from(
-              iframeDoc.querySelectorAll<HTMLElement>('.card')
-            );
-            if (cards.length === 0) throw new Error('No se encontraron tarjetas del carnet');
-
-            const { default: html2canvas } = await import('html2canvas');
-
-            for (let i = 0; i < cards.length; i++) {
-              const card = cards[i];
-              const rect = card.getBoundingClientRect();
-              const captureWidth = Math.ceil(rect.width);
-              const captureHeight = Math.ceil(rect.height);
-              const canvas = await html2canvas(card, {
-                scale: 3,
-                useCORS: true,
-                allowTaint: false,
-                backgroundColor: null,
-                logging: false,
-                width: captureWidth,
-                height: captureHeight,
-                windowWidth: iframeDoc.documentElement.scrollWidth,
-                windowHeight: iframeDoc.documentElement.scrollHeight,
-                scrollX: 0,
-                scrollY: 0,
-                onclone: (clonedDoc) => {
-                  applyCarnetPdfSafeCss(clonedDoc);
-                },
-              });
-
-
-              const side = i === 0 ? 'anverso' : i === 1 ? 'reverso' : `cara-${i + 1}`;
-              const baseName = buildPdfFilename(label).replace(/\.pdf$/i, '');
-              const pngName = `${baseName}-${side}.png`;
-
+            let captureIframe: HTMLIFrameElement;
+            if (previewReady) {
+              captureIframe = previewIframe!;
+            } else {
+              // Fallback: build hidden iframe
+              offscreenIframe = document.createElement('iframe');
+              offscreenIframe.style.cssText =
+                'position:fixed;left:-10000px;top:0;width:1px;height:1px;border:0;background:#ffffff;';
+              document.body.appendChild(offscreenIframe);
               await new Promise<void>((resolve) => {
-                canvas.toBlob((blob) => {
-                  if (!blob) { resolve(); return; }
-                  const blobUrl = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = blobUrl;
-                  a.download = pngName;
-                  document.body.appendChild(a);
-                  a.click();
-                  document.body.removeChild(a);
-                  setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-                  resolve();
-                }, 'image/png');
+                offscreenIframe!.onload = () => resolve();
+                const d = offscreenIframe!.contentDocument!;
+                d.open();
+                d.write(html);
+                d.close();
+                setTimeout(() => resolve(), 800);
               });
+              try {
+                await (offscreenIframe.contentDocument as any)?.fonts?.ready;
+              } catch {}
+              captureIframe = offscreenIframe;
             }
 
-            toast({ title: 'PNG descargado', description: `${label} descargado como imagen(es) PNG.` });
+            const pdf = await captureIframeNodesToPdf(captureIframe, '.card', {
+              scale: 3,
+              pageMode: 'node-sized',
+            });
+            pdf.save(buildPdfFilename(label));
+            toast({ title: 'PDF descargado', description: `${label} descargado como PDF.` });
             return;
           }
 
+          // ===== FACTURA (and other HTML docs) =====
+          const previewIframe = facturaIframeRef.current;
+          const previewDoc = previewIframe?.contentDocument;
+          const previewNode = previewDoc?.querySelector<HTMLElement>('#invoice-document');
+          const previewReady =
+            !!previewNode && previewNode.getBoundingClientRect().width > 0;
 
-
-          // ===== FACTURA (and other HTML docs): existing flow =====
-
-          // Wait for iframe fonts
-          try {
-            // @ts-ignore
-            if (iframeDoc.fonts?.ready) await iframeDoc.fonts.ready;
-          } catch {}
-
-          // Wait for iframe images
-          const imgs = Array.from(iframeDoc.images || []);
-          await Promise.all(
-            imgs.map((img) =>
-              (img as HTMLImageElement).complete && (img as HTMLImageElement).naturalWidth > 0
-                ? Promise.resolve()
-                : new Promise<void>((res) => {
-                    (img as HTMLImageElement).onload = () => res();
-                    (img as HTMLImageElement).onerror = () => res();
-                    setTimeout(() => res(), 4000);
-                  })
-            )
-          );
-
-          // Clone styles to parent head for wrapper rendering
-          const styleSources = Array.from(
-            iframeDoc.querySelectorAll('style, link[rel="stylesheet"]')
-          ) as (HTMLStyleElement | HTMLLinkElement)[];
-
-          const linkLoadPromises: Promise<void>[] = [];
-          styleSources.forEach((node) => {
-            const clone = node.cloneNode(true) as HTMLElement;
-            clone.setAttribute('data-pdf-injected', '1');
-            document.head.appendChild(clone);
-            injectedNodes.push(clone);
-            if (clone.tagName === 'LINK') {
-              linkLoadPromises.push(
-                new Promise<void>((res) => {
-                  (clone as HTMLLinkElement).onload = () => res();
-                  (clone as HTMLLinkElement).onerror = () => res();
-                  setTimeout(() => res(), 4000);
-                })
-              );
-            }
-          });
-          await Promise.all(linkLoadPromises);
-
-          try {
-            // @ts-ignore
-            if (document.fonts?.ready) await document.fonts.ready;
-          } catch {}
-
-          const bodyHtml = iframeDoc.body.innerHTML;
-          const bodyInlineStyle = iframeDoc.body.getAttribute('style') || '';
-
-          wrapper = document.createElement('div');
-          wrapper.style.position = 'fixed';
-          wrapper.style.left = '-10000px';
-          wrapper.style.top = '0';
-          wrapper.style.width = A4_WIDTH_PX + 'px';
-          wrapper.style.background = '#ffffff';
-          wrapper.innerHTML = `
-            <div class="pdf-body" style="${bodyInlineStyle};width:${A4_WIDTH_PX}px;margin:0;background:#ffffff;">
-              ${bodyHtml}
-            </div>
-          `;
-          document.body.appendChild(wrapper);
-          const wrapperImages = Array.from(wrapper.querySelectorAll('img')) as HTMLImageElement[];
-          await Promise.all(
-            wrapperImages.map((img) =>
-              img.complete && img.naturalWidth > 0
-                ? Promise.resolve()
-                : new Promise<void>((res) => {
-                    img.onload = () => res();
-                    img.onerror = () => res();
-                    setTimeout(() => res(), 4000);
-                  })
-            )
-          );
-          await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-          const naturalHeight = wrapper.scrollHeight + 4;
-          const scale = 2;
-
-          const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-            import('html2canvas'),
-            import('jspdf'),
-          ]);
-
-          const canvas = await html2canvas(wrapper, {
-            scale,
-            useCORS: true,
-            allowTaint: false,
-            backgroundColor: '#ffffff',
-            windowWidth: A4_WIDTH_PX,
-            windowHeight: naturalHeight,
-            scrollX: 0,
-            scrollY: 0,
-          });
-
-          const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-          const pdfPageWidthMm = 210;
-          const pdfPageHeightMm = 297;
-          const pxPerMm = canvas.width / pdfPageWidthMm;
-          const pageHeightPx = Math.floor(pdfPageHeightMm * pxPerMm);
-
-          let renderedHeight = 0;
-          let pageIndex = 0;
-          while (renderedHeight < canvas.height) {
-            const sliceHeight = Math.min(pageHeightPx, canvas.height - renderedHeight);
-            const pageCanvas = document.createElement('canvas');
-            pageCanvas.width = canvas.width;
-            pageCanvas.height = sliceHeight;
-            const ctx = pageCanvas.getContext('2d')!;
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-            ctx.drawImage(
-              canvas,
-              0, renderedHeight, canvas.width, sliceHeight,
-              0, 0, canvas.width, sliceHeight
-            );
-            const imgData = pageCanvas.toDataURL('image/jpeg', 0.95);
-            const sliceHeightMm = sliceHeight / pxPerMm;
-            if (pageIndex > 0) pdf.addPage();
-            pdf.addImage(imgData, 'JPEG', 0, 0, pdfPageWidthMm, sliceHeightMm);
-            renderedHeight += sliceHeight;
-            pageIndex++;
+          let captureIframe: HTMLIFrameElement;
+          if (previewReady) {
+            captureIframe = previewIframe!;
+          } else {
+            // Fallback: build hidden iframe at natural width
+            offscreenIframe = document.createElement('iframe');
+            offscreenIframe.style.cssText =
+              'position:fixed;left:-10000px;top:0;width:850px;height:1px;border:0;background:#ffffff;';
+            document.body.appendChild(offscreenIframe);
+            await new Promise<void>((resolve) => {
+              offscreenIframe!.onload = () => resolve();
+              const d = offscreenIframe!.contentDocument!;
+              d.open();
+              d.write(html);
+              d.close();
+              setTimeout(() => resolve(), 800);
+            });
+            // Readiness gate before capture
+            try {
+              const fd = offscreenIframe.contentDocument as any;
+              await fd?.fonts?.ready;
+            } catch {}
+            captureIframe = offscreenIframe;
           }
 
-          pdf.save(buildPdfFilename(label));
-          toast({ title: 'PDF descargado', description: `${label} lista para imprimir (A4).` });
+          try {
+            const pdf = await captureIframeNodesToPdf(captureIframe, '#invoice-document', {
+              scale: 2,
+              useCORS: true,
+              backgroundColor: '#ffffff',
+              pageMode: 'a4',
+            });
+            pdf.save(buildPdfFilename(label));
+            toast({ title: 'PDF descargado', description: `${label} lista para imprimir (A4).` });
+          } catch {
+            window.open(url, '_blank', 'noopener,noreferrer');
+          }
           return;
         }
       }
-
-
 
       // Non-HTML: direct download
       const blob = await response.blob();
@@ -695,9 +681,9 @@ export function PolicyDetailsDialog({
       });
       window.open(url, '_blank', 'noopener,noreferrer');
     } finally {
-      injectedNodes.forEach((n) => n.parentNode?.removeChild(n));
-      if (wrapper && wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
-      if (iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe);
+      if (offscreenIframe && offscreenIframe.parentNode) {
+        offscreenIframe.parentNode.removeChild(offscreenIframe);
+      }
       setDownloadingUrl(null);
     }
   };
@@ -1285,6 +1271,7 @@ export function PolicyDetailsDialog({
                   {(selectedPoliza as any).factura_poliza_url ? (
                     <div className="rounded-lg border bg-white overflow-hidden">
                       <iframe
+                        ref={facturaIframeRef}
                         key={(selectedPoliza as any).factura_poliza_url}
                         srcDoc={facturaHtml ?? "<p style='font-family:sans-serif;padding:24px;color:#666'>Cargando factura...</p>"}
                         title="Factura"
@@ -1336,6 +1323,7 @@ export function PolicyDetailsDialog({
                   {(selectedPoliza as any).carnet_poliza_url ? (
                     <div className="rounded-lg border bg-white overflow-hidden">
                       <iframe
+                        ref={carnetIframeRef}
                         key={(selectedPoliza as any).carnet_poliza_url}
                         srcDoc={carnetHtml ?? "<p style='font-family:sans-serif;padding:24px;color:#666'>Cargando carnet...</p>"}
                         title="Carnet"
