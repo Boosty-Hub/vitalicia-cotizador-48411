@@ -88,6 +88,7 @@ async function buildHtml(p: any, verifyUrl: string): Promise<string> {
   tailwind.config = { theme: { extend: { colors: { 'vitalicia-blue':'#91D8F7','vitalicia-dark-blue':'#003399' }, fontFamily: { sans:['Arial','Helvetica','sans-serif'] } } } }
 </script>
 <style>
+  html { font-size: 14px; } /* baja todas las letras (rem) ~2px y compacta el layout */
   body { background-color:#f3f4f6; display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; padding:20px; }
   @media print {
     @page { size: A4 landscape; margin: 8mm; }
@@ -100,7 +101,7 @@ async function buildHtml(p: any, verifyUrl: string): Promise<string> {
 </head>
 <body>
 <div class="flex items-center justify-center min-h-screen bg-gray-100 p-4">
-  <div class="carnet-card bg-white w-[680px] flex shadow-lg border border-gray-300 font-sans pb-4" style="min-height:470px;">
+  <div class="carnet-card bg-white w-[680px] flex shadow-lg border border-gray-300 font-sans pb-2" style="min-height:470px;">
     <div class="w-1/2 p-4 border-r border-gray-200 flex flex-col">
       <div class="flex items-center mb-2">
         <img alt="Logo" class="h-12 w-40 object-contain" src="${LOGO_URL}" />
