@@ -104,7 +104,7 @@ async function buildHtml(p: any, verifyUrl: string): Promise<string> {
     <div class="w-1/2 p-4 border-r border-gray-200 flex flex-col">
       <div class="flex items-center mb-2">
         <img alt="Logo" class="h-12 w-40 object-contain" src="${LOGO_URL}" />
-        <h1 class="flex-1 text-center font-black text-xl leading-tight">PÓLIZA DE RESPONSABILIDAD CIVIL DE VEHÍCULOS RCV</h1>
+        <h1 class="flex-1 text-center font-black text-sm leading-tight">PÓLIZA DE RESPONSABILIDAD CIVIL DE VEHÍCULOS RCV</h1>
       </div>
       <div class="text-center my-2"><h2 class="text-xl font-bold">PÓLIZA No. : ${esc(numPoliza)}</h2></div>
       <div class="bg-[#91D8F7] text-[#003399] font-bold text-center py-0.5 text-sm mb-2">DATOS DEL ASEGURADO</div>
