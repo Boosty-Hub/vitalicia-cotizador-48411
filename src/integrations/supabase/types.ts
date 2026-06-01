@@ -623,6 +623,7 @@ export type Database = {
           c_numtelef1: string | null
           c_placa: string | null
           c_razonsocial: string | null
+          carnet_pdf_url: string | null
           carnet_poliza_url: string | null
           cd_edocivil: string | null
           cd_edocivilap: string | null
@@ -655,6 +656,7 @@ export type Database = {
           f_fecnacap: string | null
           f_fecnacch: string | null
           factura_compra_vehiculo_url: string | null
+          factura_pdf_url: string | null
           factura_poliza_url: string | null
           fecha_compra_monday: string | null
           fecha_de_vencimiento_monday: string | null
@@ -766,6 +768,7 @@ export type Database = {
           c_numtelef1?: string | null
           c_placa?: string | null
           c_razonsocial?: string | null
+          carnet_pdf_url?: string | null
           carnet_poliza_url?: string | null
           cd_edocivil?: string | null
           cd_edocivilap?: string | null
@@ -798,6 +801,7 @@ export type Database = {
           f_fecnacap?: string | null
           f_fecnacch?: string | null
           factura_compra_vehiculo_url?: string | null
+          factura_pdf_url?: string | null
           factura_poliza_url?: string | null
           fecha_compra_monday?: string | null
           fecha_de_vencimiento_monday?: string | null
@@ -909,6 +913,7 @@ export type Database = {
           c_numtelef1?: string | null
           c_placa?: string | null
           c_razonsocial?: string | null
+          carnet_pdf_url?: string | null
           carnet_poliza_url?: string | null
           cd_edocivil?: string | null
           cd_edocivilap?: string | null
@@ -941,6 +946,7 @@ export type Database = {
           f_fecnacap?: string | null
           f_fecnacch?: string | null
           factura_compra_vehiculo_url?: string | null
+          factura_pdf_url?: string | null
           factura_poliza_url?: string | null
           fecha_compra_monday?: string | null
           fecha_de_vencimiento_monday?: string | null
