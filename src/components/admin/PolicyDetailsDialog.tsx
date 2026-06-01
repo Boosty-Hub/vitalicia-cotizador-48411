@@ -71,6 +71,7 @@ export function PolicyDetailsDialog({
   const [isGeneratingCarnet, setIsGeneratingCarnet] = useState(false);
   const [facturaHtml, setFacturaHtml] = useState<string | null>(null);
   const [carnetHtml, setCarnetHtml] = useState<string | null>(null);
+  const [docReloadNonce, setDocReloadNonce] = useState(0);
   const [downloadingUrl, setDownloadingUrl] = useState<string | null>(null);
 
   const carnetIframeRef = useRef<HTMLIFrameElement>(null);
@@ -107,6 +108,7 @@ export function PolicyDetailsDialog({
         setSelectedPoliza((prev) => (prev ? ({ ...prev, factura_poliza_url: url } as Poliza) : prev));
         setEditedPoliza((prev) => (prev ? ({ ...prev, factura_poliza_url: url } as Poliza) : prev));
       }
+      setDocReloadNonce((n) => n + 1); // fuerza re-fetch del preview aunque la URL no cambie
       onPolicyUpdated?.();
     } catch (e: any) {
       console.error("Error generating factura:", e);
@@ -130,6 +132,7 @@ export function PolicyDetailsDialog({
         setSelectedPoliza((prev) => (prev ? ({ ...prev, carnet_poliza_url: url } as Poliza) : prev));
         setEditedPoliza((prev) => (prev ? ({ ...prev, carnet_poliza_url: url } as Poliza) : prev));
       }
+      setDocReloadNonce((n) => n + 1); // fuerza re-fetch del preview aunque la URL no cambie
       onPolicyUpdated?.();
     } catch (e: any) {
       console.error("Error generating carnet:", e);
@@ -149,7 +152,7 @@ export function PolicyDetailsDialog({
       .then((t) => { if (!cancelled) setFacturaHtml(t); })
       .catch(() => { if (!cancelled) setFacturaHtml(null); });
     return () => { cancelled = true; };
-  }, [(selectedPoliza as any)?.factura_poliza_url]);
+  }, [(selectedPoliza as any)?.factura_poliza_url, docReloadNonce]);
 
   useEffect(() => {
     const url = (selectedPoliza as any)?.carnet_poliza_url;
@@ -160,7 +163,7 @@ export function PolicyDetailsDialog({
       .then((t) => { if (!cancelled) setCarnetHtml(t); })
       .catch(() => { if (!cancelled) setCarnetHtml(null); });
     return () => { cancelled = true; };
-  }, [(selectedPoliza as any)?.carnet_poliza_url]);
+  }, [(selectedPoliza as any)?.carnet_poliza_url, docReloadNonce]);
 
   // Update local state when prop changes
   useEffect(() => {
@@ -567,7 +570,7 @@ export function PolicyDetailsDialog({
     let offscreenIframe: HTMLIFrameElement | null = null;
 
     try {
-      const response = await fetch(url);
+      const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`);
       const contentType = response.headers.get('content-type') || '';
       const looksHtml = contentType.includes('html') || /\.html?$/i.test(filename) || /\.(txt)$/i.test(filename);
 
@@ -1282,7 +1285,7 @@ export function PolicyDetailsDialog({
                     <div className="rounded-lg border bg-white overflow-hidden">
                       <iframe
                         ref={facturaIframeRef}
-                        key={(selectedPoliza as any).factura_poliza_url}
+                        key={`${(selectedPoliza as any).factura_poliza_url}-${docReloadNonce}`}
                         srcDoc={facturaHtml ?? "<p style='font-family:sans-serif;padding:24px;color:#666'>Cargando factura...</p>"}
                         title="Factura"
                         className="w-full bg-white"
@@ -1335,7 +1338,7 @@ export function PolicyDetailsDialog({
                       <div className="flex justify-end">
                         <Button
                           size="sm"
-                          onClick={() => handleDownloadDocument((selectedPoliza as any).carnet_poliza_url, 'carnet.pdf')}
+                          onClick={() => handleDownloadDocument((selectedPoliza as any).carnet_poliza_url, (((selectedPoliza as any).carnet_poliza_url || '').split('/').pop() || '').split('?')[0] || 'carnet.html')}
                           disabled={!!downloadingUrl}
                         >
                           {downloadingUrl ? (
@@ -1348,7 +1351,7 @@ export function PolicyDetailsDialog({
                       <div className="rounded-lg border bg-white overflow-hidden">
                         <iframe
                           ref={carnetIframeRef}
-                          key={(selectedPoliza as any).carnet_poliza_url}
+                          key={`${(selectedPoliza as any).carnet_poliza_url}-${docReloadNonce}`}
                           srcDoc={carnetHtml ?? "<p style='font-family:sans-serif;padding:24px;color:#666'>Cargando carnet...</p>"}
                           title="Carnet"
                           className="w-full bg-white"
