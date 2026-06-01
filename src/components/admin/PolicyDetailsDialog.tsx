@@ -578,46 +578,64 @@ export function PolicyDetailsDialog({
           const isFactura = /factura/i.test(filename) || /factura/i.test(url);
           const label: 'Factura' | 'Carnet' | 'Documento' = isFactura ? 'Factura' : isCarnet ? 'Carnet' : 'Documento';
 
-          // ===== CARNET =====
+          // ===== CARNET (impresión nativa para fidelidad EXACTA) =====
+          // El carnet usa clip-path, gradientes, pseudo-elementos y sombras que
+          // html2canvas NO reproduce. Usamos el motor de impresión del navegador
+          // (PDF pixel-exacto), inyectando CSS @page con una tarjeta por página.
           if (isCarnet) {
-            const previewIframe = carnetIframeRef.current;
-            const previewDoc = previewIframe?.contentDocument;
-            const previewCards = previewDoc
-              ? Array.from(previewDoc.querySelectorAll<HTMLElement>('.card'))
-              : [];
-            const previewReady =
-              previewCards.length > 0 &&
-              previewCards[0].getBoundingClientRect().width > 0;
+            const printCss = `
+<style id="carnet-print-css">
+@media print {
+  @page { size: 540px 340px; margin: 0; }
+  html, body { background:#fff !important; margin:0 !important; padding:0 !important; min-height:0 !important; display:block !important; }
+  .stage { display:block !important; gap:0 !important; }
+  .card-wrap { display:block !important; margin:0 !important; }
+  .caption { display:none !important; }
+  .card { box-shadow:none !important; border-radius:0 !important; margin:0 !important; page-break-after:always; break-after:page; }
+  .card:last-child { page-break-after:auto; break-after:auto; }
+  * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+}
+</style>`;
+            const htmlForPrint = /<\/head>/i.test(html)
+              ? html.replace(/<\/head>/i, `${printCss}</head>`)
+              : printCss + html;
 
-            let captureIframe: HTMLIFrameElement;
-            if (previewReady) {
-              captureIframe = previewIframe!;
-            } else {
-              // Fallback: build hidden iframe
-              offscreenIframe = document.createElement('iframe');
-              offscreenIframe.style.cssText =
-                'position:fixed;left:-10000px;top:0;width:1px;height:1px;border:0;background:#ffffff;';
-              document.body.appendChild(offscreenIframe);
-              await new Promise<void>((resolve) => {
-                offscreenIframe!.onload = () => resolve();
-                const d = offscreenIframe!.contentDocument!;
-                d.open();
-                d.write(html);
-                d.close();
-                setTimeout(() => resolve(), 800);
-              });
-              try {
-                await (offscreenIframe.contentDocument as any)?.fonts?.ready;
-              } catch {}
-              captureIframe = offscreenIframe;
-            }
+            const printFrame = document.createElement('iframe');
+            printFrame.setAttribute('aria-hidden', 'true');
+            printFrame.style.cssText =
+              'position:fixed;right:0;bottom:0;width:560px;height:380px;border:0;opacity:0;pointer-events:none;';
+            document.body.appendChild(printFrame);
 
-            const pdf = await captureIframeNodesToPdf(captureIframe, '.card', {
-              scale: 3,
-              pageMode: 'node-sized',
+            await new Promise<void>((resolve) => {
+              let done = false;
+              const finish = () => { if (!done) { done = true; resolve(); } };
+              printFrame.onload = () => finish();
+              const d = printFrame.contentDocument!;
+              d.open();
+              d.write(htmlForPrint);
+              d.close();
+              setTimeout(finish, 1500);
             });
-            pdf.save(buildPdfFilename(label));
-            toast({ title: 'PDF descargado', description: `${label} descargado como PDF.` });
+
+            const win = printFrame.contentWindow!;
+            try { await (printFrame.contentDocument as any)?.fonts?.ready; } catch {}
+            // doble rAF: asegura layout pintado antes de invocar print()
+            await new Promise<void>((r) =>
+              win.requestAnimationFrame(() => win.requestAnimationFrame(() => r())),
+            );
+
+            const cleanup = () => {
+              if (printFrame.parentNode) printFrame.parentNode.removeChild(printFrame);
+            };
+            win.addEventListener('afterprint', () => setTimeout(cleanup, 300));
+            setTimeout(cleanup, 60000); // respaldo si afterprint no dispara
+
+            toast({
+              title: 'Carnet listo para guardar',
+              description: 'Elegí "Guardar como PDF" (destino) en el diálogo de impresión.',
+            });
+            win.focus();
+            win.print();
             return;
           }
 
