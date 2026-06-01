@@ -581,49 +581,61 @@ export function PolicyDetailsDialog({
           const isFactura = /factura/i.test(filename) || /factura/i.test(url);
           const label: 'Factura' | 'Carnet' | 'Documento' = isFactura ? 'Factura' : isCarnet ? 'Carnet' : 'Documento';
 
-          // ===== CARNET (render nativo del navegador para fidelidad EXACTA) =====
-          // El carnet usa clip-path + Tailwind CDN que html2canvas NO reproduce.
-          // Lo renderizamos con el motor del navegador (PDF pixel-exacto). El propio
-          // HTML del carnet ya trae su CSS @media print (@page 1000x400), así que acá
-          // solo lo cargamos en un iframe, esperamos a que pinte e imprimimos.
+          // ===== CARNET (captura silenciosa -> PDF A4, descarga automática) =====
+          // El nuevo diseño del carnet usa solo Tailwind (colores sólidos) + imágenes,
+          // sin clip-path/gradientes/pseudo-elementos, así que html2canvas lo reproduce
+          // fiel (igual que la factura). Capturamos la tarjeta .carnet-card y la
+          // centramos en una hoja A4 horizontal. Sin diálogo: pdf.save() descarga solo.
           if (isCarnet) {
-            const printFrame = document.createElement('iframe');
-            printFrame.setAttribute('aria-hidden', 'true');
-            printFrame.style.cssText =
-              'position:fixed;right:0;bottom:0;width:1024px;height:440px;border:0;opacity:0;pointer-events:none;';
-            document.body.appendChild(printFrame);
+            const liveDoc = carnetIframeRef.current?.contentDocument;
+            const liveCard = liveDoc?.querySelector<HTMLElement>('.carnet-card');
+            const liveReady = !!liveCard && liveCard.getBoundingClientRect().width > 0;
 
-            await new Promise<void>((resolve) => {
-              let done = false;
-              const finish = () => { if (!done) { done = true; resolve(); } };
-              printFrame.onload = () => finish();
-              const d = printFrame.contentDocument!;
-              d.open();
-              d.write(html);
-              d.close();
-              setTimeout(finish, 1500);
-            });
+            let cardNode: HTMLElement;
+            if (liveReady) {
+              cardNode = liveCard!;
+            } else {
+              offscreenIframe = document.createElement('iframe');
+              offscreenIframe.style.cssText =
+                'position:fixed;right:0;bottom:0;width:1040px;height:460px;border:0;opacity:0;pointer-events:none;background:#fff;';
+              document.body.appendChild(offscreenIframe);
+              await new Promise<void>((resolve) => {
+                let done = false;
+                const finish = () => { if (!done) { done = true; resolve(); } };
+                offscreenIframe!.onload = () => finish();
+                const d = offscreenIframe!.contentDocument!;
+                d.open();
+                d.write(html);
+                d.close();
+                setTimeout(finish, 1500);
+              });
+              try { await (offscreenIframe.contentDocument as any)?.fonts?.ready; } catch {}
+              await new Promise<void>((r) => setTimeout(r, 700)); // settle Tailwind CDN
+              cardNode = offscreenIframe.contentDocument!.querySelector<HTMLElement>('.carnet-card')!;
+            }
 
-            const win = printFrame.contentWindow!;
-            try { await (printFrame.contentDocument as any)?.fonts?.ready; } catch {}
-            // settle: dar tiempo a que el runtime de Tailwind (CDN) aplique estilos
-            await new Promise<void>((r) => setTimeout(r, 700));
+            const win = (cardNode.ownerDocument.defaultView as Window) || window;
             await new Promise<void>((r) =>
               win.requestAnimationFrame(() => win.requestAnimationFrame(() => r())),
             );
 
-            const cleanup = () => {
-              if (printFrame.parentNode) printFrame.parentNode.removeChild(printFrame);
-            };
-            win.addEventListener('afterprint', () => setTimeout(cleanup, 300));
-            setTimeout(cleanup, 60000); // respaldo si afterprint no dispara
-
-            toast({
-              title: 'Carnet listo para guardar',
-              description: 'Elegí "Guardar como PDF" (destino) en el diálogo de impresión.',
+            const canvas = await html2canvas(cardNode, {
+              scale: 3,
+              useCORS: true,
+              backgroundColor: '#ffffff',
             });
-            win.focus();
-            win.print();
+
+            // PDF A4 horizontal, tarjeta centrada y escalada para entrar
+            const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+            const pageW = 297, pageH = 210, margin = 8;
+            const maxW = pageW - margin * 2, maxH = pageH - margin * 2;
+            const ratio = canvas.width / canvas.height;
+            let w = maxW, h = w / ratio;
+            if (h > maxH) { h = maxH; w = h * ratio; }
+            const x = (pageW - w) / 2, y = (pageH - h) / 2;
+            pdf.addImage(canvas.toDataURL('image/png'), 'PNG', x, y, w, h, undefined, 'FAST');
+            pdf.save(buildPdfFilename(label));
+            toast({ title: 'PDF descargado', description: 'Carnet descargado como PDF (A4).' });
             return;
           }
 
