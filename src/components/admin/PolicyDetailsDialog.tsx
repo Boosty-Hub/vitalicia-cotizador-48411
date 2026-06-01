@@ -587,6 +587,10 @@ export function PolicyDetailsDialog({
           // fiel (igual que la factura). Capturamos la tarjeta .carnet-card y la
           // centramos en una hoja A4 horizontal. Sin diálogo: pdf.save() descarga solo.
           if (isCarnet) {
+            const [{ jsPDF }, { default: html2canvas }] = await Promise.all([
+              import('jspdf'),
+              import('html2canvas'),
+            ]);
             const liveDoc = carnetIframeRef.current?.contentDocument;
             const liveCard = liveDoc?.querySelector<HTMLElement>('.carnet-card');
             const liveReady = !!liveCard && liveCard.getBoundingClientRect().width > 0;
