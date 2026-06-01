@@ -63,6 +63,8 @@ const DOCUMENT_FIELDS: DocDef[] = [
   // Póliza emitida
   { field: "url_poliza_monday", key: "poliza_emitida", label: "poliza-emitida", section: "poliza", order: 1 },
   { field: "url_carnet_monday", key: "carnet_asegurado", label: "carnet-asegurado", section: "poliza", order: 2 },
+  { field: "carnet_pdf_url", key: "carnet_pdf", label: "carnet-pdf", section: "poliza", order: 3 },
+  { field: "factura_pdf_url", key: "factura_pdf", label: "factura-pdf", section: "poliza", order: 4 },
 ];
 
 function sanitize(name: string | null | undefined): string {

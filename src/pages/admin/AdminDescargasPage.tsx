@@ -28,6 +28,8 @@ const DOC_DEFS = [
   { field: "cedula_accionistas_url", key: "cedula_accionistas", label: "Céd. Accion." },
   { field: "rif_accionistas_url", key: "rif_accionistas", label: "RIF Accion." },
   { field: "rif_empresa_url", key: "rif_empresa", label: "RIF Empresa" },
+  { field: "carnet_pdf_url", key: "carnet_pdf", label: "Carnet PDF" },
+  { field: "factura_pdf_url", key: "factura_pdf", label: "Factura PDF" },
 ] as const;
 
 type Poliza = Record<string, any>;

@@ -27,7 +27,8 @@ import {
   Save,
   X,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Mail
 } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
 import { PolicyStatusBadge, getPolizaStatus } from "@/components/admin/PolicyStatusBadge";
@@ -72,6 +73,7 @@ export function PolicyDetailsDialog({
   const [facturaHtml, setFacturaHtml] = useState<string | null>(null);
   const [carnetHtml, setCarnetHtml] = useState<string | null>(null);
   const [docReloadNonce, setDocReloadNonce] = useState(0);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [downloadingUrl, setDownloadingUrl] = useState<string | null>(null);
 
   const carnetIframeRef = useRef<HTMLIFrameElement>(null);
@@ -139,6 +141,23 @@ export function PolicyDetailsDialog({
       toast({ title: "Error", description: e?.message || "No se pudo generar el carnet", variant: "destructive" });
     } finally {
       setIsGeneratingCarnet(false);
+    }
+  };
+
+  const handleSendDocsEmail = async () => {
+    const polizaId = (selectedPoliza as any)?.id;
+    if (!polizaId) return;
+    setIsSendingEmail(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-poliza-docs", { body: { polizaId } });
+      if (error) throw error;
+      if ((data as any)?.success === false) throw new Error((data as any)?.error || "No se pudo enviar");
+      toast({ title: "Correo enviado", description: (data as any)?.message || "Carnet y factura enviados por correo." });
+    } catch (e: any) {
+      console.error("Error enviando correo:", e);
+      toast({ title: "Error", description: e?.message || "No se pudo enviar el correo.", variant: "destructive" });
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
@@ -892,6 +911,17 @@ export function PolicyDetailsDialog({
             {allowEdit && (
               <div className="flex gap-2">
                 {!isEditing ? (
+                  <>
+                  <Button
+                    size="sm"
+                    onClick={handleSendDocsEmail}
+                    disabled={isSendingEmail || !(selectedPoliza as any)?.carnet_pdf_url || !(selectedPoliza as any)?.factura_pdf_url}
+                    title={(!(selectedPoliza as any)?.carnet_pdf_url || !(selectedPoliza as any)?.factura_pdf_url) ? "Renderizá y guardá el PDF del carnet y de la factura primero" : "Enviar carnet y factura por correo"}
+                    className="gap-2"
+                  >
+                    {isSendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                    Enviar por correo
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -901,6 +931,7 @@ export function PolicyDetailsDialog({
                     <Pencil className="h-4 w-4" />
                     Editar
                   </Button>
+                  </>
                 ) : (
                   <>
                     <Button
