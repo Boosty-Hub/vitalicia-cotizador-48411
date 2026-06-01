@@ -591,34 +591,26 @@ export function PolicyDetailsDialog({
               import('jspdf'),
               import('html2canvas'),
             ]);
-            const liveDoc = carnetIframeRef.current?.contentDocument;
-            const liveCard = liveDoc?.querySelector<HTMLElement>('.carnet-card');
-            const liveReady = !!liveCard && liveCard.getBoundingClientRect().width > 0;
-
-            let cardNode: HTMLElement;
-            if (liveReady) {
-              cardNode = liveCard!;
-            } else {
-              offscreenIframe = document.createElement('iframe');
-              offscreenIframe.style.cssText =
-                'position:fixed;right:0;bottom:0;width:1040px;height:460px;border:0;opacity:0;pointer-events:none;background:#fff;';
-              document.body.appendChild(offscreenIframe);
-              await new Promise<void>((resolve) => {
-                let done = false;
-                const finish = () => { if (!done) { done = true; resolve(); } };
-                offscreenIframe!.onload = () => finish();
-                const d = offscreenIframe!.contentDocument!;
-                d.open();
-                d.write(html);
-                d.close();
-                setTimeout(finish, 1500);
-              });
-              try { await (offscreenIframe.contentDocument as any)?.fonts?.ready; } catch {}
-              await new Promise<void>((r) => setTimeout(r, 700)); // settle Tailwind CDN
-              cardNode = offscreenIframe.contentDocument!.querySelector<HTMLElement>('.carnet-card')!;
-            }
-
-            const win = (cardNode.ownerDocument.defaultView as Window) || window;
+            // Render SIEMPRE en un iframe offscreen lo bastante ancho para capturar la
+            // tarjeta completa (el iframe del preview puede ser más angosto y recortarla).
+            offscreenIframe = document.createElement('iframe');
+            offscreenIframe.style.cssText =
+              'position:fixed;right:0;bottom:0;width:760px;height:520px;border:0;opacity:0;pointer-events:none;background:#fff;';
+            document.body.appendChild(offscreenIframe);
+            await new Promise<void>((resolve) => {
+              let done = false;
+              const finish = () => { if (!done) { done = true; resolve(); } };
+              offscreenIframe!.onload = () => finish();
+              const d = offscreenIframe!.contentDocument!;
+              d.open();
+              d.write(html);
+              d.close();
+              setTimeout(finish, 1500);
+            });
+            try { await (offscreenIframe.contentDocument as any)?.fonts?.ready; } catch {}
+            await new Promise<void>((r) => setTimeout(r, 700)); // settle Tailwind CDN
+            const cardNode = offscreenIframe.contentDocument!.querySelector<HTMLElement>('.carnet-card')!;
+            const win = offscreenIframe.contentWindow!;
             await new Promise<void>((r) =>
               win.requestAnimationFrame(() => win.requestAnimationFrame(() => r())),
             );

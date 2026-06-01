@@ -100,7 +100,7 @@ async function buildHtml(p: any, verifyUrl: string): Promise<string> {
 </head>
 <body>
 <div class="flex items-center justify-center min-h-screen bg-gray-100 p-4">
-  <div class="carnet-card bg-white w-[1000px] flex shadow-lg border border-gray-300 font-sans pb-4" style="min-height:400px;">
+  <div class="carnet-card bg-white w-[680px] flex shadow-lg border border-gray-300 font-sans pb-4" style="min-height:400px;">
     <div class="w-1/2 p-4 border-r border-gray-200 flex flex-col">
       <div class="flex items-center mb-2">
         <img alt="Logo" class="h-12 w-40 object-contain" src="${LOGO_URL}" />
@@ -146,7 +146,7 @@ async function buildHtml(p: any, verifyUrl: string): Promise<string> {
       <div class="w-1/2 flex flex-col items-center">
         <h3 class="text-center font-black text-sm leading-tight mb-4 px-2">PÓLIZA DE RESPONSABILIDAD CIVIL DE VEHÍCULOS RCV</h3>
         <div class="flex-1 w-full flex items-center justify-center">
-          <img alt="QR póliza ${esc(numPoliza)}" class="w-full h-full object-contain" src="${qrImageSrc}" />
+          <img alt="QR póliza ${esc(numPoliza)}" class="w-28 h-28 object-contain" src="${qrImageSrc}" />
         </div>
       </div>
     </div>
