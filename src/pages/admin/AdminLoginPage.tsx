@@ -220,6 +220,18 @@ export default function AdminLoginPage() {
                 "Iniciar Sesión"
               )}
             </Button>
+
+            {testMode && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full mt-2"
+                onClick={handleDirectLogin}
+                disabled={isLoading}
+              >
+                Login Directo
+              </Button>
+            )}
           </form>
 
           <div className="mt-6 pt-4 border-t border-border">
