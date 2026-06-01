@@ -605,12 +605,12 @@ ${coberturasRows || '<tr><td colspan="4" style="text-align:center;color:#777">Si
 <div class="text-center font-bold text-[11px] flex-grow">
           Para tener validez, este Recibo debe ser sellado y firmado por la Persona Autorizada.
         </div>
-<div class="absolute right-4 top-2">
+<div class="absolute right-4 top-2 stamp-pagado">
 <img src="${PAGADO_STAMP}" alt="PAGADO" style="width:110px;height:auto;transform:rotate(-8deg);opacity:.95;" />
 </div>
 </div>
 <!-- Signatures -->
-<div class="grid grid-cols-2 mt-8 mb-4">
+<div class="grid grid-cols-2 mt-8 mb-4 firma">
 <div class="text-center">
 <div class="w-2/3 mx-auto border-t border-black mb-1 mt-10"></div>
 <p class="font-bold">Firma del Asegurado / Tomador</p>
