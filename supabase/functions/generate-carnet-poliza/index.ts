@@ -100,21 +100,21 @@ async function buildHtml(p: any, verifyUrl: string): Promise<string> {
 </head>
 <body>
 <div class="flex items-center justify-center min-h-screen bg-gray-100 p-4">
-  <div class="carnet-card bg-white w-[680px] flex shadow-lg border border-gray-300 font-sans pb-4" style="min-height:400px;">
+  <div class="carnet-card bg-white w-[680px] flex shadow-lg border border-gray-300 font-sans pb-4" style="min-height:470px;">
     <div class="w-1/2 p-4 border-r border-gray-200 flex flex-col">
       <div class="flex items-center mb-2">
         <img alt="Logo" class="h-12 w-40 object-contain" src="${LOGO_URL}" />
         <h1 class="flex-1 text-center font-black text-sm leading-tight">PÓLIZA DE RESPONSABILIDAD CIVIL DE VEHÍCULOS RCV</h1>
       </div>
       <div class="text-center my-2"><h2 class="text-xl font-bold">PÓLIZA No. : ${esc(numPoliza)}</h2></div>
-      <div class="bg-[#91D8F7] text-[#003399] font-bold text-center py-0.5 text-sm mb-2">DATOS DEL ASEGURADO</div>
+      <div class="bg-[#91D8F7] text-[#003399] font-bold text-center text-sm leading-none flex items-center justify-center h-6 mb-2">DATOS DEL ASEGURADO</div>
       <div class="px-2 text-sm space-y-0.5">
         <div><span class="font-bold">${isJur ? "Razón Social" : "Nombre y Apellido"} :</span></div>
         <div class="font-bold text-[#003399] uppercase mb-1">${esc(titular.toUpperCase())}</div>
         <div><span class="font-bold">${isJur ? "RIF" : "No. Cédula"} :</span></div>
         <div class="font-bold text-[#003399]">${esc(cedDisplay)}</div>
       </div>
-      <div class="bg-[#91D8F7] text-[#003399] font-bold text-center py-0.5 text-sm my-2">DATOS DEL VEHÍCULO</div>
+      <div class="bg-[#91D8F7] text-[#003399] font-bold text-center text-sm leading-none flex items-center justify-center h-6 my-2">DATOS DEL VEHÍCULO</div>
       <div class="px-2 text-sm grid grid-cols-[120px_1fr] gap-y-0.5">
         <span class="font-bold">Marca</span><span class="font-bold text-[#003399]">: ${esc(marca)}</span>
         <span class="font-bold">Modelo</span><span class="font-bold text-[#003399]">: ${esc(modelo)}</span>
@@ -124,7 +124,7 @@ async function buildHtml(p: any, verifyUrl: string): Promise<string> {
         <span class="font-bold">Serial Carrocería</span><span class="font-bold text-[#003399]">: ${esc(serialCarroceria)}</span>
       </div>
       <div class="mt-auto">
-        <div class="bg-[#91D8F7] text-[#003399] font-bold text-center py-0.5 text-sm mb-1">VIGENCIA</div>
+        <div class="bg-[#91D8F7] text-[#003399] font-bold text-center text-sm leading-none flex items-center justify-center h-6 mb-1">VIGENCIA</div>
         <div class="text-center font-bold text-sm">Desde : ${esc(desde)} &nbsp; Hasta : ${esc(hasta)}</div>
       </div>
     </div>

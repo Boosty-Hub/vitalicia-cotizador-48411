@@ -623,7 +623,7 @@ export function PolicyDetailsDialog({
 
             // PDF A4 horizontal, tarjeta centrada y escalada para entrar
             const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-            const pageW = 297, pageH = 210, margin = 8;
+            const pageW = 297, pageH = 210, margin = 4;
             const maxW = pageW - margin * 2, maxH = pageH - margin * 2;
             const ratio = canvas.width / canvas.height;
             let w = maxW, h = w / ratio;
