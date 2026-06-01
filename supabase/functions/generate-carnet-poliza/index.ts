@@ -38,7 +38,7 @@ const addYearFmt = (v: any) => {
   return `${dd} · ${mm} · ${yy}`;
 };
 
-function buildHtml(p: any, verifyUrl: string): string {
+async function buildHtml(p: any, verifyUrl: string): Promise<string> {
   const isJur = p.formulario === "juridico";
   const titular = isJur
     ? (p.razon_social_juridico_monday || "")
@@ -61,6 +61,17 @@ function buildHtml(p: any, verifyUrl: string): string {
 
 
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=230x230&margin=0&data=${encodeURIComponent(verifyUrl)}`;
+
+  let qrImageSrc = qrSrc;
+  try {
+    const resp = await fetch(qrSrc);
+    if (resp.ok) {
+      const bytes = new Uint8Array(await resp.arrayBuffer());
+      let bin = ''; const CH = 8192;
+      for (let i = 0; i < bytes.length; i += CH) bin += String.fromCharCode(...bytes.subarray(i, i + CH));
+      qrImageSrc = `data:image/png;base64,${btoa(bin)}`;
+    }
+  } catch (_e) { /* keep remote URL as fallback */ }
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -195,7 +206,7 @@ html,body{margin:0;padding:0;background:radial-gradient(1200px 600px at 50% -100
           <div class="row"><span class="ico">⌂</span><span class="lbl">Web</span><span class="v">www.lavitalicia.com.ve</span></div>
         </div>
         <div class="qr">
-          <img src="${qrSrc}" alt="QR póliza ${esc(numPoliza)}" />
+          <img src="${qrImageSrc}" alt="QR póliza ${esc(numPoliza)}" />
           <span class="caption">Verificar</span>
         </div>
       </div>
@@ -251,7 +262,7 @@ serve(async (req) => {
     const path = `carnets/${polizaId}.html`;
     const verifyUrl = `https://seguroslavitalicia.com/carnet/${polizaId}`;
 
-    const html = buildHtml(poliza, verifyUrl);
+    const html = await buildHtml(poliza, verifyUrl);
 
     const { error: uploadErr } = await supabase.storage
       .from("poliza-documentos")
