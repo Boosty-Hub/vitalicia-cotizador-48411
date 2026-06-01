@@ -108,14 +108,14 @@ async function buildHtml(p: any, verifyUrl: string): Promise<string> {
         <h1 class="flex-1 text-center font-black text-sm leading-tight">PÓLIZA DE RESPONSABILIDAD CIVIL DE VEHÍCULOS RCV</h1>
       </div>
       <div class="text-center my-2"><h2 class="text-xl font-bold">PÓLIZA No. : ${esc(numPoliza)}</h2></div>
-      <div class="bg-[#91D8F7] text-[#003399] font-bold text-center text-sm leading-none flex items-center justify-center h-6 mb-2">DATOS DEL ASEGURADO</div>
+      <div class="bg-[#91D8F7] text-[#003399] font-bold text-center text-sm leading-none flex items-center justify-center h-6 pb-1 mb-2">DATOS DEL ASEGURADO</div>
       <div class="px-2 text-sm space-y-0.5">
         <div><span class="font-bold">${isJur ? "Razón Social" : "Nombre y Apellido"} :</span></div>
         <div class="font-bold text-[#003399] uppercase mb-1">${esc(titular.toUpperCase())}</div>
         <div><span class="font-bold">${isJur ? "RIF" : "No. Cédula"} :</span></div>
         <div class="font-bold text-[#003399]">${esc(cedDisplay)}</div>
       </div>
-      <div class="bg-[#91D8F7] text-[#003399] font-bold text-center text-sm leading-none flex items-center justify-center h-6 my-2">DATOS DEL VEHÍCULO</div>
+      <div class="bg-[#91D8F7] text-[#003399] font-bold text-center text-sm leading-none flex items-center justify-center h-6 pb-1 my-2">DATOS DEL VEHÍCULO</div>
       <div class="px-2 text-sm grid grid-cols-[120px_1fr] gap-y-0.5">
         <span class="font-bold">Marca</span><span class="font-bold text-[#003399]">: ${esc(marca)}</span>
         <span class="font-bold">Modelo</span><span class="font-bold text-[#003399]">: ${esc(modelo)}</span>
@@ -125,7 +125,7 @@ async function buildHtml(p: any, verifyUrl: string): Promise<string> {
         <span class="font-bold">Serial Carrocería</span><span class="font-bold text-[#003399]">: ${esc(serialCarroceria)}</span>
       </div>
       <div class="mt-auto">
-        <div class="bg-[#91D8F7] text-[#003399] font-bold text-center text-sm leading-none flex items-center justify-center h-6 mb-1">VIGENCIA</div>
+        <div class="bg-[#91D8F7] text-[#003399] font-bold text-center text-sm leading-none flex items-center justify-center h-6 pb-1 mb-1">VIGENCIA</div>
         <div class="text-center font-bold text-sm">Desde : ${esc(desde)} &nbsp; Hasta : ${esc(hasta)}</div>
       </div>
     </div>
