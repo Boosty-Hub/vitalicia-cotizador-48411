@@ -578,32 +578,16 @@ export function PolicyDetailsDialog({
           const isFactura = /factura/i.test(filename) || /factura/i.test(url);
           const label: 'Factura' | 'Carnet' | 'Documento' = isFactura ? 'Factura' : isCarnet ? 'Carnet' : 'Documento';
 
-          // ===== CARNET (impresión nativa para fidelidad EXACTA) =====
-          // El carnet usa clip-path, gradientes, pseudo-elementos y sombras que
-          // html2canvas NO reproduce. Usamos el motor de impresión del navegador
-          // (PDF pixel-exacto), inyectando CSS @page con una tarjeta por página.
+          // ===== CARNET (render nativo del navegador para fidelidad EXACTA) =====
+          // El carnet usa clip-path + Tailwind CDN que html2canvas NO reproduce.
+          // Lo renderizamos con el motor del navegador (PDF pixel-exacto). El propio
+          // HTML del carnet ya trae su CSS @media print (@page 1000x400), así que acá
+          // solo lo cargamos en un iframe, esperamos a que pinte e imprimimos.
           if (isCarnet) {
-            const printCss = `
-<style id="carnet-print-css">
-@media print {
-  @page { size: 540px 340px; margin: 0; }
-  html, body { background:#fff !important; margin:0 !important; padding:0 !important; min-height:0 !important; display:block !important; }
-  .stage { display:block !important; gap:0 !important; }
-  .card-wrap { display:block !important; margin:0 !important; }
-  .caption { display:none !important; }
-  .card { box-shadow:none !important; border-radius:0 !important; margin:0 !important; page-break-after:always; break-after:page; }
-  .card:last-child { page-break-after:auto; break-after:auto; }
-  * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
-}
-</style>`;
-            const htmlForPrint = /<\/head>/i.test(html)
-              ? html.replace(/<\/head>/i, `${printCss}</head>`)
-              : printCss + html;
-
             const printFrame = document.createElement('iframe');
             printFrame.setAttribute('aria-hidden', 'true');
             printFrame.style.cssText =
-              'position:fixed;right:0;bottom:0;width:560px;height:380px;border:0;opacity:0;pointer-events:none;';
+              'position:fixed;right:0;bottom:0;width:1024px;height:440px;border:0;opacity:0;pointer-events:none;';
             document.body.appendChild(printFrame);
 
             await new Promise<void>((resolve) => {
@@ -612,14 +596,15 @@ export function PolicyDetailsDialog({
               printFrame.onload = () => finish();
               const d = printFrame.contentDocument!;
               d.open();
-              d.write(htmlForPrint);
+              d.write(html);
               d.close();
               setTimeout(finish, 1500);
             });
 
             const win = printFrame.contentWindow!;
             try { await (printFrame.contentDocument as any)?.fonts?.ready; } catch {}
-            // doble rAF: asegura layout pintado antes de invocar print()
+            // settle: dar tiempo a que el runtime de Tailwind (CDN) aplique estilos
+            await new Promise<void>((r) => setTimeout(r, 700));
             await new Promise<void>((r) =>
               win.requestAnimationFrame(() => win.requestAnimationFrame(() => r())),
             );
@@ -1346,15 +1331,30 @@ export function PolicyDetailsDialog({
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {(selectedPoliza as any).carnet_poliza_url ? (
-                    <div className="rounded-lg border bg-white overflow-hidden">
-                      <iframe
-                        ref={carnetIframeRef}
-                        key={(selectedPoliza as any).carnet_poliza_url}
-                        srcDoc={carnetHtml ?? "<p style='font-family:sans-serif;padding:24px;color:#666'>Cargando carnet...</p>"}
-                        title="Carnet"
-                        className="w-full bg-white"
-                        style={{ height: 900, border: 0 }}
-                      />
+                    <div className="space-y-3">
+                      <div className="flex justify-end">
+                        <Button
+                          size="sm"
+                          onClick={() => handleDownloadDocument((selectedPoliza as any).carnet_poliza_url, 'carnet.pdf')}
+                          disabled={!!downloadingUrl}
+                        >
+                          {downloadingUrl ? (
+                            <><Loader2 className="h-4 w-4 animate-spin" /> Renderizando...</>
+                          ) : (
+                            <><FileText className="h-4 w-4" /> Renderizar carnet</>
+                          )}
+                        </Button>
+                      </div>
+                      <div className="rounded-lg border bg-white overflow-hidden">
+                        <iframe
+                          ref={carnetIframeRef}
+                          key={(selectedPoliza as any).carnet_poliza_url}
+                          srcDoc={carnetHtml ?? "<p style='font-family:sans-serif;padding:24px;color:#666'>Cargando carnet...</p>"}
+                          title="Carnet"
+                          className="w-full bg-white"
+                          style={{ height: 900, border: 0 }}
+                        />
+                      </div>
                     </div>
                   ) : (
                     <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">

@@ -73,155 +73,83 @@ async function buildHtml(p: any, verifyUrl: string): Promise<string> {
     }
   } catch (_e) { /* keep remote URL as fallback */ }
 
+  const cedDisplay = isJur
+    ? (cedRif || "")
+    : (cedRif ? (/^[A-Za-z]/.test(cedRif) ? cedRif : "V-" + cedRif) : "");
+
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
+<meta charset="utf-8" />
+<meta content="width=device-width, initial-scale=1.0" name="viewport" />
 <title>Carnet RCV — Póliza ${esc(numPoliza)}</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+  tailwind.config = { theme: { extend: { colors: { 'vitalicia-blue':'#91D8F7','vitalicia-dark-blue':'#003399' }, fontFamily: { sans:['Arial','Helvetica','sans-serif'] } } } }
+</script>
 <style>
-:root{--ink:#0f1a2b;--ink-soft:#4a5366;--line:#1a2a44;--line-soft:#cfd5df;--bg:#e7e8e4;--paper:#fff;--band:#0b3b6f;--band-deep:#062448;--accent:#c8102e;--gold:#c9a24a;}
-*{box-sizing:border-box}
-html,body{margin:0;padding:0;background:radial-gradient(1200px 600px at 50% -100px,#f0f1ed 0%,var(--bg) 60%);font-family:"Inter","Helvetica Neue",Helvetica,Arial,sans-serif;color:var(--ink);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:40px 20px;gap:28px}
-.stage{display:flex;gap:32px;flex-wrap:wrap;justify-content:center}
-.card{width:540px;height:340px;background:var(--paper);border-radius:14px;box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 2px 4px rgba(0,0,0,.06),0 18px 40px -12px rgba(11,59,111,.25),0 30px 60px -20px rgba(0,0,0,.18);position:relative;overflow:hidden;color:var(--ink)}
-.front .topbar{position:relative;height:76px;background:#fff;color:var(--ink);padding:10px 20px;display:flex;align-items:center;gap:14px;overflow:hidden;border-bottom:2px solid var(--gold)}
-.front .logo-img{height:54px;width:auto;display:block;position:relative;z-index:1}
-.doctype{margin-left:auto;text-align:right;position:relative;z-index:1}
-.doctype .kicker{font-size:8px;letter-spacing:2.4px;text-transform:uppercase;color:var(--ink-soft)}
-.doctype .name{font-size:13px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;margin-top:3px;color:var(--band)}
-.doctype .badge{display:inline-block;margin-top:5px;border:1px solid var(--band);color:var(--band);font-size:9px;letter-spacing:2px;padding:2px 8px;border-radius:2px;text-transform:uppercase;font-weight:700}
-.titleband{background:#06203f;color:#fff;padding:6px 20px;font-size:9.5px;letter-spacing:2.2px;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--gold)}
-.titleband .left{font-weight:600}
-.titleband .right{font-family:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;font-size:11px;letter-spacing:1.5px;color:var(--gold);font-weight:700}
-.body{padding:8px 20px 70px 20px;display:grid;grid-template-columns:1.05fr 1fr;gap:4px 18px;overflow:hidden}
-.field{display:flex;flex-direction:column;gap:0;min-width:0}
-.field .lbl{font-size:6.8px;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-soft);font-weight:600;line-height:1.2}
-.field .val{display:block;font-size:11px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.3;min-height:0;padding:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.field.mono .val{font-family:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;font-size:10px;letter-spacing:.3px;line-height:1.3;min-height:0}
-.field.big .val{font-size:12.5px;line-height:1.2;min-height:0}
-.field.span-2{grid-column:span 2}
-.section-tag{grid-column:1/-1;display:flex;align-items:center;gap:8px;margin-top:0;margin-bottom:-2px}
-.section-tag .dot{width:5px;height:5px;background:var(--accent);border-radius:50%}
-.section-tag .label{font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--band);font-weight:700;line-height:1.2}
-.section-tag .rule{flex:1;height:1px;background:linear-gradient(to right,var(--line-soft),transparent)}
-.vigencia{position:absolute;left:20px;right:20px;bottom:10px;display:flex;justify-content:space-between;align-items:center;background:#f6f8fb;border:1px solid var(--line-soft);border-left:3px solid var(--gold);border-radius:4px;padding:5px 12px;z-index:2}
-.vigencia .vlabel{font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:var(--ink-soft);font-weight:700}
-.vigencia .vdates{display:flex;align-items:center;gap:12px}
-.vigencia .vdates .d{display:flex;flex-direction:column;align-items:flex-end}
-.vigencia .vdates .d .k{font-size:9px;letter-spacing:1.3px;text-transform:uppercase;color:var(--ink-soft)}
-.vigencia .vdates .d .v{font-size:10.5px;font-weight:700;color:var(--band);line-height:1.25}
-.vigencia .arrow{color:var(--gold);font-weight:800;font-size:14px}
-.back{background:linear-gradient(160deg,var(--band-deep) 0%,var(--band) 60%,#0a4d8a 100%);color:#fff}
-.back::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,rgba(255,255,255,.03) 0 2px,transparent 2px 14px);pointer-events:none}
-.back .reverso-head{position:relative;z-index:2;padding:22px 26px 0 26px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
-.back .reverso-head .blk:last-child{padding-right:64px}
-.back .blk .k{font-size:7.5px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.55);font-weight:600}
-.back .blk .v{font-size:13px;font-weight:700;color:#fff;margin-top:3px;font-family:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;letter-spacing:.5px;line-height:1.28}
-.back .contact{position:relative;z-index:2;margin-top:18px;padding:0 26px;display:grid;grid-template-columns:1fr 125px;gap:14px;align-items:start}
-.back .contact .info{display:grid;grid-template-columns:1fr;gap:6px}
-.back .contact .qr{background:#fff;padding:5px;border-radius:4px;border:1px solid rgba(255,255,255,.4);display:flex;flex-direction:column;align-items:center}
-.back .contact .qr img{width:115px;height:115px;display:block}
-.back .contact .qr .caption{font-size:8px;letter-spacing:1.3px;text-transform:uppercase;color:var(--band-deep);font-weight:700;margin-top:3px}
-.back .contact .row{display:flex;align-items:center;gap:10px;font-size:11px;color:rgba(255,255,255,.92)}
-.back .contact .row .ico{width:18px;height:18px;border:1px solid rgba(255,255,255,.5);border-radius:3px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;color:var(--gold);font-weight:800;flex-shrink:0}
-.back .contact .row .lbl{color:rgba(255,255,255,.55);font-size:7.5px;letter-spacing:1.6px;text-transform:uppercase;min-width:56px}
-.back .contact .row .v{font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.3px}
-.back .legal{position:absolute;left:26px;right:26px;bottom:16px;border-top:1px solid rgba(255,255,255,.18);padding-top:10px;display:flex;justify-content:space-between;align-items:flex-end;color:rgba(255,255,255,.7);font-size:8.5px;line-height:1.3}
-.back .legal .left{max-width:60%;font-size:8px}
-.back .legal .left .kicker{font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:2px}
-.back .legal .right{text-align:right}
-.back .legal .right .kicker{font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:2px}
-.back .legal .right .v{font-family:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;color:#fff;font-size:10px;letter-spacing:1px;line-height:1.3}
-.back .corner{position:absolute;right:0;top:0;width:70px;height:70px;background:var(--gold);clip-path:polygon(100% 0,100% 100%,0 0);z-index:1}
-.back .corner-label{position:absolute;top:12px;right:10px;z-index:3;color:var(--band-deep);font-size:7px;font-weight:800;letter-spacing:1.6px;transform:rotate(45deg);transform-origin:100% 0;width:22px;text-align:left;padding:11px}
-.caption{font-size:11px;color:var(--ink-soft);letter-spacing:1.6px;text-transform:uppercase;text-align:center;margin-top:8px;font-weight:600}
-.card-wrap{display:flex;flex-direction:column;align-items:center}
-@media print{body{background:#fff;padding:0}.caption{display:none}}
+  body { background-color:#f3f4f6; display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; padding:20px; }
+  @media print {
+    @page { size: 1000px 400px; margin: 0; }
+    html, body { background:#fff !important; padding:0 !important; margin:0 !important; min-height:0 !important; display:block !important; }
+    body > div { min-height:0 !important; padding:0 !important; background:#fff !important; display:block !important; }
+    .carnet-card { box-shadow:none !important; border:0 !important; }
+    * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  }
 </style>
 </head>
 <body>
-<div class="stage">
-  <div class="card-wrap">
-    <div class="card front">
-      <div class="topbar">
-        <img class="logo-img" src="${LOGO_URL}" alt="Seguros La Vitalicia" />
-        <div class="doctype">
-          <div class="kicker">Carnet de Cobertura</div>
-          <div class="name">Póliza RCV</div>
-          <div class="badge">Vehículos Terrestres</div>
+<div class="flex items-center justify-center min-h-screen bg-gray-100 p-4">
+  <div class="carnet-card bg-white w-[1000px] flex shadow-lg border border-gray-300 font-sans pb-4" style="min-height:400px;">
+    <div class="w-1/2 p-4 border-r border-gray-200 flex flex-col">
+      <div class="flex items-center mb-2">
+        <img alt="Logo" class="h-12 w-32 object-contain" src="${LOGO_URL}" style="clip-path: inset(0px 75% 0px 0px);" />
+        <h1 class="flex-1 text-center font-black text-xl leading-tight">PÓLIZA DE RESPONSABILIDAD CIVIL DE VEHÍCULOS RCV</h1>
+      </div>
+      <div class="text-center my-2"><h2 class="text-xl font-bold">PÓLIZA No. : ${esc(numPoliza)}</h2></div>
+      <div class="bg-[#91D8F7] text-[#003399] font-bold text-center py-0.5 text-sm mb-2">DATOS DEL ASEGURADO</div>
+      <div class="px-2 text-sm space-y-0.5">
+        <div><span class="font-bold">${isJur ? "Razón Social" : "Nombre y Apellido"} :</span></div>
+        <div class="font-bold text-[#003399] uppercase mb-1">${esc(titular.toUpperCase())}</div>
+        <div><span class="font-bold">${isJur ? "RIF" : "No. Cédula"} :</span></div>
+        <div class="font-bold text-[#003399]">${esc(cedDisplay)}</div>
+      </div>
+      <div class="bg-[#91D8F7] text-[#003399] font-bold text-center py-0.5 text-sm my-2">DATOS DEL VEHÍCULO</div>
+      <div class="px-2 text-sm grid grid-cols-[120px_1fr] gap-y-0.5">
+        <span class="font-bold">Marca</span><span class="font-bold text-[#003399]">: ${esc(marca)}</span>
+        <span class="font-bold">Modelo</span><span class="font-bold text-[#003399]">: ${esc(modelo)}</span>
+        <span class="font-bold">Placa :</span><span class="font-bold text-[#003399]">${esc(placa)}</span>
+        <span class="font-bold">Año</span><span class="font-bold text-[#003399]">: ${esc(anio)}</span>
+        <span class="font-bold">Color</span><span class="font-bold text-[#003399]">: ${esc(color)}</span>
+        <span class="font-bold">Serial Carrocería</span><span class="font-bold text-[#003399]">: ${esc(serialCarroceria)}</span>
+      </div>
+      <div class="mt-auto">
+        <div class="bg-[#91D8F7] text-[#003399] font-bold text-center py-0.5 text-sm mb-1">VIGENCIA</div>
+        <div class="text-center font-bold text-sm">Desde : ${esc(desde)} &nbsp; Hasta : ${esc(hasta)}</div>
+      </div>
+    </div>
+    <div class="w-1/2 p-4 flex">
+      <div class="w-1/2 flex flex-col items-center pt-2">
+        <img alt="Logo" class="mb-4 h-12 w-32 object-contain" src="${LOGO_URL}" style="clip-path: inset(0px 75% 0px 0px);" />
+        <div class="text-center space-y-1 text-sm font-bold">
+          <p class="mb-0.5">POLIZAS</p>
+          <p>(0412.765.4927)</p>
+          <p class="text-blue-700 underline pt-4">WWW.LAVITALICIA.COM.VE</p>
+          <p class="text-[10px] lowercase font-semibold">atencioncliente@lavitalicia.com.ve</p>
+          <p class="pt-4">J-31020536-1</p>
+          <div class="pt-6 text-[11px] leading-tight">
+            <p>Inscrita en la SUDEASEG</p>
+            <p>Bajo el Número ES-000020</p>
+          </div>
         </div>
       </div>
-      <div class="titleband">
-        <span class="left">Responsabilidad Civil · Vehículos</span>
-        <span class="right">N° ${esc(numPoliza)}</span>
-      </div>
-      <div class="body">
-        <div class="section-tag"><span class="dot"></span><span class="label">${isJur ? "Tomador" : "Asegurado"}</span><span class="rule"></span></div>
-        <div class="field span-2 big">
-          <span class="lbl" style="font-size:8px">${isJur ? "Razón Social" : "Nombre y Apellido"}</span>
-          <span class="val">${esc(titular.toUpperCase())}</span>
-        </div>
-        <div class="field mono">
-          <span class="lbl" style="font-size:8px">${isJur ? "RIF" : "Cédula de Identidad"}</span>
-          <span class="val">${esc(cedRif)}</span>
-        </div>
-        <div class="field mono">
-          <span class="lbl" style="font-size:8px">Póliza N°</span>
-          <span class="val">${esc(numPoliza)}</span>
-        </div>
-        <div class="section-tag"><span class="dot"></span><span class="label">Vehículo</span><span class="rule"></span></div>
-        <div class="field"><span class="lbl" style="font-size:8px">Marca</span><span class="val">${esc(marca)}</span></div>
-        <div class="field"><span class="lbl" style="font-size:8px">Modelo</span><span class="val">${esc(modelo)}</span></div>
-        <div class="field mono"><span class="lbl" style="font-size:8px">Placa</span><span class="val">${esc(placa)}</span></div>
-        <div class="field"><span class="lbl" style="font-size:8px">Año · Color</span><span class="val">${esc(anio)} · ${esc(color)}</span></div>
-        <div class="field mono span-2"><span class="lbl" style="font-size:8px">Serial de Carrocería</span><span class="val">${esc(serialCarroceria)}</span></div>
-      </div>
-      <div class="vigencia">
-        <span class="vlabel">Vigencia</span>
-        <div class="vdates">
-          <div class="d"><span class="k">Desde</span><span class="v">${fmtDate(desde)}</span></div>
-          <span class="arrow">→</span>
-          <div class="d"><span class="k">Hasta</span><span class="v">${hasta ? fmtDate(hasta) : addYearFmt(desde)}</span></div>
+      <div class="w-1/2 flex flex-col items-center">
+        <h3 class="text-center font-black text-sm leading-tight mb-4 px-2">PÓLIZA DE RESPONSABILIDAD CIVIL DE VEHÍCULOS RCV</h3>
+        <div class="flex-1 w-full flex items-center justify-center">
+          <img alt="QR póliza ${esc(numPoliza)}" class="w-full h-full object-contain" src="${qrImageSrc}" />
         </div>
       </div>
     </div>
-    <div class="caption">Anverso</div>
-  </div>
-
-  <div class="card-wrap">
-    <div class="card back">
-      <div class="corner"></div>
-      <div class="corner-label">RCV</div>
-      <div class="reverso-head">
-        <div class="blk"><div class="k">RIF de la Empresa</div><div class="v">J-31020536-1</div></div>
-        <div class="blk" style="text-align:right;"><div class="k">Inscripción SUDEASEG</div><div class="v">ES-000020</div></div>
-      </div>
-      <div class="contact">
-        <div class="info">
-          <div class="row"><span class="ico">☎</span><span class="lbl">Atención</span><span class="v">0412 · 765 · 4927</span></div>
-          <div class="row"><span class="ico">@</span><span class="lbl">Email</span><span class="v">atencionalcliente@lavitalicia.com.ve</span></div>
-          <div class="row"><span class="ico">⌂</span><span class="lbl">Web</span><span class="v">www.lavitalicia.com.ve</span></div>
-        </div>
-        <div class="qr">
-          <img src="${qrImageSrc}" alt="QR póliza ${esc(numPoliza)}" />
-          <span class="caption">Verificar</span>
-        </div>
-      </div>
-      <div class="legal">
-        <div class="left">
-          <div class="kicker">Aviso</div>
-          Este carnet acredita la cobertura RCV vigente del vehículo identificado al frente. Presentar ante autoridades competentes cuando le sea requerido.
-        </div>
-        <div class="right">
-          <div class="kicker">Póliza</div>
-          <div class="v">N° ${esc(numPoliza)}</div>
-        </div>
-      </div>
-    </div>
-    <div class="caption">Reverso</div>
   </div>
 </div>
 </body>
