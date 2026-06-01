@@ -429,7 +429,7 @@ export function PolicyDetailsDialog({
         const gridEl = doc.querySelector('.grid,[class*="grid-cols"]');
         if (!gridEl) { resolve(); return; }
         const check = () => {
-          const display = window.getComputedStyle(gridEl).display;
+          const display = iframe.contentWindow!.getComputedStyle(gridEl).display;
           if (display.includes('grid')) { resolve(); return; }
           requestAnimationFrame(check);
         };
@@ -528,7 +528,14 @@ export function PolicyDetailsDialog({
           const top = el.offsetTop * scale;
           const bottom = (el.offsetTop + el.offsetHeight) * scale;
           if (top < cut && bottom > cut) {
-            cut = Math.max(y + 1, top); // push cut before this block
+            const candidate = Math.max(y + 1, top);
+            // Guard: if pushing would make the slice too small (<10% of a page),
+            // hard-cut instead to avoid emitting degenerate near-empty pages.
+            if (candidate - y < pageHeightPx * 0.1) {
+              cut = Math.min(hardLimit, canvas.height); // hard-cut
+            } else {
+              cut = candidate;
+            }
           }
         });
 
