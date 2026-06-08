@@ -169,7 +169,7 @@ function Field({ icon, label, value, required, hint, editable, editing, type = "
   );
 }
 
-export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera", onUpdated }: Props) {
+export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera", variant = "bera", onUpdated }: Props) {
   const [tab, setTab] = useState("datos");
   const [history, setHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
