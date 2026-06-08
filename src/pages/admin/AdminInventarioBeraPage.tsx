@@ -47,6 +47,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { InventoryPolicyBadge as PolicyStatusBadge } from "@/components/admin/InventoryPolicyBadge";
 import { PolicyDetailsDialog } from "@/components/admin/PolicyDetailsDialog";
+import { MotoDetailsDialog } from "@/components/admin/MotoDetailsDialog";
 
 interface MotoBera {
   id: string;
