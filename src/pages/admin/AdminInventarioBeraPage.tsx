@@ -904,6 +904,13 @@ export default function AdminInventarioBeraPage() {
         onOpenChange={setIsPolicyDialogOpen}
         policy={selectedPolicy}
       />
+
+      {/* Moto Details Dialog */}
+      <MotoDetailsDialog
+        open={isMotoDialogOpen}
+        onOpenChange={setIsMotoDialogOpen}
+        moto={selectedMoto}
+      />
     </div>
   );
 }
