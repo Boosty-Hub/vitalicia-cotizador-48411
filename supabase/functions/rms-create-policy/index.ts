@@ -228,7 +228,7 @@ function buildRmsPayload(data: Record<string, any>, tipoFormulario: string): Rec
     c_cd_version: data.c_cd_version || "",
     c_cd_color: data.c_cd_color || "",
     n_suma: parseFloat(data.n_suma) || 0,
-    n_nu_centuria: data.n_nu_centuria || "",
+    n_nu_centuria: String(new Date().getFullYear()),
     c_cd_versionseguro: data.c_cd_versionseguro || "",
     c_cd_subversionseguro: data.c_cd_subversionseguro || "",
     
@@ -243,7 +243,7 @@ function buildRmsPayload(data: Record<string, any>, tipoFormulario: string): Rec
     c_razonsocial: data.c_razonsocial || "",
     
     // Dirección
-    c_cd_pais: data.c_cd_pais || defaultValues.c_cd_pais,
+    c_cd_pais: "001",
     c_cd_estado: data.c_cd_estado || "",
     c_cd_ciudad: data.c_cd_ciudad || "",
     c_cd_municipio: data.c_cd_municipio || "",
@@ -259,7 +259,7 @@ function buildRmsPayload(data: Record<string, any>, tipoFormulario: string): Rec
     n_ingresoanualnac: parseFloat(data.n_ingresoanualnac) || defaultValues.n_ingresoanualnac,
     
     // Moneda
-    cd_moneda: data.cd_moneda || defaultValues.cd_moneda,
+    cd_moneda: "DL",
     n_correlativo: parseInt(data.n_correlativo) || defaultValues.n_correlativo,
     
     // Apoderado
