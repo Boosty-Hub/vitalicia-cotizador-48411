@@ -207,27 +207,85 @@ export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera",
     };
   }, [open, moto?.placa]);
 
+  const view = (editing ? draft : moto) ?? moto;
+
   // Inconsistency checks
   const issues = useMemo(() => {
-    if (!moto) return [] as { level: "error" | "warn"; msg: string }[];
+    if (!view) return [] as { level: "error" | "warn"; msg: string }[];
     const out: { level: "error" | "warn"; msg: string }[] = [];
-    if (!moto.placa) out.push({ level: "error", msg: "Falta la placa" });
-    if (!moto.serial_chasis) out.push({ level: "error", msg: "Falta el serial de chasis (requerido por RMS)" });
-    if (!moto.serial_motor) out.push({ level: "error", msg: "Falta el serial de motor (requerido por RMS)" });
-    if (!moto.cod_modelo || moto.cod_modelo === "0000")
+    if (!view.placa) out.push({ level: "error", msg: "Falta la placa" });
+    if (!view.serial_chasis) out.push({ level: "error", msg: "Falta el serial de chasis (requerido por RMS)" });
+    if (!view.serial_motor) out.push({ level: "error", msg: "Falta el serial de motor (requerido por RMS)" });
+    if (!view.cod_modelo || view.cod_modelo === "0000")
       out.push({ level: "error", msg: "Código de modelo no resuelto (RMS: 0000)" });
-    if (!moto.cod_color || moto.cod_color === "0000")
+    if (!view.cod_color || view.cod_color === "0000")
       out.push({ level: "warn", msg: "Código de color no resuelto" });
-    if (!moto.anio_modelo) out.push({ level: "error", msg: "Falta el año del modelo" });
-    if (!moto.modelo) out.push({ level: "warn", msg: "Falta el nombre del modelo" });
-    if (!moto.color) out.push({ level: "warn", msg: "Falta el color descriptivo" });
-    if (moto.es_duplicado) out.push({ level: "warn", msg: "Placa marcada como duplicada en inventario" });
+    if (!view.anio_modelo) out.push({ level: "error", msg: "Falta el año del modelo" });
+    if (!view.modelo) out.push({ level: "warn", msg: "Falta el nombre del modelo" });
+    if (!view.color) out.push({ level: "warn", msg: "Falta el color descriptivo" });
+    if (view.es_duplicado) out.push({ level: "warn", msg: "Placa marcada como duplicada en inventario" });
     return out;
-  }, [moto]);
+  }, [view]);
 
   const rmsReady = issues.filter((i) => i.level === "error").length === 0;
 
-  if (!moto) return null;
+  const setField = <K extends keyof MotoBera>(key: K, value: string) => {
+    if (!draft) return;
+    let v: any = value;
+    if (key === "anio_modelo") v = value === "" ? null : parseInt(value) || null;
+    else if (
+      key === "precio_venta_tienda" ||
+      key === "precio_base_venta_tienda" ||
+      key === "precio_venta_sugerido" ||
+      key === "precio_base_venta_sugerido"
+    )
+      v = value === "" ? null : parseFloat(value) || null;
+    else v = value === "" ? null : value;
+    setDraft({ ...draft, [key]: v });
+  };
+
+  const handleSave = async () => {
+    if (!draft || !moto) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from(table)
+        .update({
+          fecha: draft.fecha,
+          marca: draft.marca,
+          cod_modelo: draft.cod_modelo,
+          modelo: draft.modelo,
+          anio_modelo: draft.anio_modelo,
+          placa: draft.placa,
+          transmision: draft.transmision,
+          serial_chasis: draft.serial_chasis,
+          serial_motor: draft.serial_motor,
+          cod_color: draft.cod_color,
+          color: draft.color,
+          precio_venta_tienda: draft.precio_venta_tienda,
+          precio_base_venta_tienda: draft.precio_base_venta_tienda,
+          precio_venta_sugerido: draft.precio_venta_sugerido,
+          precio_base_venta_sugerido: draft.precio_base_venta_sugerido,
+        })
+        .eq("id", moto.id);
+      if (error) throw error;
+      toast({ title: "Cambios guardados", description: "La moto se actualizó correctamente." });
+      setEditing(false);
+      onUpdated?.();
+    } catch (e: any) {
+      console.error(e);
+      toast({ title: "Error al guardar", description: e?.message || "No se pudo guardar.", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setDraft(moto);
+    setEditing(false);
+  };
+
+  if (!moto || !view) return null;
 
   return (
     <>
