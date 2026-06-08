@@ -72,13 +72,13 @@ const formatDate = (d?: string | null) => {
 };
 
 // Framer Motion variants
-const tabContentVariants = {
+const tabContentVariants: Variants = {
   initial: { opacity: 0, y: 8 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: "easeOut" } },
   exit: { opacity: 0, y: -8, transition: { duration: 0.15 } },
 };
 
-const listItem = {
+const listItem: Variants = {
   initial: { opacity: 0, x: -10 },
   animate: (i: number) => ({
     opacity: 1,
