@@ -321,10 +321,10 @@ export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera",
                   </motion.div>
                   <div>
                     <DialogTitle className="text-2xl font-bold tracking-tight">
-                      {moto.marca || "BERA"} {moto.modelo || ""}
+                      {view.marca || "BERA"} {view.modelo || ""}
                     </DialogTitle>
                     <DialogDescription className="text-primary-foreground/90 font-mono text-base mt-1">
-                      Placa: {moto.placa || "—"} · Año {moto.anio_modelo || "—"}
+                      Placa: {view.placa || "—"} · Año {view.anio_modelo || "—"}
                     </DialogDescription>
                   </div>
                 </div>
@@ -332,6 +332,7 @@ export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera",
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.15 }}
+                  className="flex items-center gap-2"
                 >
                   {rmsReady ? (
                     <Badge className="bg-emerald-500/90 hover:bg-emerald-500 text-white border-0 gap-1">
@@ -342,6 +343,60 @@ export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera",
                       <AlertTriangle className="h-3.5 w-3.5" /> {issues.filter((i) => i.level === "error").length} problemas
                     </Badge>
                   )}
+                  <AnimatePresence mode="wait" initial={false}>
+                    {editing ? (
+                      <motion.div
+                        key="edit-actions"
+                        initial={{ opacity: 0, x: 8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 8 }}
+                        className="flex gap-1.5"
+                      >
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={handleCancel}
+                          disabled={saving}
+                          className="h-8 gap-1"
+                        >
+                          <X className="h-3.5 w-3.5" /> Cancelar
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={handleSave}
+                          disabled={saving}
+                          className="h-8 gap-1 bg-white text-primary hover:bg-white/90"
+                        >
+                          {saving ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Save className="h-3.5 w-3.5" />
+                          )}
+                          Guardar
+                        </Button>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="edit-btn"
+                        initial={{ opacity: 0, x: 8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 8 }}
+                      >
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => {
+                            setDraft(moto);
+                            setEditing(true);
+                            setTab("datos");
+                          }}
+                          className="h-8 gap-1"
+                        >
+                          <Pencil className="h-3.5 w-3.5" /> Editar
+                        </Button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               </div>
             </DialogHeader>
