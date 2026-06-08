@@ -164,15 +164,26 @@ function Field({ icon, label, value, required, hint, editable, editing, type = "
   );
 }
 
-export function MotoDetailsDialog({ open, onOpenChange, moto }: Props) {
+export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera", onUpdated }: Props) {
   const [tab, setTab] = useState("datos");
   const [history, setHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [selectedPolicy, setSelectedPolicy] = useState<any | null>(null);
   const [policyOpen, setPolicyOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [draft, setDraft] = useState<MotoBera | null>(moto);
 
   useEffect(() => {
-    if (!open) setTab("datos");
+    setDraft(moto);
+    setEditing(false);
+  }, [moto?.id]);
+
+  useEffect(() => {
+    if (!open) {
+      setTab("datos");
+      setEditing(false);
+    }
   }, [open]);
 
   useEffect(() => {
