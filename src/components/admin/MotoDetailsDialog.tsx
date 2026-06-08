@@ -56,6 +56,10 @@ interface MotoBera {
   precio_base_venta_sugerido?: number | null;
   es_duplicado?: boolean | null;
   created_at?: string;
+  // Empire-only fields
+  version?: string | null;
+  anio?: number | null;
+  serial_carroceria?: string | null;
 }
 
 interface Props {
@@ -63,6 +67,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   moto: MotoBera | null;
   table?: "bd_bera" | "bd_empire";
+  variant?: "bera" | "empire";
   onUpdated?: () => void;
 }
 
