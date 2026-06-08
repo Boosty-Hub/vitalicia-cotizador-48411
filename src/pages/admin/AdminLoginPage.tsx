@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Shield, Eye, EyeOff, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAdminAuth } from "@/contexts/AdminAuthContext";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -14,11 +15,20 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+  const [pendingRedirect, setPendingRedirect] = useState(false);
+
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, isAdmin } = useAdminAuth();
   const [searchParams] = useSearchParams();
   const testMode = searchParams.get("test") === "true";
+
+  // Redirigir cuando el contexto de auth confirme que el usuario es admin
+  useEffect(() => {
+    if (pendingRedirect && user && isAdmin) {
+      navigate("/admin", { replace: true });
+    }
+  }, [pendingRedirect, user, isAdmin, navigate]);
 
   const handleDirectLogin = async () => {
     setError(null);
@@ -44,7 +54,7 @@ export default function AdminLoginPage() {
         return;
       }
       toast({ title: "Bienvenido", description: "Login directo exitoso" });
-      navigate("/admin");
+      setPendingRedirect(true);
     } catch (err) {
       setError("Error inesperado en login directo.");
       setIsLoading(false);
@@ -145,7 +155,7 @@ export default function AdminLoginPage() {
         title: "Bienvenido",
         description: "Has iniciado sesión correctamente",
       });
-      navigate("/admin");
+      setPendingRedirect(true);
 
     } catch (err) {
       console.log("Unexpected error:", err);
