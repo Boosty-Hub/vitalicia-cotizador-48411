@@ -695,17 +695,18 @@ export default function AdminInventarioEmpirePage() {
                             </TableCell>
                             <TableCell>
                               <div className="flex gap-1">
-                                {policyInfo.hasPolicy && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-emerald-600 hover:text-emerald-700"
-                                    onClick={() => handleViewPolicy(item.placa)}
-                                    title="Ver póliza"
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-primary hover:text-primary"
+                                  onClick={() => {
+                                    setSelectedMoto(item);
+                                    setIsMotoDialogOpen(true);
+                                  }}
+                                  title="Ver detalles de la moto"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
                                 {!policyInfo.hasPolicy && (
                                   <>
                                     <Button
