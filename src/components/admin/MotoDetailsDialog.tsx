@@ -517,17 +517,17 @@ export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera",
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       <Field label="c_cd_marca" value={"—"} required hint="Se resuelve al activar la póliza" />
-                      <Field label="c_cd_modelo" value={moto.cod_modelo} required hint="Debe existir en board_cod_modelo" />
-                      <Field label="c_cd_color" value={moto.cod_color} required />
-                      <Field label="n_nu_centuria (año)" value={moto.anio_modelo} required />
-                      <Field label="c_placa" value={moto.placa} required />
-                      <Field label="n_serialcontrato (chasis)" value={moto.serial_chasis} required />
-                      <Field label="c_motor" value={moto.serial_motor} required />
-                      <Field label="c_carroceria" value={moto.serial_chasis} required />
+                      <Field label="c_cd_modelo" value={view.cod_modelo} required hint="Debe existir en board_cod_modelo" />
+                      <Field label="c_cd_color" value={view.cod_color} required />
+                      <Field label="n_nu_centuria (año)" value={view.anio_modelo} required />
+                      <Field label="c_placa" value={view.placa} required />
+                      <Field label="n_serialcontrato (chasis)" value={view.serial_chasis} required />
+                      <Field label="c_motor" value={view.serial_motor} required />
+                      <Field label="c_carroceria" value={view.serial_chasis} required />
                       <Field label="c_cd_pais" value={"001"} />
                       <Field label="cd_moneda" value={"DL"} />
-                      <Field label="s_marca (descriptivo)" value={moto.marca} />
-                      <Field label="s_modelo (descriptivo)" value={moto.modelo} />
+                      <Field label="s_marca (descriptivo)" value={view.marca} />
+                      <Field label="s_modelo (descriptivo)" value={view.modelo} />
                     </div>
                   </motion.div>
                 )}
