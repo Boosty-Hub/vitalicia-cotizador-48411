@@ -347,10 +347,10 @@ export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera",
                   </motion.div>
                   <div>
                     <DialogTitle className="text-2xl font-bold tracking-tight">
-                      {view.marca || "BERA"} {view.modelo || ""}
+                      {view.marca || (variant === "empire" ? "EMPIRE" : "BERA")} {modelOf(view) || ""}
                     </DialogTitle>
                     <DialogDescription className="text-primary-foreground/90 font-mono text-base mt-1">
-                      Placa: {view.placa || "—"} · Año {view.anio_modelo || "—"}
+                      Placa: {view.placa || "—"} · Año {yearOf(view) || "—"}
                     </DialogDescription>
                   </div>
                 </div>
