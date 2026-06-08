@@ -102,6 +102,8 @@ export default function AdminInventarioEmpirePage() {
   const [policyMap, setPolicyMap] = useState<Record<string, PolicyInfo>>({});
   const [selectedPolicy, setSelectedPolicy] = useState<any | null>(null);
   const [isPolicyDialogOpen, setIsPolicyDialogOpen] = useState(false);
+  const [selectedMoto, setSelectedMoto] = useState<MotoEmpire | null>(null);
+  const [isMotoDialogOpen, setIsMotoDialogOpen] = useState(false);
   const pageSize = 20;
 
   const fetchPoliciesForPlates = async (plates: string[]) => {
