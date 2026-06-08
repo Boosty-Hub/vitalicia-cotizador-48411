@@ -826,6 +826,16 @@ export default function AdminInventarioEmpirePage() {
         onOpenChange={setIsPolicyDialogOpen}
         policy={selectedPolicy}
       />
+
+      {/* Moto Details Dialog */}
+      <MotoDetailsDialog
+        open={isMotoDialogOpen}
+        onOpenChange={setIsMotoDialogOpen}
+        moto={selectedMoto as any}
+        table="bd_empire"
+        variant="empire"
+        onUpdated={fetchData}
+      />
     </div>
   );
 }
