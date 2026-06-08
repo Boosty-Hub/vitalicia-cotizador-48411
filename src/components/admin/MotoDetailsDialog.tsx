@@ -36,6 +36,7 @@ import {
   X,
 } from "lucide-react";
 import { PolicyDetailsDialog } from "@/components/admin/PolicyDetailsDialog";
+import { LiveSearchField } from "@/components/admin/LiveSearchField";
 
 interface MotoBera {
   id: string;
@@ -178,10 +179,24 @@ export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera",
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<MotoBera | null>(moto);
+  // Transient marca code (not persisted on bd_bera/bd_empire, used to filter modelo search)
+  const [marcaCode, setMarcaCode] = useState<string | null>(null);
 
   useEffect(() => {
     setDraft(moto);
     setEditing(false);
+    // Try to resolve marca code from description for filtering modelo search
+    setMarcaCode(null);
+    if (moto?.marca) {
+      (async () => {
+        const { data } = await (supabase as any)
+          .from("board_cod_marca")
+          .select("cd_marca")
+          .ilike("descripcion", moto.marca!)
+          .maybeSingle();
+        if (data?.cd_marca) setMarcaCode(String(data.cd_marca));
+      })();
+    }
   }, [moto?.id]);
 
   useEffect(() => {
@@ -504,13 +519,60 @@ export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera",
                   >
                     {variant === "empire" ? (
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        <Field icon={<Bike className="h-3 w-3" />} label="Marca" value={view.marca} required editable editing={editing} onChange={(v) => setField("marca", v)} />
-                        <Field icon={<Hash className="h-3 w-3" />} label="Modelo" value={view.modelo} required editable editing={editing} onChange={(v) => setField("modelo", v)} />
-                        <Field icon={<Hash className="h-3 w-3" />} label="Versión" value={view.version} required editable editing={editing} onChange={(v) => setField("version", v)} />
+                        <LiveSearchField
+                          icon={<Bike className="h-3 w-3" />}
+                          label="Marca"
+                          required
+                          editing={editing}
+                          table="board_cod_marca"
+                          codeColumn="cd_marca"
+                          code={marcaCode}
+                          description={view.marca}
+                          onSelect={(code, desc) => {
+                            setMarcaCode(code);
+                            setField("marca", desc);
+                            // Clear modelo/version when marca changes
+                            setField("modelo", "");
+                            setField("version", "");
+                          }}
+                        />
+                        <LiveSearchField
+                          icon={<Hash className="h-3 w-3" />}
+                          label="Modelo"
+                          required
+                          editing={editing}
+                          table="board_cod_modelo"
+                          codeColumn="cd_modelo"
+                          filters={{ cd_marca: marcaCode }}
+                          description={view.modelo}
+                          onSelect={(_code, desc) => setField("modelo", desc)}
+                          showCode={false}
+                        />
+                        <LiveSearchField
+                          icon={<Hash className="h-3 w-3" />}
+                          label="Versión"
+                          required
+                          editing={editing}
+                          table="board_cod_version_moto"
+                          codeColumn="cd_version"
+                          filters={{ cd_marca: marcaCode }}
+                          description={view.version}
+                          onSelect={(_code, desc) => setField("version", desc)}
+                          showCode={false}
+                        />
                         <Field icon={<Calendar className="h-3 w-3" />} label="Año" value={view.anio} required editable editing={editing} type="number" onChange={(v) => setField("anio", v)} />
                         <Field icon={<Hash className="h-3 w-3" />} label="Placa" value={view.placa} required editable editing={editing} onChange={(v) => setField("placa", v)} />
                         <Field icon={<Gauge className="h-3 w-3" />} label="Transmisión" value={view.transmision} editable editing={editing} onChange={(v) => setField("transmision", v)} />
-                        <Field icon={<Palette className="h-3 w-3" />} label="Color" value={view.color} editable editing={editing} onChange={(v) => setField("color", v)} />
+                        <LiveSearchField
+                          icon={<Palette className="h-3 w-3" />}
+                          label="Color"
+                          editing={editing}
+                          table="board_cod_color"
+                          codeColumn="cd_valdet"
+                          description={view.color}
+                          onSelect={(_code, desc) => setField("color", desc)}
+                          showCode={false}
+                        />
                         <Field icon={<Hash className="h-3 w-3" />} label="Serial Carrocería" value={view.serial_carroceria} required editable editing={editing} hint="RMS rechazará el envío" onChange={(v) => setField("serial_carroceria", v)} />
                         <Field icon={<Hash className="h-3 w-3" />} label="Serial Motor" value={view.serial_motor} required editable editing={editing} hint="RMS rechazará el envío" onChange={(v) => setField("serial_motor", v)} />
                         <Field icon={<Calendar className="h-3 w-3" />} label="Fecha ingreso" value={view.fecha} editable editing={editing} type="date" onChange={(v) => setField("fecha", v)} />
@@ -518,14 +580,53 @@ export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera",
                     ) : (
                       <>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                          <Field icon={<Bike className="h-3 w-3" />} label="Marca" value={view.marca} required editable editing={editing} onChange={(v) => setField("marca", v)} />
-                          <Field icon={<Hash className="h-3 w-3" />} label="Modelo" value={view.modelo} required editable editing={editing} onChange={(v) => setField("modelo", v)} />
+                          <LiveSearchField
+                            icon={<Bike className="h-3 w-3" />}
+                            label="Marca"
+                            required
+                            editing={editing}
+                            table="board_cod_marca"
+                            codeColumn="cd_marca"
+                            code={marcaCode}
+                            description={view.marca}
+                            onSelect={(code, desc) => {
+                              setMarcaCode(code);
+                              setField("marca", desc);
+                              setField("modelo", "");
+                              setField("cod_modelo", "");
+                            }}
+                          />
+                          <LiveSearchField
+                            icon={<Hash className="h-3 w-3" />}
+                            label="Modelo"
+                            required
+                            editing={editing}
+                            table="board_cod_modelo"
+                            codeColumn="cd_modelo"
+                            filters={{ cd_marca: marcaCode }}
+                            code={view.cod_modelo}
+                            description={view.modelo}
+                            onSelect={(code, desc) => {
+                              setField("cod_modelo", code);
+                              setField("modelo", desc);
+                            }}
+                          />
                           <Field icon={<Calendar className="h-3 w-3" />} label="Año" value={view.anio_modelo} required editable editing={editing} type="number" onChange={(v) => setField("anio_modelo", v)} />
                           <Field icon={<Hash className="h-3 w-3" />} label="Placa" value={view.placa} required editable editing={editing} onChange={(v) => setField("placa", v)} />
                           <Field icon={<Gauge className="h-3 w-3" />} label="Transmisión" value={view.transmision} editable editing={editing} onChange={(v) => setField("transmision", v)} />
-                          <Field icon={<Palette className="h-3 w-3" />} label="Color" value={view.color} editable editing={editing} onChange={(v) => setField("color", v)} />
-                          <Field icon={<Hash className="h-3 w-3" />} label="Código Modelo" value={view.cod_modelo} required editable editing={editing} hint="RMS rechazará el envío" onChange={(v) => setField("cod_modelo", v)} />
-                          <Field icon={<Hash className="h-3 w-3" />} label="Código Color" value={view.cod_color} editable editing={editing} onChange={(v) => setField("cod_color", v)} />
+                          <LiveSearchField
+                            icon={<Palette className="h-3 w-3" />}
+                            label="Color"
+                            editing={editing}
+                            table="board_cod_color"
+                            codeColumn="cd_valdet"
+                            code={view.cod_color}
+                            description={view.color}
+                            onSelect={(code, desc) => {
+                              setField("cod_color", code);
+                              setField("color", desc);
+                            }}
+                          />
                           <Field icon={<Hash className="h-3 w-3" />} label="Serial Chasis" value={view.serial_chasis} required editable editing={editing} hint="RMS rechazará el envío" onChange={(v) => setField("serial_chasis", v)} />
                           <Field icon={<Hash className="h-3 w-3" />} label="Serial Motor" value={view.serial_motor} required editable editing={editing} hint="RMS rechazará el envío" onChange={(v) => setField("serial_motor", v)} />
                           <Field icon={<Calendar className="h-3 w-3" />} label="Fecha ingreso" value={view.fecha} editable editing={editing} type="date" onChange={(v) => setField("fecha", v)} />
