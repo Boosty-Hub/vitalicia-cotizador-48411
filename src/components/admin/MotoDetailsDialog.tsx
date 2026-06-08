@@ -36,6 +36,7 @@ import {
   X,
 } from "lucide-react";
 import { PolicyDetailsDialog } from "@/components/admin/PolicyDetailsDialog";
+import { LiveSearchField } from "@/components/admin/LiveSearchField";
 
 interface MotoBera {
   id: string;
