@@ -179,6 +179,8 @@ export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera",
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<MotoBera | null>(moto);
+  // Transient marca code (not persisted on bd_bera/bd_empire, used to filter modelo search)
+  const [marcaCode, setMarcaCode] = useState<string | null>(null);
 
   useEffect(() => {
     setDraft(moto);
