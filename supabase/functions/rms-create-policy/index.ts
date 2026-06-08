@@ -94,65 +94,6 @@ serve(async (req) => {
 
     console.log(`✅ Póliza ${polizaId} actualizada en DB`);
 
-    // Si fue exitoso, enviar al webhook de Make.com
-    if (isSuccess) {
-      const MAKE_WEBHOOK_URL = 'https://hook.us2.make.com/rtk99dcvukc0bjz9psj26qbe5x19db8y';
-      
-      // Obtener la póliza completa de la base de datos para enviar todos los campos
-      const { data: polizaCompleta, error: fetchError } = await supabase
-        .from('polizas_activas')
-        .select('*')
-        .eq('id', polizaId)
-        .single();
-      
-      if (fetchError) {
-        console.error('⚠️ Error obteniendo póliza completa para webhook:', fetchError);
-      }
-
-      const webhookPayload = {
-        // Datos COMPLETOS de la póliza desde la base de datos
-        poliza: polizaCompleta || { id: polizaId, ...formData },
-        // Respuesta completa de la API RMS
-        rmsResponse: rmsData,
-        // Datos extraídos para fácil acceso
-        extracted: {
-          numeroPoliza,
-          nSerialcontrato,
-          nSerialcertif,
-          recibos,
-          coberturas,
-          apiStatus,
-          apiMessage,
-        },
-        // Metadata
-        metadata: {
-          tipoFormulario,
-          processedAt: new Date().toISOString(),
-        }
-      };
-
-      console.log('📤 Enviando datos al webhook de Make.com...');
-      
-      try {
-        const webhookResponse = await fetch(MAKE_WEBHOOK_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(webhookPayload),
-        });
-
-        if (webhookResponse.ok) {
-          console.log('✅ Webhook enviado exitosamente a Make.com');
-        } else {
-          console.error('⚠️ Error enviando webhook:', webhookResponse.status, await webhookResponse.text());
-        }
-      } catch (webhookError) {
-        // No fallar el proceso principal si el webhook falla
-        console.error('⚠️ Error en webhook (no crítico):', webhookError);
-      }
-    }
-
     return new Response(JSON.stringify({
       success: isSuccess,
       numeroPoliza,
@@ -287,7 +228,7 @@ function buildRmsPayload(data: Record<string, any>, tipoFormulario: string): Rec
     c_cd_version: data.c_cd_version || "",
     c_cd_color: data.c_cd_color || "",
     n_suma: parseFloat(data.n_suma) || 0,
-    n_nu_centuria: data.n_nu_centuria || "",
+    n_nu_centuria: String(new Date().getFullYear()),
     c_cd_versionseguro: data.c_cd_versionseguro || "",
     c_cd_subversionseguro: data.c_cd_subversionseguro || "",
     
@@ -302,7 +243,7 @@ function buildRmsPayload(data: Record<string, any>, tipoFormulario: string): Rec
     c_razonsocial: data.c_razonsocial || "",
     
     // Dirección
-    c_cd_pais: data.c_cd_pais || defaultValues.c_cd_pais,
+    c_cd_pais: "001",
     c_cd_estado: data.c_cd_estado || "",
     c_cd_ciudad: data.c_cd_ciudad || "",
     c_cd_municipio: data.c_cd_municipio || "",
@@ -318,7 +259,7 @@ function buildRmsPayload(data: Record<string, any>, tipoFormulario: string): Rec
     n_ingresoanualnac: parseFloat(data.n_ingresoanualnac) || defaultValues.n_ingresoanualnac,
     
     // Moneda
-    cd_moneda: data.cd_moneda || defaultValues.cd_moneda,
+    cd_moneda: "DL",
     n_correlativo: parseInt(data.n_correlativo) || defaultValues.n_correlativo,
     
     // Apoderado
