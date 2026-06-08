@@ -54,7 +54,7 @@ export default function AdminLoginPage() {
         return;
       }
       toast({ title: "Bienvenido", description: "Login directo exitoso" });
-      navigate("/admin");
+      setPendingRedirect(true);
     } catch (err) {
       setError("Error inesperado en login directo.");
       setIsLoading(false);
