@@ -185,6 +185,18 @@ export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera",
   useEffect(() => {
     setDraft(moto);
     setEditing(false);
+    // Try to resolve marca code from description for filtering modelo search
+    setMarcaCode(null);
+    if (moto?.marca) {
+      (async () => {
+        const { data } = await (supabase as any)
+          .from("board_cod_marca")
+          .select("cd_marca")
+          .ilike("descripcion", moto.marca!)
+          .maybeSingle();
+        if (data?.cd_marca) setMarcaCode(String(data.cd_marca));
+      })();
+    }
   }, [moto?.id]);
 
   useEffect(() => {
