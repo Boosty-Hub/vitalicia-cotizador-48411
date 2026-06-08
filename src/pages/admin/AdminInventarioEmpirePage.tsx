@@ -677,7 +677,10 @@ export default function AdminInventarioEmpirePage() {
                               <PolicyStatusBadge
                                 hasPolicy={policyInfo.hasPolicy}
                                 isActive={policyInfo.isActive}
-                                onClick={() => handleViewPolicy(item.placa)}
+                                onClick={() => {
+                                  setSelectedMoto(item);
+                                  setIsMotoDialogOpen(true);
+                                }}
                               />
                             </TableCell>
                             <TableCell className="whitespace-nowrap">{item.fecha || "-"}</TableCell>
