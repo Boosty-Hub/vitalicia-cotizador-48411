@@ -98,22 +98,29 @@ interface FieldProps {
   value?: string | number | null;
   required?: boolean;
   hint?: string;
+  editable?: boolean;
+  editing?: boolean;
+  type?: "text" | "number" | "date";
+  onChange?: (v: string) => void;
 }
 
-function Field({ icon, label, value, required, hint }: FieldProps) {
+function Field({ icon, label, value, required, hint, editable, editing, type = "text", onChange }: FieldProps) {
   const empty = value == null || value === "" || value === "0000";
   const inconsistent = required && empty;
+  const isEditing = editable && editing;
 
   return (
     <motion.div
-      whileHover={{ scale: 1.015 }}
+      whileHover={!isEditing ? { scale: 1.015 } : undefined}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
       className={`relative rounded-lg border p-3 transition-colors ${
-        inconsistent
-          ? "border-destructive/40 bg-destructive/5"
-          : empty
-            ? "border-muted bg-muted/30"
-            : "border-border bg-card"
+        isEditing
+          ? "border-primary/60 bg-primary/5 ring-2 ring-primary/20"
+          : inconsistent
+            ? "border-destructive/40 bg-destructive/5"
+            : empty
+              ? "border-muted bg-muted/30"
+              : "border-border bg-card"
       }`}
     >
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
@@ -123,10 +130,20 @@ function Field({ icon, label, value, required, hint }: FieldProps) {
           <span className="text-destructive" title="Requerido por RMS">*</span>
         )}
       </div>
-      <p className={`text-sm font-medium break-words ${empty ? "text-muted-foreground italic" : ""}`}>
-        {empty ? "Sin dato" : String(value)}
-      </p>
-      {inconsistent && (
+      {isEditing ? (
+        <Input
+          type={type}
+          value={value == null ? "" : String(value)}
+          onChange={(e) => onChange?.(e.target.value)}
+          className="h-8 text-sm"
+          autoFocus={false}
+        />
+      ) : (
+        <p className={`text-sm font-medium break-words ${empty ? "text-muted-foreground italic" : ""}`}>
+          {empty ? "Sin dato" : String(value)}
+        </p>
+      )}
+      {inconsistent && !isEditing && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -138,7 +155,7 @@ function Field({ icon, label, value, required, hint }: FieldProps) {
           </span>
         </motion.div>
       )}
-      {hint && empty && (
+      {hint && empty && !isEditing && (
         <p className="text-[10px] text-destructive/80 mt-1">{hint}</p>
       )}
     </motion.div>
