@@ -75,7 +75,7 @@ export function LiveSearchField({
     const reqId = ++reqIdRef.current;
     const t = setTimeout(async () => {
       setLoading(true);
-      let q = supabase
+      let q: any = (supabase as any)
         .from(table)
         .select(`${codeColumn}, ${descriptionColumn}`)
         .order(descriptionColumn, { ascending: true })
