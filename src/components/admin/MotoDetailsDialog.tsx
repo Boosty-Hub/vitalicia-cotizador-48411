@@ -502,31 +502,48 @@ export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera",
                     animate="animate"
                     exit="exit"
                   >
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      <Field icon={<Bike className="h-3 w-3" />} label="Marca" value={view.marca} required editable editing={editing} onChange={(v) => setField("marca", v)} />
-                      <Field icon={<Hash className="h-3 w-3" />} label="Modelo" value={view.modelo} required editable editing={editing} onChange={(v) => setField("modelo", v)} />
-                      <Field icon={<Calendar className="h-3 w-3" />} label="Año" value={view.anio_modelo} required editable editing={editing} type="number" onChange={(v) => setField("anio_modelo", v)} />
-                      <Field icon={<Hash className="h-3 w-3" />} label="Placa" value={view.placa} required editable editing={editing} onChange={(v) => setField("placa", v)} />
-                      <Field icon={<Gauge className="h-3 w-3" />} label="Transmisión" value={view.transmision} editable editing={editing} onChange={(v) => setField("transmision", v)} />
-                      <Field icon={<Palette className="h-3 w-3" />} label="Color" value={view.color} editable editing={editing} onChange={(v) => setField("color", v)} />
-                      <Field icon={<Hash className="h-3 w-3" />} label="Código Modelo" value={view.cod_modelo} required editable editing={editing} hint="RMS rechazará el envío" onChange={(v) => setField("cod_modelo", v)} />
-                      <Field icon={<Hash className="h-3 w-3" />} label="Código Color" value={view.cod_color} editable editing={editing} onChange={(v) => setField("cod_color", v)} />
-                      <Field icon={<Hash className="h-3 w-3" />} label="Serial Chasis" value={view.serial_chasis} required editable editing={editing} hint="RMS rechazará el envío" onChange={(v) => setField("serial_chasis", v)} />
-                      <Field icon={<Hash className="h-3 w-3" />} label="Serial Motor" value={view.serial_motor} required editable editing={editing} hint="RMS rechazará el envío" onChange={(v) => setField("serial_motor", v)} />
-                      <Field icon={<Calendar className="h-3 w-3" />} label="Fecha ingreso" value={view.fecha} editable editing={editing} type="date" onChange={(v) => setField("fecha", v)} />
-                    </div>
-
-                    <div className="mt-5">
-                      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                        Precios
-                      </h4>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <Field label="Venta tienda" value={editing ? view.precio_venta_tienda : formatPrice(view.precio_venta_tienda)} editable editing={editing} type="number" onChange={(v) => setField("precio_venta_tienda", v)} />
-                        <Field label="Base venta tienda" value={editing ? view.precio_base_venta_tienda : formatPrice(view.precio_base_venta_tienda)} editable editing={editing} type="number" onChange={(v) => setField("precio_base_venta_tienda", v)} />
-                        <Field label="Venta sugerido" value={editing ? view.precio_venta_sugerido : formatPrice(view.precio_venta_sugerido)} editable editing={editing} type="number" onChange={(v) => setField("precio_venta_sugerido", v)} />
-                        <Field label="Base sugerido" value={editing ? view.precio_base_venta_sugerido : formatPrice(view.precio_base_venta_sugerido)} editable editing={editing} type="number" onChange={(v) => setField("precio_base_venta_sugerido", v)} />
+                    {variant === "empire" ? (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <Field icon={<Bike className="h-3 w-3" />} label="Marca" value={view.marca} required editable editing={editing} onChange={(v) => setField("marca", v)} />
+                        <Field icon={<Hash className="h-3 w-3" />} label="Modelo" value={view.modelo} required editable editing={editing} onChange={(v) => setField("modelo", v)} />
+                        <Field icon={<Hash className="h-3 w-3" />} label="Versión" value={view.version} required editable editing={editing} onChange={(v) => setField("version", v)} />
+                        <Field icon={<Calendar className="h-3 w-3" />} label="Año" value={view.anio} required editable editing={editing} type="number" onChange={(v) => setField("anio", v)} />
+                        <Field icon={<Hash className="h-3 w-3" />} label="Placa" value={view.placa} required editable editing={editing} onChange={(v) => setField("placa", v)} />
+                        <Field icon={<Gauge className="h-3 w-3" />} label="Transmisión" value={view.transmision} editable editing={editing} onChange={(v) => setField("transmision", v)} />
+                        <Field icon={<Palette className="h-3 w-3" />} label="Color" value={view.color} editable editing={editing} onChange={(v) => setField("color", v)} />
+                        <Field icon={<Hash className="h-3 w-3" />} label="Serial Carrocería" value={view.serial_carroceria} required editable editing={editing} hint="RMS rechazará el envío" onChange={(v) => setField("serial_carroceria", v)} />
+                        <Field icon={<Hash className="h-3 w-3" />} label="Serial Motor" value={view.serial_motor} required editable editing={editing} hint="RMS rechazará el envío" onChange={(v) => setField("serial_motor", v)} />
+                        <Field icon={<Calendar className="h-3 w-3" />} label="Fecha ingreso" value={view.fecha} editable editing={editing} type="date" onChange={(v) => setField("fecha", v)} />
                       </div>
-                    </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          <Field icon={<Bike className="h-3 w-3" />} label="Marca" value={view.marca} required editable editing={editing} onChange={(v) => setField("marca", v)} />
+                          <Field icon={<Hash className="h-3 w-3" />} label="Modelo" value={view.modelo} required editable editing={editing} onChange={(v) => setField("modelo", v)} />
+                          <Field icon={<Calendar className="h-3 w-3" />} label="Año" value={view.anio_modelo} required editable editing={editing} type="number" onChange={(v) => setField("anio_modelo", v)} />
+                          <Field icon={<Hash className="h-3 w-3" />} label="Placa" value={view.placa} required editable editing={editing} onChange={(v) => setField("placa", v)} />
+                          <Field icon={<Gauge className="h-3 w-3" />} label="Transmisión" value={view.transmision} editable editing={editing} onChange={(v) => setField("transmision", v)} />
+                          <Field icon={<Palette className="h-3 w-3" />} label="Color" value={view.color} editable editing={editing} onChange={(v) => setField("color", v)} />
+                          <Field icon={<Hash className="h-3 w-3" />} label="Código Modelo" value={view.cod_modelo} required editable editing={editing} hint="RMS rechazará el envío" onChange={(v) => setField("cod_modelo", v)} />
+                          <Field icon={<Hash className="h-3 w-3" />} label="Código Color" value={view.cod_color} editable editing={editing} onChange={(v) => setField("cod_color", v)} />
+                          <Field icon={<Hash className="h-3 w-3" />} label="Serial Chasis" value={view.serial_chasis} required editable editing={editing} hint="RMS rechazará el envío" onChange={(v) => setField("serial_chasis", v)} />
+                          <Field icon={<Hash className="h-3 w-3" />} label="Serial Motor" value={view.serial_motor} required editable editing={editing} hint="RMS rechazará el envío" onChange={(v) => setField("serial_motor", v)} />
+                          <Field icon={<Calendar className="h-3 w-3" />} label="Fecha ingreso" value={view.fecha} editable editing={editing} type="date" onChange={(v) => setField("fecha", v)} />
+                        </div>
+
+                        <div className="mt-5">
+                          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                            Precios
+                          </h4>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <Field label="Venta tienda" value={editing ? view.precio_venta_tienda : formatPrice(view.precio_venta_tienda)} editable editing={editing} type="number" onChange={(v) => setField("precio_venta_tienda", v)} />
+                            <Field label="Base venta tienda" value={editing ? view.precio_base_venta_tienda : formatPrice(view.precio_base_venta_tienda)} editable editing={editing} type="number" onChange={(v) => setField("precio_base_venta_tienda", v)} />
+                            <Field label="Venta sugerido" value={editing ? view.precio_venta_sugerido : formatPrice(view.precio_venta_sugerido)} editable editing={editing} type="number" onChange={(v) => setField("precio_venta_sugerido", v)} />
+                            <Field label="Base sugerido" value={editing ? view.precio_base_venta_sugerido : formatPrice(view.precio_base_venta_sugerido)} editable editing={editing} type="number" onChange={(v) => setField("precio_base_venta_sugerido", v)} />
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </motion.div>
                 )}
 
@@ -543,20 +560,21 @@ export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera",
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       <Field label="c_cd_marca" value={"—"} required hint="Se resuelve al activar la póliza" />
-                      <Field label="c_cd_modelo" value={view.cod_modelo} required hint="Debe existir en board_cod_modelo" />
-                      <Field label="c_cd_color" value={view.cod_color} required />
-                      <Field label="n_nu_centuria (año)" value={view.anio_modelo} required />
+                      <Field label="c_cd_modelo" value={variant === "empire" ? "—" : view.cod_modelo} required hint={variant === "empire" ? "Se resuelve por versión" : "Debe existir en board_cod_modelo"} />
+                      <Field label="c_cd_color" value={variant === "empire" ? "—" : view.cod_color} required />
+                      <Field label="n_nu_centuria (año)" value={yearOf(view)} required />
                       <Field label="c_placa" value={view.placa} required />
-                      <Field label="n_serialcontrato (chasis)" value={view.serial_chasis} required />
+                      <Field label="n_serialcontrato (chasis)" value={chasisOf(view)} required />
                       <Field label="c_motor" value={view.serial_motor} required />
-                      <Field label="c_carroceria" value={view.serial_chasis} required />
+                      <Field label="c_carroceria" value={chasisOf(view)} required />
                       <Field label="c_cd_pais" value={"001"} />
                       <Field label="cd_moneda" value={"DL"} />
                       <Field label="s_marca (descriptivo)" value={view.marca} />
-                      <Field label="s_modelo (descriptivo)" value={view.modelo} />
+                      <Field label="s_modelo (descriptivo)" value={modelOf(view)} />
                     </div>
                   </motion.div>
                 )}
+
 
                 {tab === "historico" && (
                   <motion.div
