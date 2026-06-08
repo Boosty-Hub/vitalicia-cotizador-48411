@@ -62,6 +62,8 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   moto: MotoBera | null;
+  table?: "bd_bera" | "bd_empire";
+  onUpdated?: () => void;
 }
 
 const formatPrice = (n?: number | null) =>
