@@ -155,7 +155,7 @@ export default function AdminLoginPage() {
         title: "Bienvenido",
         description: "Has iniciado sesión correctamente",
       });
-      navigate("/admin");
+      setPendingRedirect(true);
 
     } catch (err) {
       console.log("Unexpected error:", err);
