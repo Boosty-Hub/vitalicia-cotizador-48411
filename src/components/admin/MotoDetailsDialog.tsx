@@ -214,30 +214,38 @@ export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera",
 
   const view = (editing ? draft : moto) ?? moto;
 
+  // Normalized accessors (empire uses different column names)
+  const yearOf = (m: MotoBera | null) => (variant === "empire" ? m?.anio : m?.anio_modelo) ?? null;
+  const chasisOf = (m: MotoBera | null) => (variant === "empire" ? m?.serial_carroceria : m?.serial_chasis) ?? null;
+  const modelOf = (m: MotoBera | null) => (variant === "empire" ? m?.version || m?.modelo : m?.modelo) ?? null;
+
   // Inconsistency checks
   const issues = useMemo(() => {
     if (!view) return [] as { level: "error" | "warn"; msg: string }[];
     const out: { level: "error" | "warn"; msg: string }[] = [];
     if (!view.placa) out.push({ level: "error", msg: "Falta la placa" });
-    if (!view.serial_chasis) out.push({ level: "error", msg: "Falta el serial de chasis (requerido por RMS)" });
+    const chasis = chasisOf(view);
+    if (!chasis) out.push({ level: "error", msg: `Falta el serial de ${variant === "empire" ? "carrocería" : "chasis"} (requerido por RMS)` });
     if (!view.serial_motor) out.push({ level: "error", msg: "Falta el serial de motor (requerido por RMS)" });
-    if (!view.cod_modelo || view.cod_modelo === "0000")
-      out.push({ level: "error", msg: "Código de modelo no resuelto (RMS: 0000)" });
-    if (!view.cod_color || view.cod_color === "0000")
-      out.push({ level: "warn", msg: "Código de color no resuelto" });
-    if (!view.anio_modelo) out.push({ level: "error", msg: "Falta el año del modelo" });
-    if (!view.modelo) out.push({ level: "warn", msg: "Falta el nombre del modelo" });
+    if (variant === "bera") {
+      if (!view.cod_modelo || view.cod_modelo === "0000")
+        out.push({ level: "error", msg: "Código de modelo no resuelto (RMS: 0000)" });
+      if (!view.cod_color || view.cod_color === "0000")
+        out.push({ level: "warn", msg: "Código de color no resuelto" });
+    }
+    if (!yearOf(view)) out.push({ level: "error", msg: "Falta el año del modelo" });
+    if (!modelOf(view)) out.push({ level: "warn", msg: "Falta el modelo" });
     if (!view.color) out.push({ level: "warn", msg: "Falta el color descriptivo" });
     if (view.es_duplicado) out.push({ level: "warn", msg: "Placa marcada como duplicada en inventario" });
     return out;
-  }, [view]);
+  }, [view, variant]);
 
   const rmsReady = issues.filter((i) => i.level === "error").length === 0;
 
   const setField = <K extends keyof MotoBera>(key: K, value: string) => {
     if (!draft) return;
     let v: any = value;
-    if (key === "anio_modelo") v = value === "" ? null : parseInt(value) || null;
+    if (key === "anio_modelo" || key === "anio") v = value === "" ? null : parseInt(value) || null;
     else if (
       key === "precio_venta_tienda" ||
       key === "precio_base_venta_tienda" ||
@@ -253,26 +261,39 @@ export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera",
     if (!draft || !moto) return;
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from(table)
-        .update({
-          fecha: draft.fecha,
-          marca: draft.marca,
-          cod_modelo: draft.cod_modelo,
-          modelo: draft.modelo,
-          anio_modelo: draft.anio_modelo,
-          placa: draft.placa,
-          transmision: draft.transmision,
-          serial_chasis: draft.serial_chasis,
-          serial_motor: draft.serial_motor,
-          cod_color: draft.cod_color,
-          color: draft.color,
-          precio_venta_tienda: draft.precio_venta_tienda,
-          precio_base_venta_tienda: draft.precio_base_venta_tienda,
-          precio_venta_sugerido: draft.precio_venta_sugerido,
-          precio_base_venta_sugerido: draft.precio_base_venta_sugerido,
-        })
-        .eq("id", moto.id);
+      const payload: Record<string, any> =
+        variant === "empire"
+          ? {
+              fecha: draft.fecha,
+              marca: draft.marca,
+              modelo: draft.modelo,
+              version: draft.version,
+              anio: draft.anio,
+              transmision: draft.transmision,
+              placa: draft.placa,
+              serial_motor: draft.serial_motor,
+              serial_carroceria: draft.serial_carroceria,
+              color: draft.color,
+            }
+          : {
+              fecha: draft.fecha,
+              marca: draft.marca,
+              cod_modelo: draft.cod_modelo,
+              modelo: draft.modelo,
+              anio_modelo: draft.anio_modelo,
+              placa: draft.placa,
+              transmision: draft.transmision,
+              serial_chasis: draft.serial_chasis,
+              serial_motor: draft.serial_motor,
+              cod_color: draft.cod_color,
+              color: draft.color,
+              precio_venta_tienda: draft.precio_venta_tienda,
+              precio_base_venta_tienda: draft.precio_base_venta_tienda,
+              precio_venta_sugerido: draft.precio_venta_sugerido,
+              precio_base_venta_sugerido: draft.precio_base_venta_sugerido,
+            };
+
+      const { error } = await supabase.from(table).update(payload).eq("id", moto.id);
       if (error) throw error;
       toast({ title: "Cambios guardados", description: "La moto se actualizó correctamente." });
       setEditing(false);
