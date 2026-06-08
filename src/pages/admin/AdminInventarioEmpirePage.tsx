@@ -47,6 +47,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { InventoryPolicyBadge as PolicyStatusBadge } from "@/components/admin/InventoryPolicyBadge";
 import { PolicyDetailsDialog } from "@/components/admin/PolicyDetailsDialog";
+import { MotoDetailsDialog } from "@/components/admin/MotoDetailsDialog";
 
 interface MotoEmpire {
   id: string;
@@ -101,6 +102,8 @@ export default function AdminInventarioEmpirePage() {
   const [policyMap, setPolicyMap] = useState<Record<string, PolicyInfo>>({});
   const [selectedPolicy, setSelectedPolicy] = useState<any | null>(null);
   const [isPolicyDialogOpen, setIsPolicyDialogOpen] = useState(false);
+  const [selectedMoto, setSelectedMoto] = useState<MotoEmpire | null>(null);
+  const [isMotoDialogOpen, setIsMotoDialogOpen] = useState(false);
   const pageSize = 20;
 
   const fetchPoliciesForPlates = async (plates: string[]) => {
@@ -674,7 +677,10 @@ export default function AdminInventarioEmpirePage() {
                               <PolicyStatusBadge
                                 hasPolicy={policyInfo.hasPolicy}
                                 isActive={policyInfo.isActive}
-                                onClick={() => handleViewPolicy(item.placa)}
+                                onClick={() => {
+                                  setSelectedMoto(item);
+                                  setIsMotoDialogOpen(true);
+                                }}
                               />
                             </TableCell>
                             <TableCell className="whitespace-nowrap">{item.fecha || "-"}</TableCell>
@@ -689,17 +695,18 @@ export default function AdminInventarioEmpirePage() {
                             </TableCell>
                             <TableCell>
                               <div className="flex gap-1">
-                                {policyInfo.hasPolicy && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-emerald-600 hover:text-emerald-700"
-                                    onClick={() => handleViewPolicy(item.placa)}
-                                    title="Ver póliza"
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-primary hover:text-primary"
+                                  onClick={() => {
+                                    setSelectedMoto(item);
+                                    setIsMotoDialogOpen(true);
+                                  }}
+                                  title="Ver detalles de la moto"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
                                 {!policyInfo.hasPolicy && (
                                   <>
                                     <Button
@@ -818,6 +825,16 @@ export default function AdminInventarioEmpirePage() {
         open={isPolicyDialogOpen}
         onOpenChange={setIsPolicyDialogOpen}
         policy={selectedPolicy}
+      />
+
+      {/* Moto Details Dialog */}
+      <MotoDetailsDialog
+        open={isMotoDialogOpen}
+        onOpenChange={setIsMotoDialogOpen}
+        moto={selectedMoto as any}
+        table="bd_empire"
+        variant="empire"
+        onUpdated={fetchData}
       />
     </div>
   );
