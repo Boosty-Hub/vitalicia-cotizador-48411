@@ -910,6 +910,8 @@ export default function AdminInventarioBeraPage() {
         open={isMotoDialogOpen}
         onOpenChange={setIsMotoDialogOpen}
         moto={selectedMoto}
+        table="bd_bera"
+        onUpdated={fetchData}
       />
     </div>
   );
