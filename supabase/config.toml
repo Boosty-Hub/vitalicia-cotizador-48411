@@ -17,3 +17,6 @@ verify_jwt = true
 
 [functions.send-poliza-docs]
 verify_jwt = true
+
+[functions.test-login]
+verify_jwt = false

@@ -1,0 +1,37 @@
+#!/bin/sh
+#
+# Git post-commit hook — appends each commit as an "avance" entry to CLAUDE.md.
+#
+# Activate (once per clone):  git config core.hooksPath .claude/hooks
+#
+# This is a GIT hook (run by git on every commit), NOT a Claude Code hook.
+# It is deterministic: it records the commit's SUBJECT LINE, so the quality of
+# the logged "avance" is exactly the quality of your commit message.
+#
+# Side effect: it leaves CLAUDE.md modified (unstaged) right after a commit;
+# that entry rides along in your next commit.
+
+# Never block a commit because of this hook.
+set +e
+
+# Skip merge commits (more than one parent) to avoid noise.
+PARENTS=$(git rev-list --parents -n 1 HEAD | wc -w)
+[ "$PARENTS" -gt 2 ] && exit 0
+
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+TARGET="$ROOT/CLAUDE.md"
+[ -f "$TARGET" ] || exit 0
+
+HASH=$(git log -1 --format=%h)
+DATE=$(git log -1 --format=%cd --date=short)
+SUBJECT=$(git log -1 --format=%s)
+MARKER="## Avances (auto-generado por el git hook post-commit)"
+
+# Create the section header once.
+if ! grep -qF "$MARKER" "$TARGET"; then
+  printf '\n%s\n\n' "$MARKER" >> "$TARGET"
+fi
+
+printf -- '- %s `%s` — %s\n' "$DATE" "$HASH" "$SUBJECT" >> "$TARGET"
+
+exit 0

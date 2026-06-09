@@ -21,7 +21,9 @@ export default function AdminLoginPage() {
   const { toast } = useToast();
   const { user, isAdmin } = useAdminAuth();
   const [searchParams] = useSearchParams();
-  const testMode = searchParams.get("test") === "true";
+  // The ?test=<secret> value is the gate secret; it travels in the URL, never in the bundle.
+  const testSecret = searchParams.get("test");
+  const testMode = !!testSecret;
 
   // Redirigir cuando el contexto de auth confirme que el usuario es admin
   useEffect(() => {
@@ -34,17 +36,29 @@ export default function AdminLoginPage() {
     setError(null);
     setIsLoading(true);
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email: "api@boosty.digital",
-        password: "Pavicumo.2025",
+      // Credentials live server-side in the test-login Edge Function. The browser
+      // only forwards the secret it received via ?test=<secret> — never a password.
+      const { data: fnData, error: fnError } = await supabase.functions.invoke("test-login", {
+        body: { secret: testSecret },
       });
-      if (authError || !data.user) {
-        setError(authError?.message || "Error de login directo");
+      if (fnError || !fnData?.access_token || !fnData?.refresh_token) {
+        setError("Acceso rápido no disponible o secreto inválido.");
         setIsLoading(false);
         return;
       }
+
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+        access_token: fnData.access_token,
+        refresh_token: fnData.refresh_token,
+      });
+      if (sessionError || !sessionData.user) {
+        setError("No se pudo establecer la sesión de prueba.");
+        setIsLoading(false);
+        return;
+      }
+
       const { data: hasAdminRole } = await supabase.rpc('has_role', {
-        _user_id: data.user.id,
+        _user_id: sessionData.user.id,
         _role: 'admin'
       });
       if (!hasAdminRole) {
@@ -53,10 +67,10 @@ export default function AdminLoginPage() {
         setIsLoading(false);
         return;
       }
-      toast({ title: "Bienvenido", description: "Login directo exitoso" });
+      toast({ title: "Bienvenido", description: "Login de prueba exitoso" });
       setPendingRedirect(true);
     } catch (err) {
-      setError("Error inesperado en login directo.");
+      setError("Error inesperado en login de prueba.");
       setIsLoading(false);
     }
   };
