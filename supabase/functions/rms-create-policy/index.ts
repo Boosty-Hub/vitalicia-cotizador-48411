@@ -237,15 +237,13 @@ function buildRmsPayload(data: Record<string, any>, tipoFormulario: string): Rec
     // Titular - n_cedrif: usar n_cedrif, fallback a nro_documento_natural_monday o nro_documento_juridico_monday
     c_cd_nacionalidad: data.c_cd_nacionalidad || (isJuridico ? "J" : ""),
     n_cedrif: parseInt(data.n_cedrif) || parseInt(data.nro_documento_natural_monday) || parseInt(data.nro_documento_juridico_monday) || 0,
-    // Para jurídico el titular es una empresa: cd_sexo/f_fecnac/cd_edocivil no aplican.
-    // RMS rechaza valores vacíos en estos campos, así que se omiten para jurídico.
-    ...(isJuridico ? {} : {
-      cd_sexo: data.cd_sexo || "",
-      f_fecnac: data.f_fecnac || "",
-      cd_edocivil: data.cd_edocivil || "",
-    }),
-    c_nombre: data.c_nombre || (isJuridico ? "" : ""),
-    c_apellido: data.c_apellido || (isJuridico ? "" : ""),
+    // Para jurídico el titular es una empresa: cd_sexo/f_fecnac/cd_edocivil no aplican
+    // pero RMS los marca NOT NULL en c_persona, así que enviamos placeholders válidos.
+    cd_sexo: data.cd_sexo || (isJuridico ? "M" : ""),
+    f_fecnac: data.f_fecnac || (isJuridico ? "1900-01-01" : ""),
+    cd_edocivil: data.cd_edocivil || (isJuridico ? "S" : ""),
+    c_nombre: data.c_nombre || "",
+    c_apellido: data.c_apellido || "",
     c_razonsocial: data.c_razonsocial || "",
     
     // Dirección
