@@ -48,6 +48,7 @@ import { Badge } from "@/components/ui/badge";
 import { InventoryPolicyBadge as PolicyStatusBadge } from "@/components/admin/InventoryPolicyBadge";
 import { PolicyDetailsDialog } from "@/components/admin/PolicyDetailsDialog";
 import { MotoDetailsDialog } from "@/components/admin/MotoDetailsDialog";
+import { DuplicateWarningDialog, DuplicateRow, DuplicateColumnsConfig } from "@/components/admin/DuplicateWarningDialog";
 
 interface MotoBera {
   id: string;
@@ -95,6 +96,15 @@ const initialFormData = {
   precio_base_venta_sugerido: 0,
 };
 
+const DUP_KEY = "dup-warning-bera";
+const DUP_COLUMNS: DuplicateColumnsConfig = {
+  yearKey: "anio_modelo",
+  yearLabel: "Año modelo",
+  serialKey: "serial_chasis",
+  serialLabel: "Serial Chasis",
+  modelOf: (r) => String(r.modelo ?? "—"),
+};
+
 export default function AdminInventarioBeraPage() {
   const [data, setData] = useState<MotoBera[]>([]);
   const [loading, setLoading] = useState(true);
@@ -115,6 +125,9 @@ export default function AdminInventarioBeraPage() {
   const [isPolicyDialogOpen, setIsPolicyDialogOpen] = useState(false);
   const [selectedMoto, setSelectedMoto] = useState<MotoBera | null>(null);
   const [isMotoDialogOpen, setIsMotoDialogOpen] = useState(false);
+  const [dupRows, setDupRows] = useState<DuplicateRow[]>([]);
+  const [dupCount, setDupCount] = useState(0);
+  const [dupOpen, setDupOpen] = useState(false);
   const pageSize = 20;
 
   const fetchPoliciesForPlates = async (plates: string[]) => {
@@ -222,6 +235,24 @@ export default function AdminInventarioBeraPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (sessionStorage.getItem(DUP_KEY)) return;
+    let cancelled = false;
+    (async () => {
+      const { data, count } = await supabase
+        .from("bd_bera")
+        .select("id,placa,marca,modelo,anio_modelo,serial_chasis", { count: "exact" })
+        .eq("es_duplicado", true)
+        .limit(50);
+      if (cancelled || !count) return;
+      setDupRows((data ?? []) as DuplicateRow[]);
+      setDupCount(count);
+      setDupOpen(true);
+      sessionStorage.setItem(DUP_KEY, "1");
+    })();
+    return () => { cancelled = true; };
+  }, []); // mount only — independent of fetchData deps
 
   useEffect(() => {
     fetchData();
@@ -912,6 +943,21 @@ export default function AdminInventarioBeraPage() {
         moto={selectedMoto}
         table="bd_bera"
         onUpdated={fetchData}
+      />
+
+      {/* Duplicate Warning Dialog */}
+      <DuplicateWarningDialog
+        variant="bera"
+        open={dupOpen}
+        onOpenChange={setDupOpen}
+        rows={dupRows}
+        totalCount={dupCount}
+        columns={DUP_COLUMNS}
+        onViewDuplicates={() => {
+          setFilterDuplicados("duplicados");
+          setCurrentPage(1);
+          setDupOpen(false);
+        }}
       />
     </div>
   );

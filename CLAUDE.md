@@ -112,3 +112,4 @@ touching inventory/pricing, expect to handle both variants.
 ## Avances (auto-generado por el git hook post-commit)
 
 - 2026-06-09 `659385c` — feat(admin): login rápido seguro vía Edge Function test-login
+- 2026-06-09 `20d43ca` — refactor(admin-auth): consolida login en AdminAuthContext y corrige manejo de error de rol

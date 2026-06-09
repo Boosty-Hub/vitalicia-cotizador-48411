@@ -1,0 +1,16 @@
+change: inventario-duplicados-popup
+project: vitalicia-cotizador-48411
+artifact_store: openspec
+phase: tasks
+status: done
+updated: "2026-06-09"
+
+artifacts:
+  proposal: openspec/changes/inventario-duplicados-popup/proposal.md
+  explore: openspec/changes/inventario-duplicados-popup/explore.md
+  specs:
+    - openspec/changes/inventario-duplicados-popup/specs/duplicate-warning-dialog/spec.md
+  design: openspec/changes/inventario-duplicados-popup/design.md
+  tasks: openspec/changes/inventario-duplicados-popup/tasks.md
+
+next_recommended: sdd-apply
