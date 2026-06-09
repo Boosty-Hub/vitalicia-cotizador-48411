@@ -228,18 +228,24 @@ function buildRmsPayload(data: Record<string, any>, tipoFormulario: string): Rec
     c_cd_version: data.c_cd_version || "",
     c_cd_color: data.c_cd_color || "",
     n_suma: parseFloat(data.n_suma) || 0,
-    n_nu_centuria: String(new Date().getFullYear()),
+    // n_nu_centuria: usar el valor enviado (debe coincidir con board_cod_version_api),
+    // sólo como fallback usar el año actual.
+    n_nu_centuria: String(data.n_nu_centuria || new Date().getFullYear()),
     c_cd_versionseguro: data.c_cd_versionseguro || "",
     c_cd_subversionseguro: data.c_cd_subversionseguro || "",
     
     // Titular - n_cedrif: usar n_cedrif, fallback a nro_documento_natural_monday o nro_documento_juridico_monday
-    c_cd_nacionalidad: data.c_cd_nacionalidad || "",
+    c_cd_nacionalidad: data.c_cd_nacionalidad || (isJuridico ? "J" : ""),
     n_cedrif: parseInt(data.n_cedrif) || parseInt(data.nro_documento_natural_monday) || parseInt(data.nro_documento_juridico_monday) || 0,
-    cd_sexo: data.cd_sexo || "",
-    f_fecnac: data.f_fecnac || "",
-    cd_edocivil: data.cd_edocivil || "",
-    c_nombre: data.c_nombre || "",
-    c_apellido: data.c_apellido || "",
+    // Para jurídico el titular es una empresa: cd_sexo/f_fecnac/cd_edocivil no aplican.
+    // RMS rechaza valores vacíos en estos campos, así que se omiten para jurídico.
+    ...(isJuridico ? {} : {
+      cd_sexo: data.cd_sexo || "",
+      f_fecnac: data.f_fecnac || "",
+      cd_edocivil: data.cd_edocivil || "",
+    }),
+    c_nombre: data.c_nombre || (isJuridico ? "" : ""),
+    c_apellido: data.c_apellido || (isJuridico ? "" : ""),
     c_razonsocial: data.c_razonsocial || "",
     
     // Dirección
