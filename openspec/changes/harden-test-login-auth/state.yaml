@@ -1,0 +1,14 @@
+change: harden-test-login-auth
+project: vitalicia-cotizador-48411
+artifact_store: openspec
+phase: spec
+status: done
+updated: "2026-06-09"
+
+artifacts:
+  proposal: openspec/changes/harden-test-login-auth/proposal.md
+  specs:
+    - openspec/changes/harden-test-login-auth/specs/test-login-endpoint/spec.md
+    - openspec/changes/harden-test-login-auth/specs/admin-auth-flow/spec.md
+
+next_recommended: sdd-design

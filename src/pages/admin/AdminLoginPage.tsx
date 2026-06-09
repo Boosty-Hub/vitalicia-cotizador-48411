@@ -19,7 +19,7 @@ export default function AdminLoginPage() {
 
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, isAdmin } = useAdminAuth();
+  const { user, isAdmin, signIn, signInWithSession } = useAdminAuth();
   const [searchParams] = useSearchParams();
   // The ?test=<secret> value is the gate secret; it travels in the URL, never in the bundle.
   const testSecret = searchParams.get("test");
@@ -32,6 +32,18 @@ export default function AdminLoginPage() {
     }
   }, [pendingRedirect, user, isAdmin, navigate]);
 
+  // Safety timeout: if redirect never resolves within 5s, reset loading state.
+  // Mirrors the context's own 5s init-loading timeout — consistent with the codebase.
+  useEffect(() => {
+    if (!pendingRedirect) return;
+    const timeout = setTimeout(() => {
+      setPendingRedirect(false);
+      setIsLoading(false);
+      setError("No se pudo completar el inicio de sesión. Intenta de nuevo.");
+    }, 5000);
+    return () => clearTimeout(timeout);
+  }, [pendingRedirect]);
+
   const handleDirectLogin = async () => {
     setError(null);
     setIsLoading(true);
@@ -43,34 +55,22 @@ export default function AdminLoginPage() {
       });
       if (fnError || !fnData?.access_token || !fnData?.refresh_token) {
         setError("Acceso rápido no disponible o secreto inválido.");
-        setIsLoading(false);
         return;
       }
 
-      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+      const { error: authOutcome } = await signInWithSession({
         access_token: fnData.access_token,
         refresh_token: fnData.refresh_token,
       });
-      if (sessionError || !sessionData.user) {
-        setError("No se pudo establecer la sesión de prueba.");
-        setIsLoading(false);
-        return;
-      }
-
-      const { data: hasAdminRole } = await supabase.rpc('has_role', {
-        _user_id: sessionData.user.id,
-        _role: 'admin'
-      });
-      if (!hasAdminRole) {
-        setError("No tienes permisos de administrador.");
-        await supabase.auth.signOut();
-        setIsLoading(false);
+      if (authOutcome) {
+        setError(authOutcome.message);
         return;
       }
       toast({ title: "Bienvenido", description: "Login de prueba exitoso" });
       setPendingRedirect(true);
     } catch (err) {
       setError("Error inesperado en login de prueba.");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -86,12 +86,12 @@ export default function AdminLoginPage() {
       }
     }
     keysToRemove.forEach(key => localStorage.removeItem(key));
-    
+
     toast({
       title: "Sesión limpiada",
       description: "Se eliminaron los datos de sesión local. Intenta iniciar sesión nuevamente.",
     });
-    
+
     // Recargar la página para reiniciar todo
     window.location.reload();
   };
@@ -113,54 +113,24 @@ export default function AdminLoginPage() {
     setIsLoading(true);
 
     try {
-      // Login directo sin timeout wrapper - más simple
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { error: authOutcome } = await signIn(email, password);
 
-      if (authError) {
-        console.log("Auth error:", authError);
-        
-        // Mensajes de error amigables
-        let errorMsg = authError.message;
-        if (authError.message?.toLowerCase().includes("invalid login credentials")) {
-          errorMsg = "Credenciales inválidas. Verifica tu correo y contraseña.";
-        } else if (authError.message?.toLowerCase().includes("failed to fetch")) {
-          errorMsg = "Error de conexión. Intenta limpiar la sesión con el botón de abajo.";
-        } else if (authError.message?.toLowerCase().includes("email not confirmed")) {
-          errorMsg = "Tu correo no está confirmado. Contacta al administrador.";
+      if (authOutcome) {
+        console.log("Auth outcome:", authOutcome);
+
+        // Preserve existing friendly copy for known Supabase error messages.
+        let errorMsg = authOutcome.message;
+        if (authOutcome.kind === 'auth') {
+          if (authOutcome.message.toLowerCase().includes("invalid login credentials")) {
+            errorMsg = "Credenciales inválidas. Verifica tu correo y contraseña.";
+          } else if (authOutcome.message.toLowerCase().includes("failed to fetch")) {
+            errorMsg = "Error de conexión. Intenta limpiar la sesión con el botón de abajo.";
+          } else if (authOutcome.message.toLowerCase().includes("email not confirmed")) {
+            errorMsg = "Tu correo no está confirmado. Contacta al administrador.";
+          }
         }
-        
+
         setError(errorMsg);
-        setIsLoading(false);
-        return;
-      }
-
-      if (!data.user) {
-        setError("No se pudo obtener información del usuario");
-        setIsLoading(false);
-        return;
-      }
-
-      // Verificar rol de admin
-      const { data: hasAdminRole, error: roleError } = await supabase.rpc('has_role', {
-        _user_id: data.user.id,
-        _role: 'admin'
-      });
-
-      if (roleError) {
-        console.log("Role check error:", roleError);
-        setError("Error verificando permisos. Intenta de nuevo.");
-        await supabase.auth.signOut();
-        setIsLoading(false);
-        return;
-      }
-
-      if (!hasAdminRole) {
-        setError("No tienes permisos de administrador.");
-        await supabase.auth.signOut();
-        setIsLoading(false);
         return;
       }
 
@@ -172,8 +142,9 @@ export default function AdminLoginPage() {
       setPendingRedirect(true);
 
     } catch (err) {
-      console.log("Unexpected error:", err);
+      console.error("Unexpected error:", err);
       setError("Error inesperado. Intenta limpiar la sesión.");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -210,7 +181,7 @@ export default function AdminLoginPage() {
                 autoComplete="email"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="password">Contraseña</Label>
               <div className="relative">
@@ -262,9 +233,9 @@ export default function AdminLoginPage() {
             <p className="text-xs text-muted-foreground text-center mb-3">
               ¿Problemas para entrar? Limpia la sesión local:
             </p>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleClearSession}
               className="w-full text-muted-foreground"
             >

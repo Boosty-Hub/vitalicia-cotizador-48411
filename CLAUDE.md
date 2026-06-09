@@ -108,3 +108,7 @@ touching inventory/pricing, expect to handle both variants.
   Prefer composing these over hand-rolling components.
 - Shared helpers: `src/lib/` (`utils.ts` `cn()`, `priceUtils.ts`, `formValidation.ts`),
   `src/utils/` (`versionApi.ts`, `refreshPolizaConfig.ts`).
+
+## Avances (auto-generado por el git hook post-commit)
+
+- 2026-06-09 `659385c` — feat(admin): login rápido seguro vía Edge Function test-login

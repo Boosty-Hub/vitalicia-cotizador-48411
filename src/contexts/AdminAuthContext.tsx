@@ -2,12 +2,19 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
+type AuthOutcome =
+  | null                                         // success
+  | { kind: 'transient'; message: string }       // DB/RPC error — retry
+  | { kind: 'forbidden'; message: string }       // not admin
+  | { kind: 'auth'; message: string };           // Supabase auth error
+
 interface AdminAuthContextType {
   user: User | null;
   session: Session | null;
   isAdmin: boolean;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: AuthOutcome }>;
+  signInWithSession: (tokens: { access_token: string; refresh_token: string }) => Promise<{ error: AuthOutcome }>;
   signOut: () => Promise<void>;
 }
 
@@ -19,13 +26,14 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Used by onAuthStateChange and initSession — does NOT sign out on failure, just returns boolean.
   const checkAdminRole = async (userId: string): Promise<boolean> => {
     try {
       const { data, error } = await supabase.rpc('has_role', {
         _user_id: userId,
         _role: 'admin'
       });
-      
+
       if (error) {
         console.error("Error checking admin role:", error);
         return false;
@@ -37,6 +45,31 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Private helper — the single home of the sign-in security policy.
+  // Calls has_role, distinguishes transient RPC error from genuine not-admin,
+  // signs out in both failure cases to avoid a half-authenticated session, and
+  // sets isAdmin(true) on success.
+  //
+  // NOTE: spec says do NOT sign out on transient RPC error; design overrides this to avoid
+  // leaving a half-authenticated session. See design.md Decision 4.
+  const verifyAdminOrSignOut = async (userId: string): Promise<AuthOutcome> => {
+    const { data, error } = await supabase.rpc('has_role', {
+      _user_id: userId,
+      _role: 'admin',
+    });
+    if (error) {
+      console.error("verifyAdminOrSignOut — RPC error:", error);
+      await supabase.auth.signOut();
+      return { kind: 'transient', message: 'Error verificando permisos. Intenta de nuevo.' };
+    }
+    if (data !== true) {
+      await supabase.auth.signOut();
+      return { kind: 'forbidden', message: 'No tienes permisos de administrador.' };
+    }
+    setIsAdmin(true);
+    return null;
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -44,12 +77,12 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         if (!mounted) return;
-        
+
         console.log("Auth state change:", event);
-        
+
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
-        
+
         if (currentSession?.user) {
           // Usar setTimeout para evitar bloqueos de Supabase
           setTimeout(async () => {
@@ -71,12 +104,12 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     const initSession = async () => {
       try {
         const { data: { session: initialSession } } = await supabase.auth.getSession();
-        
+
         if (!mounted) return;
-        
+
         setSession(initialSession);
         setUser(initialSession?.user ?? null);
-        
+
         if (initialSession?.user) {
           const adminStatus = await checkAdminRole(initialSession.user.id);
           if (mounted) {
@@ -109,30 +142,45 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<{ error: AuthOutcome }> => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        return { error };
+        return { error: { kind: 'auth', message: error.message } };
       }
-
-      if (data.user) {
-        const adminStatus = await checkAdminRole(data.user.id);
-        if (!adminStatus) {
-          await supabase.auth.signOut();
-          return { error: new Error("No tienes permisos de administrador") };
-        }
-        setIsAdmin(true);
+      if (!data.user) {
+        return { error: { kind: 'transient', message: 'No se pudo obtener el usuario.' } };
       }
-
-      return { error: null };
+      const outcome = await verifyAdminOrSignOut(data.user.id);
+      return { error: outcome };
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Error desconocido";
-      return { error: new Error(message) };
+      const message = err instanceof Error ? err.message : 'Error desconocido';
+      return { error: { kind: 'transient', message } };
+    }
+  };
+
+  const signInWithSession = async (
+    tokens: { access_token: string; refresh_token: string }
+  ): Promise<{ error: AuthOutcome }> => {
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession(tokens);
+      if (sessionError || !sessionData.user) {
+        return {
+          error: {
+            kind: 'auth',
+            message: sessionError?.message ?? 'No se pudo establecer la sesión.',
+          },
+        };
+      }
+      // Explicitly update user/session state so the redirect effect can fire even if
+      // onAuthStateChange does not re-emit SIGNED_IN (spec: "reliable redirect").
+      setUser(sessionData.user);
+      setSession(sessionData.session);
+      const outcome = await verifyAdminOrSignOut(sessionData.user.id);
+      return { error: outcome };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error desconocido';
+      return { error: { kind: 'transient', message } };
     }
   };
 
@@ -142,7 +190,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AdminAuthContext.Provider value={{ user, session, isAdmin, isLoading, signIn, signOut }}>
+    <AdminAuthContext.Provider value={{ user, session, isAdmin, isLoading, signIn, signInWithSession, signOut }}>
       {children}
     </AdminAuthContext.Provider>
   );
