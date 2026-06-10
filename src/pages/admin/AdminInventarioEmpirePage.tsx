@@ -103,8 +103,6 @@ export default function AdminInventarioEmpirePage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [formData, setFormData] = useState(initialFormData);
@@ -114,6 +112,7 @@ export default function AdminInventarioEmpirePage() {
   const [isPolicyDialogOpen, setIsPolicyDialogOpen] = useState(false);
   const [selectedMoto, setSelectedMoto] = useState<MotoEmpire | null>(null);
   const [isMotoDialogOpen, setIsMotoDialogOpen] = useState(false);
+  const [motoStartInEdit, setMotoStartInEdit] = useState(false);
   const [dupRows, setDupRows] = useState<DuplicateRow[]>([]);
   const [dupCount, setDupCount] = useState(0);
   const [dupOpen, setDupOpen] = useState(false);
@@ -280,58 +279,6 @@ export default function AdminInventarioEmpirePage() {
         description: "No se pudo agregar el registro",
         variant: "destructive",
       });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const openEditDialog = (item: MotoEmpire) => {
-    setEditingId(item.id);
-    setFormData({
-      fecha: item.fecha || "",
-      marca: item.marca || "EMPIRE",
-      modelo: item.modelo || "",
-      version: item.version || "",
-      anio: item.anio || new Date().getFullYear(),
-      transmision: item.transmision || "",
-      placa: item.placa || "",
-      serial_motor: item.serial_motor || "",
-      serial_carroceria: item.serial_carroceria || "",
-      color: item.color || "",
-    });
-    setIsEditDialogOpen(true);
-  };
-
-  const handleEdit = async () => {
-    if (!editingId) return;
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from("bd_empire")
-        .update({
-          fecha: formData.fecha || null,
-          marca: formData.marca,
-          modelo: formData.modelo || null,
-          version: formData.version || null,
-          anio: formData.anio || null,
-          transmision: formData.transmision || null,
-          placa: formData.placa || null,
-          serial_motor: formData.serial_motor || null,
-          serial_carroceria: formData.serial_carroceria || null,
-          color: formData.color || null,
-        })
-        .eq("id", editingId);
-
-      if (error) throw error;
-
-      toast({ title: "Registro actualizado", description: "Los cambios se guardaron correctamente" });
-      setIsEditDialogOpen(false);
-      setEditingId(null);
-      setFormData(initialFormData);
-      fetchData();
-    } catch (error) {
-      console.error("Error updating record:", error);
-      toast({ title: "Error", description: "No se pudo actualizar el registro", variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -744,7 +691,11 @@ export default function AdminInventarioEmpirePage() {
                                       variant="ghost"
                                       size="icon"
                                       className="h-8 w-8 text-orange-600 hover:text-orange-700"
-                                      onClick={() => openEditDialog(item)}
+                                      onClick={() => {
+                                        setSelectedMoto(item);
+                                        setMotoStartInEdit(true);
+                                        setIsMotoDialogOpen(true);
+                                      }}
                                       title="Editar registro"
                                     >
                                       <Pencil className="h-4 w-4" />
@@ -822,35 +773,6 @@ export default function AdminInventarioEmpirePage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={(open) => { setIsEditDialogOpen(open); if (!open) { setEditingId(null); setFormData(initialFormData); } }}>
-        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Editar Moto EMPIRE</DialogTitle>
-            <DialogDescription>Modifica los datos del registro</DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-4">
-            <div className="space-y-2"><Label>Fecha</Label><Input type="date" value={formData.fecha} onChange={(e) => setFormData({ ...formData, fecha: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Marca</Label><Input value={formData.marca} onChange={(e) => setFormData({ ...formData, marca: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Modelo</Label><Input value={formData.modelo} onChange={(e) => setFormData({ ...formData, modelo: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Versión</Label><Input value={formData.version} onChange={(e) => setFormData({ ...formData, version: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Año</Label><Input type="number" value={formData.anio} onChange={(e) => setFormData({ ...formData, anio: parseInt(e.target.value) || 0 })} /></div>
-            <div className="space-y-2"><Label>Transmisión</Label><Input value={formData.transmision} onChange={(e) => setFormData({ ...formData, transmision: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Placa</Label><Input value={formData.placa} onChange={(e) => setFormData({ ...formData, placa: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Serial Motor</Label><Input value={formData.serial_motor} onChange={(e) => setFormData({ ...formData, serial_motor: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Serial Carrocería</Label><Input value={formData.serial_carroceria} onChange={(e) => setFormData({ ...formData, serial_carroceria: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Color</Label><Input value={formData.color} onChange={(e) => setFormData({ ...formData, color: e.target.value })} /></div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={handleEdit} disabled={saving} className="bg-orange-500 hover:bg-orange-600">
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Guardar cambios
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Policy Details Dialog */}
       <PolicyDetailsDialog
         open={isPolicyDialogOpen}
@@ -861,11 +783,15 @@ export default function AdminInventarioEmpirePage() {
       {/* Moto Details Dialog */}
       <MotoDetailsDialog
         open={isMotoDialogOpen}
-        onOpenChange={setIsMotoDialogOpen}
+        onOpenChange={(v) => {
+          setIsMotoDialogOpen(v);
+          if (!v) setMotoStartInEdit(false);
+        }}
         moto={selectedMoto as any}
         table="bd_empire"
         variant="empire"
         onUpdated={fetchData}
+        startInEdit={motoStartInEdit}
       />
 
       {/* Duplicate Warning Dialog */}

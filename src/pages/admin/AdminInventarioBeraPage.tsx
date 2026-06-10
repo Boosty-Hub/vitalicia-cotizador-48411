@@ -114,8 +114,6 @@ export default function AdminInventarioBeraPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [formData, setFormData] = useState(initialFormData);
@@ -125,6 +123,7 @@ export default function AdminInventarioBeraPage() {
   const [isPolicyDialogOpen, setIsPolicyDialogOpen] = useState(false);
   const [selectedMoto, setSelectedMoto] = useState<MotoBera | null>(null);
   const [isMotoDialogOpen, setIsMotoDialogOpen] = useState(false);
+  const [motoStartInEdit, setMotoStartInEdit] = useState(false);
   const [dupRows, setDupRows] = useState<DuplicateRow[]>([]);
   const [dupCount, setDupCount] = useState(0);
   const [dupOpen, setDupOpen] = useState(false);
@@ -296,68 +295,6 @@ export default function AdminInventarioBeraPage() {
         description: "No se pudo agregar el registro",
         variant: "destructive",
       });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const openEditDialog = (item: MotoBera) => {
-    setEditingId(item.id);
-    setFormData({
-      fecha: item.fecha || "",
-      marca: item.marca || "BERA",
-      cod_modelo: item.cod_modelo || "",
-      modelo: item.modelo || "",
-      anio_modelo: item.anio_modelo || new Date().getFullYear(),
-      placa: item.placa || "",
-      transmision: item.transmision || "",
-      serial_chasis: item.serial_chasis || "",
-      serial_motor: item.serial_motor || "",
-      cod_color: item.cod_color || "",
-      color: item.color || "",
-      precio_venta_tienda: item.precio_venta_tienda || 0,
-      precio_base_venta_tienda: item.precio_base_venta_tienda || 0,
-      precio_venta_sugerido: item.precio_venta_sugerido || 0,
-      precio_base_venta_sugerido: item.precio_base_venta_sugerido || 0,
-    });
-    setIsEditDialogOpen(true);
-  };
-
-  const handleEdit = async () => {
-    if (!editingId) return;
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from("bd_bera")
-        .update({
-          fecha: formData.fecha || null,
-          marca: formData.marca,
-          cod_modelo: formData.cod_modelo || null,
-          modelo: formData.modelo || null,
-          anio_modelo: formData.anio_modelo || null,
-          placa: formData.placa || null,
-          transmision: formData.transmision || null,
-          serial_chasis: formData.serial_chasis || null,
-          serial_motor: formData.serial_motor || null,
-          cod_color: formData.cod_color || null,
-          color: formData.color || null,
-          precio_venta_tienda: formData.precio_venta_tienda || null,
-          precio_base_venta_tienda: formData.precio_base_venta_tienda || null,
-          precio_venta_sugerido: formData.precio_venta_sugerido || null,
-          precio_base_venta_sugerido: formData.precio_base_venta_sugerido || null,
-        })
-        .eq("id", editingId);
-
-      if (error) throw error;
-
-      toast({ title: "Registro actualizado", description: "Los cambios se guardaron correctamente" });
-      setIsEditDialogOpen(false);
-      setEditingId(null);
-      setFormData(initialFormData);
-      fetchData();
-    } catch (error) {
-      console.error("Error updating record:", error);
-      toast({ title: "Error", description: "No se pudo actualizar el registro", variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -817,7 +754,11 @@ export default function AdminInventarioBeraPage() {
                                       variant="ghost"
                                       size="icon"
                                       className="h-8 w-8 text-primary hover:text-primary"
-                                      onClick={() => openEditDialog(item)}
+                                      onClick={() => {
+                                        setSelectedMoto(item);
+                                        setMotoStartInEdit(true);
+                                        setIsMotoDialogOpen(true);
+                                      }}
                                       title="Editar registro"
                                     >
                                       <Pencil className="h-4 w-4" />
@@ -895,40 +836,6 @@ export default function AdminInventarioBeraPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={(open) => { setIsEditDialogOpen(open); if (!open) { setEditingId(null); setFormData(initialFormData); } }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Editar Moto BERA</DialogTitle>
-            <DialogDescription>Modifica los datos del registro</DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-4">
-            <div className="space-y-2"><Label>Fecha</Label><Input type="date" value={formData.fecha} onChange={(e) => setFormData({ ...formData, fecha: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Marca</Label><Input value={formData.marca} onChange={(e) => setFormData({ ...formData, marca: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Código Modelo</Label><Input value={formData.cod_modelo} onChange={(e) => setFormData({ ...formData, cod_modelo: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Modelo</Label><Input value={formData.modelo} onChange={(e) => setFormData({ ...formData, modelo: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Año del Modelo</Label><Input type="number" value={formData.anio_modelo} onChange={(e) => setFormData({ ...formData, anio_modelo: parseInt(e.target.value) || 0 })} /></div>
-            <div className="space-y-2"><Label>Placa</Label><Input value={formData.placa} onChange={(e) => setFormData({ ...formData, placa: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Transmisión</Label><Input value={formData.transmision} onChange={(e) => setFormData({ ...formData, transmision: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Serial Chasis</Label><Input value={formData.serial_chasis} onChange={(e) => setFormData({ ...formData, serial_chasis: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Serial Motor</Label><Input value={formData.serial_motor} onChange={(e) => setFormData({ ...formData, serial_motor: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Código Color</Label><Input value={formData.cod_color} onChange={(e) => setFormData({ ...formData, cod_color: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Color</Label><Input value={formData.color} onChange={(e) => setFormData({ ...formData, color: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Precio Venta Tienda</Label><Input type="number" value={formData.precio_venta_tienda} onChange={(e) => setFormData({ ...formData, precio_venta_tienda: parseFloat(e.target.value) || 0 })} /></div>
-            <div className="space-y-2"><Label>Precio Base Venta Tienda</Label><Input type="number" value={formData.precio_base_venta_tienda} onChange={(e) => setFormData({ ...formData, precio_base_venta_tienda: parseFloat(e.target.value) || 0 })} /></div>
-            <div className="space-y-2"><Label>Precio Venta Sugerido</Label><Input type="number" value={formData.precio_venta_sugerido} onChange={(e) => setFormData({ ...formData, precio_venta_sugerido: parseFloat(e.target.value) || 0 })} /></div>
-            <div className="space-y-2"><Label>Precio Base Venta Sugerido</Label><Input type="number" value={formData.precio_base_venta_sugerido} onChange={(e) => setFormData({ ...formData, precio_base_venta_sugerido: parseFloat(e.target.value) || 0 })} /></div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={handleEdit} disabled={saving}>
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Guardar cambios
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Policy Details Dialog */}
       <PolicyDetailsDialog
         open={isPolicyDialogOpen}
@@ -939,10 +846,14 @@ export default function AdminInventarioBeraPage() {
       {/* Moto Details Dialog */}
       <MotoDetailsDialog
         open={isMotoDialogOpen}
-        onOpenChange={setIsMotoDialogOpen}
+        onOpenChange={(v) => {
+          setIsMotoDialogOpen(v);
+          if (!v) setMotoStartInEdit(false);
+        }}
         moto={selectedMoto}
         table="bd_bera"
         onUpdated={fetchData}
+        startInEdit={motoStartInEdit}
       />
 
       {/* Duplicate Warning Dialog */}

@@ -1,7 +1,7 @@
 # Project Context — vitalicia-cotizador-48411
 
 > SDD init artifact. Engram topic_key: sdd-init/vitalicia-cotizador-48411
-> Generated: 2026-06-05 | Artifact store: engram
+> Generated: 2026-06-10 | Artifact store: engram (Engram MCP unavailable — file-based fallback active)
 
 ## Stack
 
@@ -73,3 +73,12 @@ Edge Functions: rms-create-policy, validate-document (public, verify_jwt=false);
 admin-create-user, admin-delete-user, download-poliza-documents (verify_jwt=true);
 generate-carnet-poliza, generate-factura-poliza.
 JWT: supabase/config.toml | Secrets: Supabase env only, never repo.
+Key tables: polizas_activas, bd_bera, bd_empire, precios_empire, board_cod_* (RMS catalogs), profiles, user_roles, admin_settings.
+RPCs: has_role, get_user_role, check_bera_duplicates, check_empire_duplicates.
+
+## OpenSpec Directory (existing)
+
+openspec/ is present — past changes used openspec artifact store.
+Archived changes: harden-test-login-auth, inventario-duplicados-popup, inventario-edit-livesearch.
+Active openspec changes (unarchived): inventario-edit-livesearch (verify-report present), moto-edit-dialog spec in openspec/specs/.
+Note: artifact store for new changes is engram; openspec/ is retained for historical reference.

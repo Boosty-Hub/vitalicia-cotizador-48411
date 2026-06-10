@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -70,6 +71,7 @@ interface Props {
   table?: "bd_bera" | "bd_empire";
   variant?: "bera" | "empire";
   onUpdated?: () => void;
+  startInEdit?: boolean;
 }
 
 const formatPrice = (n?: number | null) =>
@@ -170,7 +172,53 @@ function Field({ icon, label, value, required, hint, editable, editing, type = "
   );
 }
 
-export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera", variant = "bera", onUpdated }: Props) {
+const TRANSMISION_OPTIONS = ["MANUAL", "AUTOMÁTICA"] as const;
+
+function TransmisionField({ value, editing, onChange }: {
+  value?: string | null;
+  editing?: boolean;
+  onChange: (v: string) => void;
+}) {
+  const empty = value == null || value === "";
+  const isEditing = editing;
+
+  return (
+    <motion.div
+      whileHover={!isEditing ? { scale: 1.015 } : undefined}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      className={`relative rounded-lg border p-3 transition-colors ${
+        isEditing
+          ? "border-primary/60 bg-primary/5 ring-2 ring-primary/20"
+          : empty
+            ? "border-muted bg-muted/30"
+            : "border-border bg-card"
+      }`}
+    >
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+        <Gauge className="h-3 w-3" />
+        <span>Transmisión</span>
+      </div>
+      {isEditing ? (
+        <Select value={value ?? undefined} onValueChange={onChange}>
+          <SelectTrigger className="h-8 text-sm">
+            <SelectValue placeholder="Seleccionar..." />
+          </SelectTrigger>
+          <SelectContent>
+            {TRANSMISION_OPTIONS.map((opt) => (
+              <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : (
+        <p className={`text-sm font-medium break-words ${empty ? "text-muted-foreground italic" : ""}`}>
+          {empty ? "Sin dato" : String(value)}
+        </p>
+      )}
+    </motion.div>
+  );
+}
+
+export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera", variant = "bera", onUpdated, startInEdit = false }: Props) {
   const [tab, setTab] = useState("datos");
   const [history, setHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -203,8 +251,11 @@ export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera",
     if (!open) {
       setTab("datos");
       setEditing(false);
+    } else if (startInEdit) {
+      setEditing(true);
+      setTab("datos");
     }
-  }, [open]);
+  }, [open, startInEdit]);
 
   useEffect(() => {
     if (!open || !moto?.placa) return;
@@ -562,7 +613,7 @@ export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera",
                         />
                         <Field icon={<Calendar className="h-3 w-3" />} label="Año" value={view.anio} required editable editing={editing} type="number" onChange={(v) => setField("anio", v)} />
                         <Field icon={<Hash className="h-3 w-3" />} label="Placa" value={view.placa} required editable editing={editing} onChange={(v) => setField("placa", v)} />
-                        <Field icon={<Gauge className="h-3 w-3" />} label="Transmisión" value={view.transmision} editable editing={editing} onChange={(v) => setField("transmision", v)} />
+                        <TransmisionField value={view.transmision} editing={editing} onChange={(v) => setField("transmision", v)} />
                         <LiveSearchField
                           icon={<Palette className="h-3 w-3" />}
                           label="Color"
@@ -613,7 +664,7 @@ export function MotoDetailsDialog({ open, onOpenChange, moto, table = "bd_bera",
                           />
                           <Field icon={<Calendar className="h-3 w-3" />} label="Año" value={view.anio_modelo} required editable editing={editing} type="number" onChange={(v) => setField("anio_modelo", v)} />
                           <Field icon={<Hash className="h-3 w-3" />} label="Placa" value={view.placa} required editable editing={editing} onChange={(v) => setField("placa", v)} />
-                          <Field icon={<Gauge className="h-3 w-3" />} label="Transmisión" value={view.transmision} editable editing={editing} onChange={(v) => setField("transmision", v)} />
+                          <TransmisionField value={view.transmision} editing={editing} onChange={(v) => setField("transmision", v)} />
                           <LiveSearchField
                             icon={<Palette className="h-3 w-3" />}
                             label="Color"
