@@ -1263,6 +1263,88 @@ const ActivarPolizaNaturalPage = () => {
       setIsSubmitting(false);
     }
   };
+  // DEV ONLY: rellena el formulario con datos de prueba válidos para acelerar el QA.
+  // No toca la placa ni el serial (vienen de la validación contra inventario).
+  const fillTestData = async () => {
+    const findCode = (arr: any[], rx: RegExp, key = "cd_valdet", descKey = "descripcion") =>
+      arr.find(o => rx.test(o?.[descKey] || ""))?.[key];
+
+    const tipo = findCode(nacionalidades, /venezolano/i) || "V";
+    const sexoM = findCode(sexos, /masculino/i) || "M";
+    const sexoF = findCode(sexos, /femenino/i) || "F";
+    const edoCivil = findCode(estadosCiviles, /soltero/i) || "";
+    const estadoObj = estados.find(e => /distrito capital/i.test(e.descripcion || "")) || estados[0];
+    const codTel =
+      codigosTelefonicos.find(c => (c.s_descripcion || "").includes("0414"))?.cd_valdet ||
+      codigosTelefonicos[0]?.cd_valdet ||
+      "";
+
+    // Ciudad y municipio se cargan en cascada: buscamos sus códigos directo en BD.
+    let ciudadCod = "";
+    let municipioId = "";
+    if (estadoObj?.cd_estado) {
+      const { data: cds } = await supabase
+        .from("board_cod_ciudad")
+        .select("cd_ciudad, descripcion, cd_estado")
+        .eq("cd_estado", estadoObj.cd_estado)
+        .not("cd_ciudad", "is", null);
+      const ciudadObj = (cds || []).find(c => /caracas/i.test(c.descripcion || "")) || (cds || [])[0];
+      ciudadCod = ciudadObj?.cd_ciudad || "";
+      if (ciudadCod) {
+        const { data: mns } = await supabase
+          .from("board_cod_municipio")
+          .select("id, cd_municipio, descripcion, cd_ciudad, cd_estado")
+          .eq("cd_ciudad", ciudadCod)
+          .eq("cd_estado", estadoObj.cd_estado)
+          .not("descripcion", "is", null);
+        const muniObj = (mns || []).find(m => /libertador/i.test(m.descripcion || "")) || (mns || [])[0];
+        municipioId = muniObj?.id || "";
+      }
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      nombre: "PRUEBA QA",
+      apellidos: "TEST AUTOMATIZADO",
+      tipoIdentificacion: tipo,
+      numeroCedula: "V-12345678",
+      sexo: sexoM,
+      fechaNacimiento: "1990-05-15",
+      estadoCivil: edoCivil,
+      direccion: "AV PRINCIPAL CASA 5 SECTOR CENTRO",
+      estado: estadoObj?.cd_estado || "",
+      ciudad: ciudadCod,
+      municipio: municipioId,
+      codigoPostal: "1010",
+      codigoTelefonico: codTel,
+      numeroTelefonico: "1234567",
+      email: "prueba.qa@vitalicia-test.com",
+      email2: "prueba.qa@vitalicia-test.com",
+      fechaCompra: todayISO(),
+      beneficiarioRelacion: "esposa",
+      beneficiarioTieneCedula: "si",
+      beneficiarioNombre: "MARIA",
+      beneficiarioApellidos: "TEST BENEFICIARIO",
+      beneficiarioTipoIdentificacion: tipo,
+      beneficiarioNumeroCedula: "V-23456789",
+      beneficiarioSexo: sexoF,
+      beneficiarioFechaNacimiento: "1992-08-20",
+      beneficiarioEstadoCivil: edoCivil,
+    }));
+    setSerialConfirmado(true);
+    setEmailError("");
+    setEmail2Error("");
+    setCedulaError("");
+    setBeneficiarioCedulaError("");
+    setDireccionError("");
+    setFechaNacimientoError("");
+    setFechaCompraError("");
+    toast({
+      title: "Datos de prueba cargados",
+      description: "Formulario rellenado para QA. Faltan placa/serial (del inventario) y documentos.",
+    });
+  };
+
   const pageVariants = {
     initial: {
       opacity: 0,
@@ -1313,6 +1395,18 @@ const ActivarPolizaNaturalPage = () => {
               Paso {currentStep} de {totalSteps}
             </p>
             <Progress value={progress} className="mt-4" />
+            {import.meta.env.DEV && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={fillTestData}
+                className="mt-4 gap-2 border-dashed text-muted-foreground"
+              >
+                <Zap className="w-4 h-4" />
+                Llenar con datos de prueba
+              </Button>
+            )}
           </motion.div>
 
           <AnimatePresence mode="wait">
@@ -2317,6 +2411,20 @@ const ActivarPolizaNaturalPage = () => {
                         )}
                       </Button>
                     </div>
+
+                    {import.meta.env.DEV && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleSubmit}
+                        disabled={isSubmitting}
+                        className="w-full gap-2 border-dashed border-amber-500 text-amber-600 hover:text-amber-700"
+                      >
+                        <Zap className="w-4 h-4" />
+                        Bypass documentos y enviar (DEV)
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               </motion.div>}

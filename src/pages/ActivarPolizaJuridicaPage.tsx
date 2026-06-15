@@ -1008,6 +1008,89 @@ const ActivarPolizaJuridicaPage = () => {
     }
   };
 
+  // DEV ONLY: rellena el formulario con datos de prueba válidos para acelerar el QA.
+  // No toca la placa ni el serial (vienen de la validación contra inventario).
+  const fillTestData = async () => {
+    // estado/ciudad/municipio: en este formulario el select de estado usa descripcion como value,
+    // ciudad y municipio usan el .id (UUID) de la fila de BD.
+    const estadoObj = estados.find(e => /distrito capital/i.test(e.descripcion || "")) || estados[0];
+
+    let ciudadId = "";
+    let municipioId = "";
+    if (estadoObj?.cd_estado) {
+      const { data: cds } = await supabase
+        .from("board_cod_ciudad")
+        .select("id, cd_ciudad, descripcion, cd_estado")
+        .eq("cd_estado", estadoObj.cd_estado)
+        .not("cd_ciudad", "is", null);
+      const ciudadObj = (cds || []).find(c => /caracas/i.test(c.descripcion || "")) || (cds || [])[0];
+      ciudadId = ciudadObj?.id || "";
+      if (ciudadObj?.cd_ciudad) {
+        const { data: mns } = await supabase
+          .from("board_cod_municipio")
+          .select("id, cd_municipio, descripcion, cd_ciudad, cd_estado")
+          .eq("cd_ciudad", ciudadObj.cd_ciudad)
+          .eq("cd_estado", estadoObj.cd_estado)
+          .not("descripcion", "is", null);
+        const muniObj = (mns || []).find(m => /libertador/i.test(m.descripcion || "")) || (mns || [])[0];
+        municipioId = muniObj?.id || "";
+      }
+    }
+
+    // codigo telefonico: value es cd_valdet
+    const codTel =
+      codigosTelefonicos.find(c => (c.cd_valdet || "").includes("0414"))?.cd_valdet ||
+      codigosTelefonicos[0]?.cd_valdet ||
+      "";
+
+    // estado civil y sexo: value es descripcion (arrays solo tienen { descripcion })
+    const edoCivil = estadosCiviles.find(e => /soltero/i.test(e.descripcion || ""))?.descripcion || estadosCiviles[0]?.descripcion || "";
+    const sexoM = sexos.find(s => /masculino/i.test(s.descripcion || ""))?.descripcion || sexos[0]?.descripcion || "";
+
+    setFormData(prev => ({
+      ...prev,
+      // Datos de la empresa
+      nombreEmpresa: "EMPRESA DE PRUEBA QA SA",
+      tipoIdentificacion: "Jurídico",
+      // 9 dígitos sin prefijo (handleInputChange("numeroRIF") los acepta tal cual)
+      numeroRIF: "123456789",
+      // Dirección de la empresa
+      estado: estadoObj?.descripcion || "",
+      ciudad: ciudadId,
+      municipio: municipioId,
+      direccion: "AV PRINCIPAL EDIFICIO CENTRO PISO 2 OFIC 5",
+      codigoPostal: "1010",
+      codigoTelefonicoWhatsapp: codTel,
+      telefonoCelular: "1234567",
+      codigoTelefonicoResidencial: codTel,
+      telefonoOficina: "7654321",
+      correoElectronico: "empresa.qa@vitalicia-test.com",
+      correoAlternativo: "empresa.qa2@vitalicia-test.com",
+      actividadEconomica: "Otras actividades de servicios",
+      // Representante legal: tipoIdentificacionRepresentante usa el nombre descriptivo
+      // porque el select filtra nacionalidades y usa nac.descripcion como value
+      tipoIdentificacionRepresentante: "Venezolano",
+      cedulaRepresentante: "V-12345678",
+      nombresRepresentante: "REPRESENTANTE",
+      apellidosRepresentante: "LEGAL PRUEBA",
+      estadoCivilRepresentante: edoCivil,
+      sexoRepresentante: sexoM,
+      fechaNacimientoRepresentante: "1985-03-20",
+      // Fecha de adquisición del vehículo
+      fechaAdquisicion: todayISO(),
+    }));
+    setSerialConfirmado(true);
+    setNumeroRIFError("");
+    setCedulaRepresentanteError("");
+    setCorreoError("");
+    setCorreoAltError("");
+    setFechaAdquisicionError("");
+    toast({
+      title: "Datos de prueba cargados",
+      description: "Formulario rellenado para QA. Faltan placa/serial (del inventario) y documentos.",
+    });
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     
@@ -1315,6 +1398,18 @@ const ActivarPolizaJuridicaPage = () => {
               Paso {currentStep} de {totalSteps}
             </p>
             <Progress value={progress} className="mt-4" />
+            {import.meta.env.DEV && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={fillTestData}
+                className="mt-4 gap-2 border-dashed text-muted-foreground"
+              >
+                <Wand2 className="w-4 h-4" />
+                Llenar con datos de prueba
+              </Button>
+            )}
           </motion.div>
 
           <AnimatePresence mode="wait">
@@ -2528,6 +2623,19 @@ const ActivarPolizaJuridicaPage = () => {
                         )}
                       </Button>
                     </div>
+                    {import.meta.env.DEV && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleSubmit}
+                        disabled={isSubmitting}
+                        className="w-full gap-2 border-dashed border-amber-500 text-amber-600 hover:text-amber-700"
+                      >
+                        <Wand2 className="w-4 h-4" />
+                        Bypass documentos y enviar (DEV)
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               </motion.div>

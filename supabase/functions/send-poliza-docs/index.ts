@@ -43,7 +43,8 @@ serve(async (req) => {
       throw new Error("Faltan los PDF del carnet y/o la factura. Renderizalos y guardalos primero.");
     }
 
-    const recipient = p.c_email1 || p.email_monday || p.email_alternativo_monday || p.c_email2;
+    // Enviar al Email Principal (email_monday). Fallbacks solo si está vacío.
+    const recipient = p.email_monday || p.c_email1 || p.email_alternativo_monday || p.c_email2;
     if (!recipient) throw new Error("El registro no tiene email de destino.");
 
     const nombre =
@@ -59,20 +60,60 @@ serve(async (req) => {
       urlToBase64(facturaPdf),
     ]);
 
+    // Plantilla de correo basada en tablas + estilos inline (compatible con Gmail/Outlook/Apple Mail).
+    const btn = (label: string, href: string, bg: string) => `
+      <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;">
+        <tr><td align="center" bgcolor="${bg}" style="border-radius:8px;">
+          <a href="${href}" target="_blank"
+             style="display:inline-block;padding:13px 26px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:8px;">
+            ${label}
+          </a>
+        </td></tr>
+      </table>`;
+
     const html = `
-      <div style="font-family:Arial,Helvetica,sans-serif;color:#0f1a2b;line-height:1.5">
-        <h2 style="color:#003399;margin:0 0 12px">Seguros La Vitalicia</h2>
-        <p>Estimado/a <b>${nombre}</b>,</p>
-        <p>Adjuntamos el <b>carnet</b> y la <b>factura</b> de su póliza ${
-          numPoliza ? `N° <b>${numPoliza}</b>` : ""
-        } en formato PDF.</p>
-        <p>También puede consultarlos en línea:</p>
-        <ul>
-          <li>Carnet: <a href="${carnetLink}">${carnetLink}</a></li>
-          <li>Factura: <a href="${facturaLink}">${facturaLink}</a></li>
-        </ul>
-        <p style="color:#4a5366;font-size:13px">Gracias por confiar en Seguros La Vitalicia.</p>
-      </div>`;
+    <!DOCTYPE html>
+    <html lang="es">
+    <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="x-apple-disable-message-reformatting"></head>
+    <body style="margin:0;padding:0;background-color:#eef1f6;">
+      <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Tu carnet y factura de Seguros La Vitalicia${numPoliza ? ` — Póliza N° ${numPoliza}` : ""}.</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#eef1f6;padding:24px 12px;">
+        <tr><td align="center">
+          <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:100%;background-color:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(12,29,49,0.08);">
+            <!-- Header -->
+            <tr><td bgcolor="#0c1d31" style="padding:28px 32px;border-bottom:4px solid #c9a24b;">
+              <span style="font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:bold;letter-spacing:0.5px;color:#ffffff;">SEGUROS LA VITALICIA</span><br>
+              <span style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#c9a24b;letter-spacing:1px;">VITAL PARA TI</span>
+            </td></tr>
+            <!-- Body -->
+            <tr><td style="padding:32px;font-family:Arial,Helvetica,sans-serif;color:#0f1a2b;">
+              <p style="margin:0 0 16px;font-size:16px;">Estimado/a <strong>${nombre}</strong>,</p>
+              <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#3a4658;">
+                Adjuntamos en formato PDF el <strong>carnet</strong> y la <strong>factura</strong> de su póliza.
+                También puede consultarlos en línea con los botones de abajo.
+              </p>
+              ${numPoliza ? `
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;background-color:#f4f6f9;border-radius:10px;">
+                <tr><td style="padding:16px 20px;font-family:Arial,Helvetica,sans-serif;">
+                  <span style="font-size:12px;color:#7a869a;text-transform:uppercase;letter-spacing:1px;">N° de Póliza</span><br>
+                  <span style="font-size:20px;font-weight:bold;color:#0c1d31;">${numPoliza}</span>
+                </td></tr>
+              </table>` : ""}
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+                <td align="center" style="padding:4px;">${btn("Ver carnet", carnetLink, "#1d4ed8")}</td>
+                <td align="center" style="padding:4px;">${btn("Ver factura", facturaLink, "#0c1d31")}</td>
+              </tr></table>
+            </td></tr>
+            <!-- Footer -->
+            <tr><td bgcolor="#f4f6f9" style="padding:20px 32px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#7a869a;line-height:1.6;border-top:1px solid #e2e7ef;">
+              Gracias por confiar en <strong style="color:#0c1d31;">Seguros La Vitalicia</strong>.<br>
+              Este es un correo automático; si tiene dudas, responda a este mensaje o contacte a su asesor.
+            </td></tr>
+          </table>
+        </td></tr>
+      </table>
+    </body>
+    </html>`;
 
     const from = Deno.env.get("EMAIL_FROM") || "Seguros La Vitalicia <onboarding@resend.dev>";
     const resKey = Deno.env.get("RESEND_API_KEY");

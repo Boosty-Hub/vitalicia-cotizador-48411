@@ -29,7 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Search, Eye, Trash2, ChevronLeft, ChevronRight, FileDown, Loader2, RefreshCw, Download } from "lucide-react";
+import { Search, Eye, Trash2, ChevronLeft, ChevronRight, FileDown, Loader2, RefreshCw, Download, AlertTriangle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Database } from "@/integrations/supabase/types";
 import { PolicyStatusBadge, getPolizaStatus } from "@/components/admin/PolicyStatusBadge";
@@ -52,6 +52,9 @@ export default function AdminPolizasPage() {
   const [processingPolizaId, setProcessingPolizaId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [downloading, setDownloading] = useState(false);
+  const [errorPolizas, setErrorPolizas] = useState<Poliza[]>([]);
+  const [showErrorsDialog, setShowErrorsDialog] = useState(false);
+  const [realtimeNonce, setRealtimeNonce] = useState(0);
   const pageSize = 10;
 
   const toggleSelected = (id: string) => {
@@ -112,7 +115,43 @@ export default function AdminPolizasPage() {
 
   useEffect(() => {
     fetchPolizas();
-  }, [currentPage, searchTerm, filterFormulario]);
+  }, [currentPage, searchTerm, filterFormulario, realtimeNonce]);
+
+  // Conteo/listado de registros que tuvieron error al procesar con RMS (api_status = 'error').
+  useEffect(() => {
+    const fetchErrores = async () => {
+      const { data } = await supabase
+        .from("polizas_activas")
+        .select("id, nombre_titular_monday, apellidos_titular_monday, placa_monday, api_message")
+        .eq("api_status", "error")
+        .order("created_at", { ascending: false });
+      setErrorPolizas((data as any) || []);
+    };
+    fetchErrores();
+  }, [realtimeNonce]);
+
+  // Toast en tiempo real por cada nuevo registro insertado en polizas_activas.
+  useEffect(() => {
+    const channel = supabase
+      .channel("polizas-nuevos-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "polizas_activas" },
+        (payload) => {
+          const p = payload.new as any;
+          const titular = `${p?.nombre_titular_monday || ""} ${p?.apellidos_titular_monday || ""}`.trim();
+          toast({
+            title: "🆕 Nuevo registro",
+            description: [titular, p?.placa_monday].filter(Boolean).join(" · ") || "Se registró una nueva póliza",
+          });
+          setRealtimeNonce((n) => n + 1);
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const fetchPolizas = async () => {
     setLoading(true);
@@ -372,6 +411,16 @@ export default function AdminPolizasPage() {
           </Select>
         </div>
         <div className="flex gap-2">
+          {errorPolizas.length > 0 && (
+            <Button
+              onClick={() => setShowErrorsDialog(true)}
+              variant="outline"
+              className="gap-2 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              <AlertTriangle className="h-4 w-4" />
+              Errores ({errorPolizas.length})
+            </Button>
+          )}
           {selectedIds.size > 0 && (
             <Button onClick={() => downloadDocs(Array.from(selectedIds))} disabled={downloading} className="gap-2">
               {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
@@ -559,6 +608,41 @@ export default function AdminPolizasPage() {
             >
               Eliminar
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Errors Count Dialog */}
+      <AlertDialog open={showErrorsDialog} onOpenChange={setShowErrorsDialog}>
+        <AlertDialogContent className="max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              {errorPolizas.length} {errorPolizas.length === 1 ? "registro tuvo" : "registros tuvieron"} error
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Estas pólizas fallaron al procesar con RMS. Podés reintentarlas desde el badge de estado o el botón de reprocesar en la tabla.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="max-h-72 overflow-y-auto space-y-2">
+            {errorPolizas.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No hay registros con error.</p>
+            ) : (
+              errorPolizas.map((p) => (
+                <div key={p.id} className="rounded-md border border-border p-2.5 text-sm">
+                  <div className="font-medium">
+                    {p.nombre_titular_monday} {p.apellidos_titular_monday}
+                    {p.placa_monday ? ` · ${p.placa_monday}` : ""}
+                  </div>
+                  {(p as any).api_message && (
+                    <div className="text-xs text-muted-foreground mt-0.5">{(p as any).api_message}</div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cerrar</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

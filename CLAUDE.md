@@ -114,3 +114,4 @@ touching inventory/pricing, expect to handle both variants.
 - 2026-06-09 `659385c` — feat(admin): login rápido seguro vía Edge Function test-login
 - 2026-06-09 `20d43ca` — refactor(admin-auth): consolida login en AdminAuthContext y corrige manejo de error de rol
 - 2026-06-09 `9de8951` — feat(admin): popup de duplicados al entrar a inventario BERA/EMPIRE
+- 2026-06-10 `c17a1cf` — feat(admin): consolida edición de motos en MotoDetailsDialog con live search

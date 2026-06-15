@@ -78,6 +78,10 @@ export function PolicyDetailsDialog({
 
   const carnetIframeRef = useRef<HTMLIFrameElement>(null);
   const facturaIframeRef = useRef<HTMLIFrameElement>(null);
+  // Marca de "generación en curso" de la auto-cura del PDF (factura/carnet): evita ejecuciones
+  // concurrentes, pero se resetea al terminar (éxito o error) para permitir reintentos.
+  const facturaPdfAutoAttempted = useRef<string | null>(null);
+  const carnetPdfAutoAttempted = useRef<string | null>(null);
 
   // Preload PDF libs when the dialog opens so the first click is instant
   useEffect(() => {
@@ -98,10 +102,11 @@ export function PolicyDetailsDialog({
 
   const handleGenerateFactura = async () => {
     if (!selectedPoliza?.id) return;
+    const targetId = selectedPoliza.id;
     setIsGeneratingFactura(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-factura-poliza", {
-        body: { polizaId: selectedPoliza.id },
+        body: { polizaId: targetId },
       });
       if (error) throw error;
       const url = (data as any)?.url;
@@ -109,6 +114,8 @@ export function PolicyDetailsDialog({
       if (url) {
         setSelectedPoliza((prev) => (prev ? ({ ...prev, factura_poliza_url: url } as Poliza) : prev));
         setEditedPoliza((prev) => (prev ? ({ ...prev, factura_poliza_url: url } as Poliza) : prev));
+        // Generar/persistir el PDF real (factura_pdf_url) en segundo plano, sin bloquear el spinner/toast.
+        void generateAndPersistFacturaPdf(targetId, url);
       }
       setDocReloadNonce((n) => n + 1); // fuerza re-fetch del preview aunque la URL no cambie
       onPolicyUpdated?.();
@@ -122,10 +129,11 @@ export function PolicyDetailsDialog({
 
   const handleGenerateCarnet = async () => {
     if (!selectedPoliza?.id) return;
+    const targetId = selectedPoliza.id;
     setIsGeneratingCarnet(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-carnet-poliza", {
-        body: { polizaId: selectedPoliza.id },
+        body: { polizaId: targetId },
       });
       if (error) throw error;
       const url = (data as any)?.url;
@@ -133,6 +141,8 @@ export function PolicyDetailsDialog({
       if (url) {
         setSelectedPoliza((prev) => (prev ? ({ ...prev, carnet_poliza_url: url } as Poliza) : prev));
         setEditedPoliza((prev) => (prev ? ({ ...prev, carnet_poliza_url: url } as Poliza) : prev));
+        // Generar/persistir el PDF real (carnet_pdf_url) en segundo plano.
+        void generateAndPersistCarnetPdf(targetId, url);
       }
       setDocReloadNonce((n) => n + 1); // fuerza re-fetch del preview aunque la URL no cambie
       onPolicyUpdated?.();
@@ -183,6 +193,33 @@ export function PolicyDetailsDialog({
       .catch(() => { if (!cancelled) setCarnetHtml(null); });
     return () => { cancelled = true; };
   }, [(selectedPoliza as any)?.carnet_poliza_url, docReloadNonce]);
+
+  // Auto-cura: al abrir una póliza cuya factura tiene HTML (factura_poliza_url) pero todavía
+  // no tiene el PDF real (factura_pdf_url), lo genera y persiste una sola vez por póliza, para
+  // que "Enviar por correo" se habilite sin descarga manual. (generateAndPersistFacturaPdf se
+  // define más abajo; la referencia en el callback diferido es válida.)
+  useEffect(() => {
+    const id = (selectedPoliza as any)?.id as string | undefined;
+    const polizaUrl = (selectedPoliza as any)?.factura_poliza_url as string | undefined;
+    const pdfUrl = (selectedPoliza as any)?.factura_pdf_url as string | undefined;
+    if (!open || !id || !polizaUrl || pdfUrl) return;
+    if (facturaPdfAutoAttempted.current) return; // ya hay una generación en curso
+    facturaPdfAutoAttempted.current = id;
+    generateAndPersistFacturaPdf(id, polizaUrl).finally(() => { facturaPdfAutoAttempted.current = null; });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, (selectedPoliza as any)?.id, (selectedPoliza as any)?.factura_poliza_url, (selectedPoliza as any)?.factura_pdf_url]);
+
+  // Auto-cura simétrica para el carnet (el envío por correo exige carnet_pdf_url además del de factura).
+  useEffect(() => {
+    const id = (selectedPoliza as any)?.id as string | undefined;
+    const polizaUrl = (selectedPoliza as any)?.carnet_poliza_url as string | undefined;
+    const pdfUrl = (selectedPoliza as any)?.carnet_pdf_url as string | undefined;
+    if (!open || !id || !polizaUrl || pdfUrl) return;
+    if (carnetPdfAutoAttempted.current) return;
+    carnetPdfAutoAttempted.current = id;
+    generateAndPersistCarnetPdf(id, polizaUrl).finally(() => { carnetPdfAutoAttempted.current = null; });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, (selectedPoliza as any)?.id, (selectedPoliza as any)?.carnet_poliza_url, (selectedPoliza as any)?.carnet_pdf_url]);
 
   // Update local state when prop changes
   useEffect(() => {
@@ -584,8 +621,11 @@ export function PolicyDetailsDialog({
   };
 
   // Sube el PDF generado a Storage y guarda su URL en polizas_activas.
-  const persistGeneratedPdf = async (blob: Blob, kind: 'carnet' | 'factura') => {
-    const polizaId = (selectedPoliza as any)?.id;
+  // targetId fija la póliza destino al iniciar la generación; así, si el usuario cambia de
+  // registro mientras se genera, no se escribe contra la póliza equivocada. Si no se pasa,
+  // usa la póliza mostrada (compatibilidad con la descarga manual).
+  const persistGeneratedPdf = async (blob: Blob, kind: 'carnet' | 'factura', targetId?: string) => {
+    const polizaId = targetId ?? (selectedPoliza as any)?.id;
     if (!polizaId) return;
     try {
       const path = `${kind === 'carnet' ? 'carnets' : 'facturas'}/${polizaId}.pdf`;
@@ -597,12 +637,95 @@ export function PolicyDetailsDialog({
       const pdfUrl = pub?.publicUrl;
       const col = kind === 'carnet' ? 'carnet_pdf_url' : 'factura_pdf_url';
       await supabase.from('polizas_activas').update({ [col]: pdfUrl } as any).eq('id', polizaId);
-      setSelectedPoliza((prev) => (prev ? ({ ...prev, [col]: pdfUrl } as any) : prev));
-      setEditedPoliza((prev) => (prev ? ({ ...prev, [col]: pdfUrl } as any) : prev));
+      // Solo mergear en el estado local si la póliza mostrada sigue siendo la misma.
+      setSelectedPoliza((prev) => (prev && (prev as any).id === polizaId ? ({ ...prev, [col]: pdfUrl } as any) : prev));
+      setEditedPoliza((prev) => (prev && (prev as any).id === polizaId ? ({ ...prev, [col]: pdfUrl } as any) : prev));
       onPolicyUpdated?.();
     } catch (e) {
       console.error(`No se pudo guardar el PDF (${kind}) en la base de datos:`, e);
-      toast({ title: 'Aviso', description: 'El PDF se descargó pero no se pudo guardar en la base de datos.', variant: 'destructive' });
+      toast({ title: 'Aviso', description: 'No se pudo guardar el PDF en la base de datos.', variant: 'destructive' });
+    }
+  };
+
+  // Genera el PDF real de la factura a partir de su HTML (factura_poliza_url) y lo persiste
+  // en factura_pdf_url SIN descargar el archivo. Así "Enviar por correo" se habilita sin
+  // depender de una descarga manual. No-bloqueante: si falla, solo loguea.
+  const generateAndPersistFacturaPdf = async (targetId: string, htmlUrl: string) => {
+    let offscreen: HTMLIFrameElement | null = null;
+    try {
+      const html = await fetch(`${htmlUrl}?t=${Date.now()}`).then((r) => r.text());
+      if (!/<html|<!doctype|<body|<div|<table/i.test(html)) return; // no es HTML renderizable
+      offscreen = document.createElement('iframe');
+      offscreen.style.cssText =
+        'position:fixed;left:-10000px;top:0;width:850px;height:1px;border:0;background:#ffffff;';
+      document.body.appendChild(offscreen);
+      await new Promise<void>((resolve) => {
+        offscreen!.onload = () => resolve();
+        const d = offscreen!.contentDocument!;
+        d.open();
+        d.write(html);
+        d.close();
+        setTimeout(() => resolve(), 800);
+      });
+      try { await (offscreen.contentDocument as any)?.fonts?.ready; } catch {}
+      const pdf = await captureIframeNodesToPdf(offscreen, '#invoice-document', {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        pageMode: 'a4',
+      });
+      const blob = pdf.output('blob');
+      await persistGeneratedPdf(blob, 'factura', targetId);
+    } catch (e) {
+      console.error('No se pudo generar/persistir el PDF de la factura automáticamente:', e);
+    } finally {
+      if (offscreen && offscreen.parentNode) offscreen.parentNode.removeChild(offscreen);
+    }
+  };
+
+  // Igual que la factura, pero para el carnet: render offscreen del HTML (.carnet-card) a PDF A4
+  // horizontal y persistencia en carnet_pdf_url. El gate de "Enviar por correo" exige AMBOS PDFs,
+  // así que sin esto los registros sin PDF de carnet quedarían bloqueados aunque la factura esté.
+  const generateAndPersistCarnetPdf = async (targetId: string, htmlUrl: string) => {
+    let offscreen: HTMLIFrameElement | null = null;
+    try {
+      const html = await fetch(`${htmlUrl}?t=${Date.now()}`).then((r) => r.text());
+      if (!/<html|<!doctype|<body|<div|<table/i.test(html)) return;
+      const [{ jsPDF }, { default: html2canvas }] = await Promise.all([import('jspdf'), import('html2canvas')]);
+      offscreen = document.createElement('iframe');
+      offscreen.style.cssText =
+        'position:fixed;right:0;bottom:0;width:760px;height:520px;border:0;opacity:0;pointer-events:none;background:#fff;';
+      document.body.appendChild(offscreen);
+      await new Promise<void>((resolve) => {
+        let done = false;
+        const finish = () => { if (!done) { done = true; resolve(); } };
+        offscreen!.onload = () => finish();
+        const d = offscreen!.contentDocument!;
+        d.open();
+        d.write(html);
+        d.close();
+        setTimeout(finish, 1500);
+      });
+      try { await (offscreen.contentDocument as any)?.fonts?.ready; } catch {}
+      await new Promise<void>((r) => setTimeout(r, 700)); // settle Tailwind CDN
+      const cardNode = offscreen.contentDocument!.querySelector<HTMLElement>('.carnet-card');
+      if (!cardNode) return;
+      // Settle por timeout (no usamos el rAF del iframe: se congela si la pestaña pasa a segundo plano).
+      await new Promise<void>((r) => setTimeout(r, 150));
+      const canvas = await html2canvas(cardNode, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const pageW = 297, pageH = 210, margin = 2;
+      const maxW = pageW - margin * 2, maxH = pageH - margin * 2;
+      const ratio = canvas.width / canvas.height;
+      let w = maxW, h = w / ratio;
+      if (h > maxH) { h = maxH; w = h * ratio; }
+      const x = (pageW - w) / 2, y = (pageH - h) / 2;
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', x, y, w, h, undefined, 'FAST');
+      await persistGeneratedPdf(pdf.output('blob'), 'carnet', targetId);
+    } catch (e) {
+      console.error('No se pudo generar/persistir el PDF del carnet automáticamente:', e);
+    } finally {
+      if (offscreen && offscreen.parentNode) offscreen.parentNode.removeChild(offscreen);
     }
   };
 
@@ -916,7 +1039,15 @@ export function PolicyDetailsDialog({
                     size="sm"
                     onClick={handleSendDocsEmail}
                     disabled={isSendingEmail || !(selectedPoliza as any)?.carnet_pdf_url || !(selectedPoliza as any)?.factura_pdf_url}
-                    title={(!(selectedPoliza as any)?.carnet_pdf_url || !(selectedPoliza as any)?.factura_pdf_url) ? "Renderizá y guardá el PDF del carnet y de la factura primero" : "Enviar carnet y factura por correo"}
+                    title={(() => {
+                      const faltan = [
+                        !(selectedPoliza as any)?.carnet_pdf_url ? "carnet" : null,
+                        !(selectedPoliza as any)?.factura_pdf_url ? "factura" : null,
+                      ].filter(Boolean);
+                      return faltan.length
+                        ? `Generando el PDF de ${faltan.join(" y ")}… se habilitará al terminar`
+                        : "Enviar carnet y factura por correo";
+                    })()}
                     className="gap-2"
                   >
                     {isSendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
