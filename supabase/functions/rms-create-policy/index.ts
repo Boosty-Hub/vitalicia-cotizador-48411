@@ -94,6 +94,37 @@ serve(async (req) => {
 
     console.log(`✅ Póliza ${polizaId} actualizada en DB`);
 
+    // Pipeline automático server-to-server: si la póliza quedó Activa, generamos los PDF
+    // (factura y carnet) y enviamos el correo al cliente — todo en el servidor, sin depender
+    // del navegador del usuario. Si algo falla aquí, la póliza ya está activa: solo se loguea.
+    if (isSuccess) {
+      const invokeFn = async (name: string, body: Record<string, unknown>) => {
+        const resp = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+            'apikey': supabaseServiceKey,
+          },
+          body: JSON.stringify(body),
+        });
+        const txt = await resp.text();
+        if (!resp.ok) throw new Error(`${name} -> ${resp.status} ${txt}`);
+        return txt;
+      };
+
+      try {
+        // Orden: factura y carnet primero (llenan factura_pdf_url / carnet_pdf_url),
+        // luego el envío por correo que adjunta ambos PDF.
+        await invokeFn('generate-factura-poliza', { polizaId });
+        await invokeFn('generate-carnet-poliza', { polizaId });
+        await invokeFn('send-poliza-docs', { polizaId });
+        console.log(`📧 PDFs generados y correo enviado para póliza ${polizaId}`);
+      } catch (chainErr) {
+        console.error('⚠️ Falló la generación de PDF o el envío de correo (la póliza ya está activa):', chainErr);
+      }
+    }
+
     return new Response(JSON.stringify({
       success: isSuccess,
       numeroPoliza,

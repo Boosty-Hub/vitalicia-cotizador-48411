@@ -70,24 +70,54 @@ Path alias: `@` → `src` (configured in both `vite.config.ts` and tsconfig).
 - Client: `src/integrations/supabase/client.ts` — **auto-generated, do not edit**; the URL and
   anon key are committed here. DB types: `src/integrations/supabase/types.ts` (also generated).
   Import as `import { supabase } from "@/integrations/supabase/client"`.
-- **Edge Functions** (`supabase/functions/`, Deno): `rms-create-policy` and `validate-document`
-  (public, `verify_jwt = false`), `admin-create-user` / `admin-delete-user` /
-  `download-poliza-documents` (`verify_jwt = true`), `generate-carnet-poliza`,
-  `generate-factura-poliza`. JWT settings live in `supabase/config.toml`. Function secrets
-  (e.g. `RMS_API_KEY`, `RMS_API_USER`, `RMS_API_PASSWORD`) come from Supabase env, never the repo.
+- **Edge Functions** (`supabase/functions/`, Deno): the policy-document functions are public
+  (`verify_jwt = false`): `rms-create-policy`, `validate-document`, `generate-factura-poliza`,
+  `generate-carnet-poliza`. `admin-create-user` / `admin-delete-user` /
+  `download-poliza-documents` / `send-poliza-docs` are `verify_jwt = true`. JWT settings live in
+  `supabase/config.toml`. Function secrets (`RMS_API_KEY`, `RMS_API_USER`, `RMS_API_PASSWORD`,
+  the Resend key) come from Supabase env, never the repo.
+  - **Deploying edge functions:** they are NOT deployed by pushing to GitHub (that only redeploys
+    the *frontend* via Lovable). Deploy with the Supabase CLI:
+    `SUPABASE_ACCESS_TOKEN=<token> npx supabase functions deploy <name> --project-ref avlbdqqwldjteafmzwjb`
+    (Docker not required; the CLI bundles via the API).
 - **Migrations**: `supabase/migrations/`. Notable tables: `polizas_activas` (issued policies),
   `bd_bera` / `bd_empire` (vehicle inventory, see "two factories" below), `precios_empire`
   (pricing), `board_cod_*` (RMS catalog/lookup codes — marca, modelo, estado, ciudad, etc.),
   `profiles`, `user_roles`, `admin_settings`. RPCs: `has_role`, `get_user_role`,
   `check_bera_duplicates`, `check_empire_duplicates`.
 
-### External insurer API (RMS)
+### Policy activation & document pipeline (RMS + server-side PDFs)
 
-Policy activation is the core business flow: an `Activar*Poliza*Page` collects data and invokes
-the `rms-create-policy` edge function, which calls the external **RMS** insurer API
-(`api.rms40.com`) with Basic auth + `X-API-KEY`, then persists the result in `polizas_activas`.
-The public `/factura/:id` and `/carnet/:id` pages then render policy documents, generating PDFs
-client-side (`jspdf`, `html2pdf.js`, `html2canvas`).
+Policy activation is the core business flow. An `Activar*Poliza*Page` collects data, uploads
+documents to Storage, inserts the row in `polizas_activas`, and then:
+
+- **Persona Natural** → invokes `rms-create-policy`, which calls the external **RMS** insurer API
+  (`api.rms40.com`) with Basic auth + `X-API-KEY`, sets the row to `Activa` / `Error API`, and — on
+  success — **chains server-to-server**: `generate-factura-poliza` → `generate-carnet-poliza` →
+  `send-poliza-docs` (email). Fully automatic, no browser needed.
+- **Persona Jurídica** → does NOT call RMS; the row stays `Pendiente revisión analista`. When an
+  analyst approves it in the admin (`PolicyDetailsDialog.handleSave`, detected as a transition to
+  *active* via `getPolizaStatus`), the same `generate-factura` + `generate-carnet` +
+  `send-poliza-docs` chain fires from the client.
+
+**PDFs are generated server-side with `pdf-lib`** inside `generate-factura-poliza` /
+`generate-carnet-poliza` (the old client-side HTML→canvas conversion is gone). They embed the logo
+(JPEG) and the carnet QR (PNG from `qrserver.com`), upload `facturas/{id}.pdf` / `carnets/{id}.pdf`
+to the `poliza-documentos` bucket, and store the URLs in the **`factura_pdf_url` / `carnet_pdf_url`**
+columns (mirrored to `factura_poliza_url` / `carnet_poliza_url` for backward compat). The public
+`/factura/:id` and `/carnet/:id` pages and the admin modal's Factura/Carnet tabs embed those PDFs
+for download (no "regenerate" UI). `send-poliza-docs` (Resend) attaches both PDFs to the email.
+
+### `/admin/flujo` — system flow diagram (KEEP IN SYNC)
+
+`AdminFlujoPage` (`src/pages/admin/AdminFlujoPage.tsx`, route `/admin/flujo`) is a hand-authored
+visual flowchart of the Natural and Jurídica activation flows, end to end. **Any change to the
+activation/document/email flow (the `Activar*Poliza*Page` wizards, `rms-create-policy`, the
+`generate-*` / `send-poliza-docs` chain, the `polizas_activas` document columns, or the polizas
+admin module — `AdminPolizasPage.tsx` / `PolicyDetailsDialog.tsx`) MUST be reflected in
+`AdminFlujoPage`**: update/optimize the `NATURAL` / `JURIDICA` step arrays so the diagram stays
+accurate. The polizas table opens the detail modal on full-row click and filters via status tabs
+(Activas / Pendientes / Errores) and type tabs (Naturales / Jurídicas).
 
 ### Two vehicle factories: BERA and EMPIRE
 

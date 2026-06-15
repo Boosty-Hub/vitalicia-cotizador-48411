@@ -13,7 +13,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
 import { formatPriceToTwoDecimals } from "@/lib/priceUtils";
 import { 
@@ -273,6 +272,11 @@ export function PolicyDetailsDialog({
     if (!editedPoliza) return;
     setIsSaving(true);
 
+    // Estado de "actividad" ANTES de guardar (para detectar la aprobación de una jurídica).
+    const estabaActiva =
+      getPolizaStatus((selectedPoliza as any) || {}).status === "active" ||
+      (selectedPoliza as any)?.estado_principal_monday === "Activa";
+
     try {
       // Format price fields to 2 decimals before saving
       const polizaToSave = {
@@ -298,6 +302,38 @@ export function PolicyDetailsDialog({
       setSelectedPoliza(polizaToSave);
       setIsEditing(false);
       onPolicyUpdated?.();
+
+      // Jurídica: si el analista acaba de aprobarla (pasa a activa), renderizamos los PDF
+      // (factura y carnet) y los enviamos al cliente — mismo resultado que la activación
+      // automática de persona natural. Best-effort: si falla, la póliza ya quedó guardada.
+      const esJuridica = (polizaToSave as any)?.formulario === "juridico";
+      const quedoActiva =
+        getPolizaStatus(polizaToSave as any).status === "active" ||
+        (polizaToSave as any)?.estado_principal_monday === "Activa";
+      if (esJuridica && !estabaActiva && quedoActiva) {
+        toast({
+          title: "Generando documentos…",
+          description: "Renderizando factura y carnet en PDF y enviándolos al cliente.",
+        });
+        try {
+          await supabase.functions.invoke("generate-factura-poliza", { body: { polizaId: polizaToSave.id } });
+          await supabase.functions.invoke("generate-carnet-poliza", { body: { polizaId: polizaToSave.id } });
+          await supabase.functions.invoke("send-poliza-docs", { body: { polizaId: polizaToSave.id } });
+          onPolicyUpdated?.();
+          toast({
+            title: "Documentos listos",
+            description: "Factura y carnet (PDF) generados y enviados al cliente.",
+          });
+        } catch (genErr) {
+          console.error("Error generando/enviando documentos de la póliza jurídica:", genErr);
+          toast({
+            title: "Aviso",
+            description:
+              "La póliza quedó activa, pero falló la generación o el envío de documentos. Reintenta desde los botones de factura/carnet.",
+            variant: "destructive",
+          });
+        }
+      }
     } catch (error) {
       console.error("Error updating poliza:", error);
       toast({
@@ -981,6 +1017,32 @@ export function PolicyDetailsDialog({
 
   const currentStatusStyle = statusStyles[status];
 
+  // PDFs ya generados (factura/carnet). Preferimos la columna *_pdf_url; *_poliza_url queda como respaldo.
+  const facturaPdfUrl = (selectedPoliza as any)?.factura_pdf_url || (selectedPoliza as any)?.factura_poliza_url || "";
+  const carnetPdfUrl = (selectedPoliza as any)?.carnet_pdf_url || (selectedPoliza as any)?.carnet_poliza_url || "";
+
+  // Descarga directa del PDF (vía blob, funciona aunque el archivo esté en otro origen).
+  const handleDownloadPdf = async (url: string, filename: string) => {
+    if (!url || downloadingUrl) return;
+    setDownloadingUrl(url);
+    try {
+      const res = await fetch(`${url}${url.includes("?") ? "&" : "?"}t=${Date.now()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(a.href);
+    } catch (e) {
+      window.open(url, "_blank");
+    } finally {
+      setDownloadingUrl(null);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={(openState) => {
       if (!openState) {
@@ -988,10 +1050,10 @@ export function PolicyDetailsDialog({
       }
       onOpenChange(openState);
     }}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
         {/* Status Banner */}
-        <div className={`-mx-6 -mt-6 mb-4 px-6 py-3 rounded-t-lg ${currentStatusStyle.bg} ${currentStatusStyle.glow}`}>
-          <div className="flex items-center justify-between">
+        <div className={`-mx-6 -mt-6 mb-4 px-6 py-3 rounded-t-lg shrink-0 ${currentStatusStyle.bg} ${currentStatusStyle.glow}`}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <PolicyStatusBadge 
                 status={status} 
@@ -1021,8 +1083,8 @@ export function PolicyDetailsDialog({
           </div>
         </div>
 
-        <DialogHeader>
-          <div className="flex items-center justify-between">
+        <DialogHeader className="shrink-0">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <DialogTitle>
                 {isEditing ? "Editar Póliza" : "Detalle de Póliza"}
@@ -1097,9 +1159,9 @@ export function PolicyDetailsDialog({
           </div>
         </DialogHeader>
         
-        <ScrollArea className="h-[70vh] pr-4">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-4">
           <Tabs defaultValue="titular" className="w-full">
-            <TabsList className="grid w-full grid-cols-9">
+            <TabsList className="flex w-full justify-start overflow-x-auto [&>*]:shrink-0 sm:grid sm:grid-cols-9">
               <TabsTrigger value="titular">Titular</TabsTrigger>
               <TabsTrigger value="beneficiario">Beneficiario</TabsTrigger>
               <TabsTrigger value="vehiculo">Vehículo</TabsTrigger>
@@ -1117,7 +1179,7 @@ export function PolicyDetailsDialog({
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Información Personal</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-3 gap-4">
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {renderField("Nombre", "nombre_titular_monday")}
                   {renderField("Apellidos", "apellidos_titular_monday")}
                   {renderField("Tipo Identificación", "tipo_id_titular_monday")}
@@ -1138,7 +1200,7 @@ export function PolicyDetailsDialog({
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Información de Contacto</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-3 gap-4">
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {renderField("Código Telefónico", "codigo_telefonico_titular_monday")}
                   {renderField("Número Telefónico", "numero_telefonico_titular_monday")}
                   {renderField("Email Principal", "email_monday")}
@@ -1150,7 +1212,7 @@ export function PolicyDetailsDialog({
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Datos API</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-3 gap-4">
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {renderField("c_nombre", "c_nombre")}
                   {renderField("c_apellido", "c_apellido")}
                   {renderField("n_cedrif", "n_cedrif")}
@@ -1168,7 +1230,7 @@ export function PolicyDetailsDialog({
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Datos del Apoderado</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-3 gap-4">
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {renderField("Nombre", "nombre_apoderado_monday")}
                   {renderField("Apellido", "apellido_apoderado_monday")}
                   {renderField("Nro. Documento", "numero_documento_apoderado_monday")}
@@ -1182,7 +1244,7 @@ export function PolicyDetailsDialog({
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Datos API - Apoderado (AP)</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-3 gap-4">
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {renderField("c_nombreap", "c_nombreap")}
                   {renderField("c_apellidoap", "c_apellidoap")}
                   {renderField("n_cedrifap", "n_cedrifap")}
@@ -1200,7 +1262,7 @@ export function PolicyDetailsDialog({
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Datos API - Chofer (CH)</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-3 gap-4">
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {renderField("c_nombrech", "c_nombrech")}
                   {renderField("c_apellidoch", "c_apellidoch")}
                   {renderField("n_cedrifch", "n_cedrifch")}
@@ -1221,7 +1283,7 @@ export function PolicyDetailsDialog({
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Información del Vehículo</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-3 gap-4">
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {renderField("Placa", "placa_monday")}
                   {renderField("Marca", "s_marca")}
                   {renderField("Código Marca", "c_cd_marca")}
@@ -1242,7 +1304,7 @@ export function PolicyDetailsDialog({
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Datos Técnicos del Vehículo</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-3 gap-4">
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {renderField("Serial Carrocería", "serial_carroceria_monday")}
                   {renderField("c_carroceria", "c_carroceria")}
                   {renderField("c_placa", "c_placa")}
@@ -1259,7 +1321,7 @@ export function PolicyDetailsDialog({
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Datos de Compra</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-3 gap-4">
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {renderField("Fecha Compra", "fecha_compra_monday", "date")}
                   {renderField("f_fechacompra", "f_fechacompra", "date")}
                   {renderField("Precio Venta Tienda", "precio_venta_tienda_monday")}
@@ -1274,7 +1336,7 @@ export function PolicyDetailsDialog({
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Dirección</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-3 gap-4">
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {renderField("País", "pais_monday")}
                   {renderField("Código País", "c_cd_pais")}
                   {renderField("s_pais", "s_pais")}
@@ -1296,7 +1358,7 @@ export function PolicyDetailsDialog({
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Datos de Contacto API</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-3 gap-4">
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {renderField("c_cd_telef1", "c_cd_telef1")}
                   {renderField("s_telef1", "s_telef1")}
                   {renderField("c_numtelef1", "c_numtelef1")}
@@ -1439,7 +1501,7 @@ export function PolicyDetailsDialog({
                       Editar URLs de Documentos
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-2 gap-4">
+                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {renderField("URL Cédula Identidad", "cedula_identidad_url")}
                     {renderField("URL Licencia Conducir", "licencia_conducir_url")}
                     {renderField("URL Certificado Médico", "certificado_medico_url")}
@@ -1458,48 +1520,43 @@ export function PolicyDetailsDialog({
             <TabsContent value="factura" className="space-y-4 mt-4">
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center justify-between gap-2">
-                    <span className="flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-primary" />
-                      Factura de la Póliza
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={isGeneratingFactura || !selectedPoliza?.id}
-                      onClick={handleGenerateFactura}
-                    >
-                      {isGeneratingFactura ? (
-                        <><Loader2 className="h-4 w-4 animate-spin" /> Generando...</>
-                      ) : (
-                        <><RefreshCw className="h-4 w-4" /> {(selectedPoliza as any)?.factura_poliza_url ? "Regenerar factura" : "Generar factura"}</>
-                      )}
-                    </Button>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-primary" />
+                    Factura de la Póliza
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {(selectedPoliza as any).factura_poliza_url ? (
-                    <div className="rounded-lg border bg-white overflow-hidden">
-                      <iframe
-                        ref={facturaIframeRef}
-                        key={`${(selectedPoliza as any).factura_poliza_url}-${docReloadNonce}`}
-                        srcDoc={facturaHtml ?? "<p style='font-family:sans-serif;padding:24px;color:#666'>Cargando factura...</p>"}
-                        title="Factura"
-                        className="w-full bg-white"
-                        style={{ height: 900, border: 0 }}
-                      />
-                    </div>
+                  {facturaPdfUrl ? (
+                    <>
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleDownloadPdf(facturaPdfUrl, `factura-${selectedPoliza?.numero_poliza_monday || selectedPoliza?.id}.pdf`)}
+                          disabled={downloadingUrl === facturaPdfUrl}
+                          className="gap-2"
+                        >
+                          {downloadingUrl === facturaPdfUrl ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                          Descargar PDF
+                        </Button>
+                        <Button asChild size="sm" variant="outline" className="gap-2">
+                          <a href={`${window.location.origin}/factura/${selectedPoliza?.id}`} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-4 w-4" /> Abrir página pública
+                          </a>
+                        </Button>
+                      </div>
+                      <div className="rounded-lg border bg-muted/30 overflow-hidden">
+                        <iframe
+                          key={facturaPdfUrl}
+                          src={`${facturaPdfUrl}#toolbar=1&view=FitH`}
+                          title="Factura"
+                          className="w-full"
+                          style={{ height: 800, border: 0 }}
+                        />
+                      </div>
+                    </>
                   ) : (
                     <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-                      Aún no se ha generado la factura. Pulsa “Generar factura” para crearla con los datos de este registro.
-                    </div>
-                  )}
-                  <div className="grid grid-cols-1 gap-3">
-                    {renderDocumentLink("Factura (link público)", (selectedPoliza as any).factura_poliza_url, `${window.location.origin}/factura/${selectedPoliza.id}`)}
-                  </div>
-                  {isEditing && (
-                    <div className="pt-2 border-t">
-                      {renderField("URL pública de la Factura", "factura_poliza_url" as any)}
+                      La factura todavía no está disponible. Se genera automáticamente cuando la póliza queda activa.
                     </div>
                   )}
                 </CardContent>
@@ -1510,65 +1567,43 @@ export function PolicyDetailsDialog({
             <TabsContent value="carnet" className="space-y-4 mt-4">
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center justify-between gap-2">
-                    <span className="flex items-center gap-2">
-                      <FileCheck className="h-5 w-5 text-primary" />
-                      Carnet del Asegurado
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={isGeneratingCarnet || !selectedPoliza?.id}
-                      onClick={handleGenerateCarnet}
-                    >
-                      {isGeneratingCarnet ? (
-                        <><Loader2 className="h-4 w-4 animate-spin" /> Generando...</>
-                      ) : (
-                        <><RefreshCw className="h-4 w-4" /> {(selectedPoliza as any)?.carnet_poliza_url ? "Regenerar carnet" : "Generar carnet"}</>
-                      )}
-                    </Button>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FileCheck className="h-5 w-5 text-primary" />
+                    Carnet del Asegurado
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {(selectedPoliza as any).carnet_poliza_url ? (
-                    <div className="space-y-3">
-                      <div className="flex justify-end">
+                  {carnetPdfUrl ? (
+                    <>
+                      <div className="flex flex-wrap justify-end gap-2">
                         <Button
                           size="sm"
-                          onClick={() => handleDownloadDocument((selectedPoliza as any).carnet_poliza_url, (((selectedPoliza as any).carnet_poliza_url || '').split('/').pop() || '').split('?')[0] || 'carnet.html')}
-                          disabled={!!downloadingUrl}
+                          onClick={() => handleDownloadPdf(carnetPdfUrl, `carnet-${selectedPoliza?.numero_poliza_monday || selectedPoliza?.id}.pdf`)}
+                          disabled={downloadingUrl === carnetPdfUrl}
+                          className="gap-2"
                         >
-                          {downloadingUrl ? (
-                            <><Loader2 className="h-4 w-4 animate-spin" /> Renderizando...</>
-                          ) : (
-                            <><FileText className="h-4 w-4" /> Renderizar carnet</>
-                          )}
+                          {downloadingUrl === carnetPdfUrl ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                          Descargar PDF
+                        </Button>
+                        <Button asChild size="sm" variant="outline" className="gap-2">
+                          <a href={`${window.location.origin}/carnet/${selectedPoliza?.id}`} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-4 w-4" /> Abrir página pública
+                          </a>
                         </Button>
                       </div>
-                      <div className="rounded-lg border bg-white overflow-hidden">
+                      <div className="rounded-lg border bg-muted/30 overflow-hidden">
                         <iframe
-                          ref={carnetIframeRef}
-                          key={`${(selectedPoliza as any).carnet_poliza_url}-${docReloadNonce}`}
-                          srcDoc={carnetHtml ?? "<p style='font-family:sans-serif;padding:24px;color:#666'>Cargando carnet...</p>"}
+                          key={carnetPdfUrl}
+                          src={`${carnetPdfUrl}#toolbar=1&view=FitH`}
                           title="Carnet"
-                          className="w-full bg-white"
-                          style={{ height: 900, border: 0 }}
+                          className="w-full"
+                          style={{ height: 800, border: 0 }}
                         />
                       </div>
-                    </div>
+                    </>
                   ) : (
                     <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-                      Aún no se ha generado el carnet. Pulsa “Generar carnet” para crearlo con los datos de este registro.
-                    </div>
-                  )}
-                  <div className="grid grid-cols-1 gap-3">
-                    {renderDocumentLink("Carnet generado (link público)", (selectedPoliza as any).carnet_poliza_url, `${window.location.origin}/carnet/${selectedPoliza.id}`)}
-                    {renderDocumentLink("Carnet Monday", selectedPoliza.url_carnet_monday)}
-                  </div>
-                  {isEditing && (
-                    <div className="pt-2 border-t space-y-3">
-                      {renderField("URL pública del Carnet generado", "carnet_poliza_url" as any)}
-                      {renderField("URL Carnet Monday", "url_carnet_monday")}
+                      El carnet todavía no está disponible. Se genera automáticamente cuando la póliza queda activa.
                     </div>
                   )}
                 </CardContent>
@@ -1586,7 +1621,7 @@ export function PolicyDetailsDialog({
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {renderField("API Status", "api_status")}
                     {renderField("API Message", "api_message")}
                     {renderField("n_serialcontrato", "n_serialcontrato")}
@@ -1615,7 +1650,7 @@ export function PolicyDetailsDialog({
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Información de Póliza</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-3 gap-4">
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {renderField("Número de Póliza", "numero_poliza_monday")}
                   {renderField("Póliza Monday", "poliza_monday")}
                   {renderField("Fecha Inicio", "f_fchdesde", "date")}
@@ -1630,7 +1665,7 @@ export function PolicyDetailsDialog({
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Configuración API</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-3 gap-4">
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {renderField("API Monday", "api_monday")}
                   {renderField("Version API Monday", "version_api_monday")}
                   {renderField("Monday ID", "mondayid")}
@@ -1648,7 +1683,7 @@ export function PolicyDetailsDialog({
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Metadatos</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-3 gap-4">
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">ID</p>
                     <p className="text-sm font-mono">{selectedPoliza.id}</p>
@@ -1742,7 +1777,7 @@ export function PolicyDetailsDialog({
               })()}
             </TabsContent>
           </Tabs>
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );

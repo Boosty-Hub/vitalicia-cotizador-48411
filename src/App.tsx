@@ -42,6 +42,7 @@ import AdminForgotPasswordPage from "./pages/admin/AdminForgotPasswordPage";
 import AdminResetPasswordPage from "./pages/admin/AdminResetPasswordPage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminPolizasPage from "./pages/admin/AdminPolizasPage";
+import AdminFlujoPage from "./pages/admin/AdminFlujoPage";
 import AdminConfiguracionesPage from "./pages/admin/AdminConfiguracionesPage";
 import AdminUsuariosPage from "./pages/admin/AdminUsuariosPage";
 import AdminPreciosEmpirePage from "./pages/admin/AdminPreciosEmpirePage";
@@ -108,6 +109,7 @@ const App = () => (
             >
               <Route index element={<AdminDashboardPage />} />
               <Route path="polizas" element={<AdminPolizasPage />} />
+              <Route path="flujo" element={<AdminFlujoPage />} />
               <Route path="descargas" element={<AdminDescargasPage />} />
               <Route path="inventario-bera" element={<AdminInventarioBeraPage />} />
               <Route path="inventario-empire" element={<AdminInventarioEmpirePage />} />

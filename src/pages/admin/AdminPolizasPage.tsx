@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
@@ -11,13 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Search, Eye, Trash2, ChevronLeft, ChevronRight, FileDown, Loader2, RefreshCw, Download, AlertTriangle } from "lucide-react";
+import { Search, Trash2, ChevronLeft, ChevronRight, FileDown, Loader2, RefreshCw, Download } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Database } from "@/integrations/supabase/types";
 import { PolicyStatusBadge, getPolizaStatus } from "@/components/admin/PolicyStatusBadge";
@@ -38,13 +32,33 @@ import { refreshPolizaConfig } from "@/utils/refreshPolizaConfig";
 
 type Poliza = Database["public"]["Tables"]["polizas_activas"]["Row"];
 
+// Filtro de estado por pestaña, aplicado en la consulta (server-side) para que la paginación
+// sea correcta. Coincide con la lógica de getPolizaStatus:
+//  - activas: tiene número de póliza y no está en error
+//  - pendientes: sin número de póliza y sin error (Nuevo registro / Pendiente revisión analista)
+//  - errores: api_status = 'error'
+const applyStatusFilter = (query: any, status: string) => {
+  if (status === "activas") {
+    return query.not("numero_poliza_monday", "is", null).or("api_status.is.null,api_status.neq.error");
+  }
+  if (status === "pendientes") {
+    return query.is("numero_poliza_monday", null).or("api_status.is.null,api_status.neq.error");
+  }
+  if (status === "errores") {
+    return query.eq("api_status", "error");
+  }
+  return query;
+};
+
 export default function AdminPolizasPage() {
   const [polizas, setPolizas] = useState<Poliza[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterFormulario, setFilterFormulario] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [counts, setCounts] = useState({ all: 0, activas: 0, pendientes: 0, errores: 0 });
   const [selectedPoliza, setSelectedPoliza] = useState<Poliza | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -52,10 +66,12 @@ export default function AdminPolizasPage() {
   const [processingPolizaId, setProcessingPolizaId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [downloading, setDownloading] = useState(false);
-  const [errorPolizas, setErrorPolizas] = useState<Poliza[]>([]);
-  const [showErrorsDialog, setShowErrorsDialog] = useState(false);
   const [realtimeNonce, setRealtimeNonce] = useState(0);
   const pageSize = 10;
+
+  const searchOr = searchTerm
+    ? `nombre_titular_monday.ilike.%${searchTerm}%,apellidos_titular_monday.ilike.%${searchTerm}%,nro_documento_natural_monday.ilike.%${searchTerm}%,placa_monday.ilike.%${searchTerm}%,numero_poliza_monday.ilike.%${searchTerm}%`
+    : "";
 
   const toggleSelected = (id: string) => {
     const ns = new Set(selectedIds);
@@ -115,20 +131,36 @@ export default function AdminPolizasPage() {
 
   useEffect(() => {
     fetchPolizas();
-  }, [currentPage, searchTerm, filterFormulario, realtimeNonce]);
+  }, [currentPage, searchTerm, filterFormulario, filterStatus, realtimeNonce]);
 
-  // Conteo/listado de registros que tuvieron error al procesar con RMS (api_status = 'error').
+  // Conteos por estado para las pestañas (respetan la búsqueda y el tipo seleccionados).
   useEffect(() => {
-    const fetchErrores = async () => {
-      const { data } = await supabase
-        .from("polizas_activas")
-        .select("id, nombre_titular_monday, apellidos_titular_monday, placa_monday, api_message")
-        .eq("api_status", "error")
-        .order("created_at", { ascending: false });
-      setErrorPolizas((data as any) || []);
+    const fetchCounts = async () => {
+      const build = () => {
+        let q = supabase.from("polizas_activas").select("id", { count: "exact", head: true });
+        if (searchOr) q = q.or(searchOr);
+        if (filterFormulario !== "all") q = q.eq("formulario", filterFormulario);
+        return q;
+      };
+      try {
+        const [all, activas, pendientes, errores] = await Promise.all([
+          build(),
+          applyStatusFilter(build(), "activas"),
+          applyStatusFilter(build(), "pendientes"),
+          applyStatusFilter(build(), "errores"),
+        ]);
+        setCounts({
+          all: all.count || 0,
+          activas: activas.count || 0,
+          pendientes: pendientes.count || 0,
+          errores: errores.count || 0,
+        });
+      } catch (e) {
+        /* los conteos son informativos: si fallan, no rompemos la tabla */
+      }
     };
-    fetchErrores();
-  }, [realtimeNonce]);
+    fetchCounts();
+  }, [searchTerm, filterFormulario, realtimeNonce]);
 
   // Toast en tiempo real por cada nuevo registro insertado en polizas_activas.
   useEffect(() => {
@@ -160,15 +192,9 @@ export default function AdminPolizasPage() {
         .from("polizas_activas")
         .select("*", { count: "exact" });
 
-      if (searchTerm) {
-        query = query.or(
-          `nombre_titular_monday.ilike.%${searchTerm}%,apellidos_titular_monday.ilike.%${searchTerm}%,nro_documento_natural_monday.ilike.%${searchTerm}%,placa_monday.ilike.%${searchTerm}%,numero_poliza_monday.ilike.%${searchTerm}%`
-        );
-      }
-
-      if (filterFormulario !== "all") {
-        query = query.eq("formulario", filterFormulario);
-      }
+      if (searchOr) query = query.or(searchOr);
+      if (filterFormulario !== "all") query = query.eq("formulario", filterFormulario);
+      query = applyStatusFilter(query, filterStatus);
 
       const from = (currentPage - 1) * pageSize;
       const to = from + pageSize - 1;
@@ -225,15 +251,15 @@ export default function AdminPolizasPage() {
   // Reprocesar póliza: actualiza configuración y llama a RMS API
   const handleReprocess = async (poliza: Poliza) => {
     if (processingPolizaId) return;
-    
+
     setProcessingPolizaId(poliza.id);
-    
+
     try {
       toast({
         title: "Actualizando configuración...",
         description: "Obteniendo datos actualizados de las tablas de configuración",
       });
-      
+
       const refreshResult = await refreshPolizaConfig({
         id: poliza.id,
         s_marca: poliza.s_marca,
@@ -295,7 +321,7 @@ export default function AdminPolizasPage() {
 
       if (rmsError) {
         console.error('Error llamando a RMS:', rmsError);
-        
+
         await supabase
           .from('polizas_activas')
           .update({
@@ -303,7 +329,7 @@ export default function AdminPolizasPage() {
             api_message: rmsError.message || 'Error al procesar con RMS',
           })
           .eq('id', poliza.id);
-        
+
         toast({
           title: "Error al procesar",
           description: rmsError.message || 'Error al comunicarse con RMS',
@@ -327,7 +353,7 @@ export default function AdminPolizasPage() {
       });
 
       fetchPolizas();
-      
+
     } catch (error) {
       console.error('Error en handleReprocess:', error);
       toast({
@@ -377,10 +403,17 @@ export default function AdminPolizasPage() {
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
+  const TabCount = ({ n }: { n: number }) => (
+    <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
+      {n}
+    </span>
+  );
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex flex-col sm:flex-row gap-4 flex-1">
+    <div className="space-y-4">
+      {/* Toolbar: búsqueda + tipo (pestañas) + acciones */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center flex-1">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -393,34 +426,21 @@ export default function AdminPolizasPage() {
               className="pl-10"
             />
           </div>
-          <Select
+          <Tabs
             value={filterFormulario}
             onValueChange={(value) => {
               setFilterFormulario(value);
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Tipo de póliza" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="natural">Persona Natural</SelectItem>
-              <SelectItem value="juridico">Persona Jurídica</SelectItem>
-            </SelectContent>
-          </Select>
+            <TabsList>
+              <TabsTrigger value="all">Todas</TabsTrigger>
+              <TabsTrigger value="natural">Naturales</TabsTrigger>
+              <TabsTrigger value="juridico">Jurídicas</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
         <div className="flex gap-2">
-          {errorPolizas.length > 0 && (
-            <Button
-              onClick={() => setShowErrorsDialog(true)}
-              variant="outline"
-              className="gap-2 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-            >
-              <AlertTriangle className="h-4 w-4" />
-              Errores ({errorPolizas.length})
-            </Button>
-          )}
           {selectedIds.size > 0 && (
             <Button onClick={() => downloadDocs(Array.from(selectedIds))} disabled={downloading} className="gap-2">
               {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
@@ -433,6 +453,24 @@ export default function AdminPolizasPage() {
           </Button>
         </div>
       </div>
+
+      {/* Pestañas de estado */}
+      <Tabs
+        value={filterStatus}
+        onValueChange={(value) => {
+          setFilterStatus(value);
+          setCurrentPage(1);
+        }}
+      >
+        <TabsList>
+          <TabsTrigger value="all">Todas<TabCount n={counts.all} /></TabsTrigger>
+          <TabsTrigger value="activas">Activas<TabCount n={counts.activas} /></TabsTrigger>
+          <TabsTrigger value="pendientes">Pendientes<TabCount n={counts.pendientes} /></TabsTrigger>
+          <TabsTrigger value="errores" className="data-[state=active]:text-destructive">
+            Errores<TabCount n={counts.errores} />
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       <div className="rounded-lg border border-border bg-card">
         {loading ? (
@@ -473,14 +511,18 @@ export default function AdminPolizasPage() {
                   const isProcessing = processingPolizaId === poliza.id;
 
                   return (
-                    <TableRow key={poliza.id}>
-                      <TableCell>
+                    <TableRow
+                      key={poliza.id}
+                      onClick={() => openDetailDialog(poliza)}
+                      className="cursor-pointer hover:bg-muted/50"
+                    >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <Checkbox
                           checked={selectedIds.has(poliza.id)}
                           onCheckedChange={() => toggleSelected(poliza.id)}
                         />
                       </TableCell>
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <PolicyStatusBadge
                           status={isProcessing ? 'processing' : status}
                           message={message}
@@ -502,7 +544,7 @@ export default function AdminPolizasPage() {
                           {poliza.formulario === "natural" ? "Natural" : "Jurídico"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end gap-2">
                           {(status === 'error' || status === 'pending') && (
                             <Button
@@ -527,18 +569,12 @@ export default function AdminPolizasPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => openDetailDialog(poliza)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
                             onClick={() => {
                               setPolizaToDelete(poliza.id);
                               setShowDeleteDialog(true);
                             }}
                             className="text-destructive hover:text-destructive"
+                            title="Eliminar póliza"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -556,7 +592,7 @@ export default function AdminPolizasPage() {
       {/* Pagination */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Mostrando {(currentPage - 1) * pageSize + 1} a{" "}
+          Mostrando {totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1} a{" "}
           {Math.min(currentPage * pageSize, totalCount)} de {totalCount} registros
         </p>
         <div className="flex items-center gap-2">
@@ -569,13 +605,13 @@ export default function AdminPolizasPage() {
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="text-sm text-muted-foreground">
-            Página {currentPage} de {totalPages}
+            Página {currentPage} de {totalPages || 1}
           </span>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
+            disabled={currentPage >= totalPages}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -608,41 +644,6 @@ export default function AdminPolizasPage() {
             >
               Eliminar
             </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Errors Count Dialog */}
-      <AlertDialog open={showErrorsDialog} onOpenChange={setShowErrorsDialog}>
-        <AlertDialogContent className="max-w-lg">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" />
-              {errorPolizas.length} {errorPolizas.length === 1 ? "registro tuvo" : "registros tuvieron"} error
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Estas pólizas fallaron al procesar con RMS. Podés reintentarlas desde el badge de estado o el botón de reprocesar en la tabla.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="max-h-72 overflow-y-auto space-y-2">
-            {errorPolizas.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No hay registros con error.</p>
-            ) : (
-              errorPolizas.map((p) => (
-                <div key={p.id} className="rounded-md border border-border p-2.5 text-sm">
-                  <div className="font-medium">
-                    {p.nombre_titular_monday} {p.apellidos_titular_monday}
-                    {p.placa_monday ? ` · ${p.placa_monday}` : ""}
-                  </div>
-                  {(p as any).api_message && (
-                    <div className="text-xs text-muted-foreground mt-0.5">{(p as any).api_message}</div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cerrar</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
