@@ -83,6 +83,7 @@ serve(async (req) => {
         api_coberturas: coberturas,
         api_status: apiStatus,
         api_message: apiMessage,
+        api_request: rmsPayload,
         estado_principal_monday: isSuccess ? 'Activa' : 'Error API',
       })
       .eq('id', polizaId);
@@ -288,8 +289,12 @@ function buildRmsPayload(data: Record<string, any>, tipoFormulario: string): Rec
     c_email1: email1,
     c_email2: email2,
     
-    // Actividad económica - La API RMS espera exactamente 4 dígitos numéricos
-    c_cd_actividad: sanitizeActividadEconomica(data.c_cd_actividad, defaultValues.c_cd_actividad),
+    // Actividad económica - HARDCODEADO a "0000" por un bug del lado de RMS: cualquier otro
+    // código (incluido el real del catálogo, p.ej. "S9609") dispara una violación de FK en
+    // c_persona al incluir el titular. Aplica a persona natural Y jurídica. Revertir a
+    // sanitizeActividadEconomica(data.c_cd_actividad, defaultValues.c_cd_actividad) si RMS
+    // corrige la validación del catálogo de actividades.
+    c_cd_actividad: "0000",
     c_cd_ocupacion: parseInt(data.c_cd_ocupacion) || defaultValues.c_cd_ocupacion,
     n_ingresoanualnac: parseFloat(data.n_ingresoanualnac) || defaultValues.n_ingresoanualnac,
     
