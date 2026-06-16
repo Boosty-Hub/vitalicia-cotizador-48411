@@ -763,13 +763,19 @@ const ActivarPolizaNaturalPage = () => {
         .ilike('descripcion', vehicleData?.Marca || '')
         .maybeSingle();
 
-      // Fetch modelo code and description
-      const { data: modeloData } = await supabase
+      // Fetch modelo code and description.
+      // board_cod_modelo puede tener descripciones duplicadas (misma marca, mismo nombre,
+      // distinto código, p.ej. "NEW OUTLOOK II" => 0012 y 0019). maybeSingle() devolvía null
+      // ante el duplicado y el código caía al fallback "0000". Tomamos el menor código de
+      // forma determinística.
+      const { data: modeloRows } = await supabase
         .from('board_cod_modelo')
         .select('cd_modelo, descripcion')
         .eq('cd_marca', marcaData?.cd_marca || '')
         .ilike('descripcion', vehicleData?.Modelo || '')
-        .maybeSingle();
+        .order('cd_modelo')
+        .limit(1);
+      const modeloData = modeloRows?.[0] ?? null;
 
       // Fetch color code and description
       const { data: colorData } = await supabase
