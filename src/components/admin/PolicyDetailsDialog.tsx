@@ -282,10 +282,27 @@ export function PolicyDetailsDialog({
       const polizaToSave = {
         ...editedPoliza,
         n_suma: editedPoliza.n_suma ? formatPriceToTwoDecimals(editedPoliza.n_suma) : editedPoliza.n_suma,
-        precio_venta_tienda_monday: editedPoliza.precio_venta_tienda_monday 
-          ? formatPriceToTwoDecimals(editedPoliza.precio_venta_tienda_monday) 
+        precio_venta_tienda_monday: editedPoliza.precio_venta_tienda_monday
+          ? formatPriceToTwoDecimals(editedPoliza.precio_venta_tienda_monday)
           : editedPoliza.precio_venta_tienda_monday,
       };
+
+      // Sincroniza los correos editables de "Información de Contacto" (email_monday /
+      // email_alternativo_monday) con los que realmente se envían a RMS (c_email1 / c_email2).
+      // Antes solo se editaba email_monday, así que c_email1 quedaba desincronizado y RMS recibía
+      // el correo viejo. Propagamos el campo que cambió respecto al original para no pisar una
+      // edición hecha directamente sobre c_email1/c_email2 desde el tab Técnico.
+      const origEmails = (selectedPoliza as any) || {};
+      if (polizaToSave.email_monday !== origEmails.email_monday) {
+        polizaToSave.c_email1 = polizaToSave.email_monday;
+      } else if (polizaToSave.c_email1 !== origEmails.c_email1) {
+        polizaToSave.email_monday = polizaToSave.c_email1;
+      }
+      if (polizaToSave.email_alternativo_monday !== origEmails.email_alternativo_monday) {
+        polizaToSave.c_email2 = polizaToSave.email_alternativo_monday;
+      } else if (polizaToSave.c_email2 !== origEmails.c_email2) {
+        polizaToSave.email_alternativo_monday = polizaToSave.c_email2;
+      }
 
       const { error } = await supabase
         .from("polizas_activas")
@@ -1646,6 +1663,25 @@ export function PolicyDetailsDialog({
                 </CardContent>
               </Card>
               
+              {/* JSON exacto enviado a RMS (lo persiste rms-create-policy en api_request) */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">JSON enviado a RMS</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(selectedPoliza as any)?.api_request ? (
+                    <pre className="max-h-96 overflow-auto rounded-md bg-muted p-4 text-xs font-mono whitespace-pre-wrap break-words">
+                      {JSON.stringify((selectedPoliza as any).api_request, null, 2)}
+                    </pre>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Todavía no hay payload registrado. Se guarda automáticamente la próxima vez
+                      que la póliza se envíe a RMS (botón «Reprocesar Póliza»).
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Información de Póliza</CardTitle>
