@@ -802,7 +802,9 @@ const ActivarPolizaJuridicaPage = () => {
         nombre_titular_monday: formData.nombresRepresentante,
         apellidos_titular_monday: formData.apellidosRepresentante,
         tipo_id_titular_monday: formData.tipoIdentificacion,
-        nro_documento_juridico_monday: empresaId?.[2] || "",
+        // numeroRIF ya viene como 9 dígitos limpios (handleInputChange lo normaliza sin guion),
+        // por eso usamos el valor directo y NO el grupo del regex con guion, que nunca matchea.
+        nro_documento_juridico_monday: formData.numeroRIF || empresaId?.[2] || "",
         nro_documento_natural_monday: "",
         razon_social_juridico_monday: formData.nombreEmpresa,
         
@@ -1091,7 +1093,7 @@ const ActivarPolizaJuridicaPage = () => {
     });
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (bypassDocs = false) => {
     setIsSubmitting(true);
     
     try {
@@ -1138,7 +1140,7 @@ const ActivarPolizaJuridicaPage = () => {
       // Validaciones mínimas: Título OR (Factura + Cert. Origen) + RIF empresa
       const tieneTitulo = !!tituloUrl;
       const tieneFacturaYOrigen = !!facturaUrl && !!origenUrl;
-      if ((!tieneTitulo && !tieneFacturaYOrigen) || !rifEmpresaUrl) {
+      if (!bypassDocs && ((!tieneTitulo && !tieneFacturaYOrigen) || !rifEmpresaUrl)) {
         throw new Error('Error al subir uno o más documentos obligatorios');
       }
       // Para columna existente: usar origenUrl si existe, si no titulo como respaldo
@@ -1155,11 +1157,18 @@ const ActivarPolizaJuridicaPage = () => {
         .eq('descripcion', vehicleData?.Marca || '')
         .maybeSingle();
 
-      const { data: modeloData } = await supabase
+      // board_cod_modelo puede tener descripciones duplicadas (misma marca, mismo nombre,
+      // distinto código, p.ej. "NEW OUTLOOK II" => 0012 y 0019). Filtramos por marca y tomamos
+      // el menor código de forma determinística; maybeSingle() devolvía null ante el duplicado
+      // y cod_modelo_monday quedaba vacío.
+      const { data: modeloRows } = await supabase
         .from('board_cod_modelo')
-        .select('cd_modelo, descripcion')
+        .select('cd_modelo, descripcion, cd_marca')
         .eq('descripcion', vehicleData?.Modelo || '')
-        .maybeSingle();
+        .eq('cd_marca', marcaData?.cd_marca || '')
+        .order('cd_modelo')
+        .limit(1);
+      const modeloData = modeloRows?.[0] ?? null;
 
       // Fetch version API dynamically using the utility function
       const versionApiData = await fetchVersionApi(vehicleData?.Marca, vehicleData?.Año);
@@ -2628,7 +2637,7 @@ const ActivarPolizaJuridicaPage = () => {
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={handleSubmit}
+                        onClick={() => handleSubmit(true)}
                         disabled={isSubmitting}
                         className="w-full gap-2 border-dashed border-amber-500 text-amber-600 hover:text-amber-700"
                       >
