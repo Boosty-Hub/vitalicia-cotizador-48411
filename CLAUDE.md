@@ -145,3 +145,8 @@ touching inventory/pricing, expect to handle both variants.
 - 2026-06-09 `20d43ca` — refactor(admin-auth): consolida login en AdminAuthContext y corrige manejo de error de rol
 - 2026-06-09 `9de8951` — feat(admin): popup de duplicados al entrar a inventario BERA/EMPIRE
 - 2026-06-10 `c17a1cf` — feat(admin): consolida edición de motos en MotoDetailsDialog con live search
+- 2026-06-16 `2ce1dc6` — feat(admin): columna Fecha de registro en inventario BERA/EMPIRE
+- 2026-06-16 `75c94fe` — fix(activar-juridica): bypass de documentos, RIF y código de modelo
+- 2026-06-16 `8e6044e` — fix(activar-natural): código de modelo ante descripciones duplicadas en board_cod_modelo
+- 2026-06-16 `7eb9c81` — fix(polizas): sincroniza correo del titular con RMS y muestra el JSON enviado en el tab Técnico
+- 2026-06-16 `c27326f` — fix(rms-create-policy): persiste payload en api_request y fuerza c_cd_actividad a 0000
