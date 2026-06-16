@@ -366,9 +366,10 @@ export default function AdminInventarioBeraPage() {
         return;
       }
 
-      const headers = ["Fecha", "Marca", "Cod Modelo", "Modelo", "Año", "Placa", "Transmisión", "Serial Chasis", "Serial Motor", "Cod Color", "Color", "Precio Venta Tienda", "Precio Base Venta Tienda", "Precio Venta Sugerido", "Precio Base Venta Sugerido", "Duplicado"];
+      const headers = ["Fecha", "Fecha Registro", "Marca", "Cod Modelo", "Modelo", "Año", "Placa", "Transmisión", "Serial Chasis", "Serial Motor", "Cod Color", "Color", "Precio Venta Tienda", "Precio Base Venta Tienda", "Precio Venta Sugerido", "Precio Base Venta Sugerido", "Duplicado"];
       const rows = allData.map(item => [
         item.fecha || "",
+        item.created_at ? new Date(item.created_at).toLocaleDateString("es-VE") : "",
         item.marca || "",
         item.cod_modelo || "",
         item.modelo || "",
@@ -672,6 +673,7 @@ export default function AdminInventarioBeraPage() {
                       <TableHead>Estado</TableHead>
                       <TableHead>Póliza</TableHead>
                       <TableHead>Fecha</TableHead>
+                      <TableHead>Fecha de Registro</TableHead>
                       <TableHead>Marca</TableHead>
                       <TableHead>Modelo</TableHead>
                       <TableHead>Año</TableHead>
@@ -685,7 +687,7 @@ export default function AdminInventarioBeraPage() {
                   <TableBody>
                     {data.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">
                           No se encontraron registros
                         </TableCell>
                       </TableRow>
@@ -725,6 +727,9 @@ export default function AdminInventarioBeraPage() {
                               />
                             </TableCell>
                             <TableCell className="whitespace-nowrap">{item.fecha || "-"}</TableCell>
+                            <TableCell className="whitespace-nowrap">
+                              {item.created_at ? new Date(item.created_at).toLocaleDateString("es-VE") : "-"}
+                            </TableCell>
                             <TableCell>{item.marca || "-"}</TableCell>
                             <TableCell>{item.modelo || "-"}</TableCell>
                             <TableCell>{item.anio_modelo || "-"}</TableCell>

@@ -345,9 +345,10 @@ export default function AdminInventarioEmpirePage() {
         return;
       }
 
-      const headers = ["Fecha", "Marca", "Modelo", "Versión", "Año", "Transmisión", "Placa", "Serial Motor", "Serial Carrocería", "Color", "Duplicado"];
+      const headers = ["Fecha", "Fecha Registro", "Marca", "Modelo", "Versión", "Año", "Transmisión", "Placa", "Serial Motor", "Serial Carrocería", "Color", "Duplicado"];
       const rows = allData.map(item => [
         item.fecha || "",
+        item.created_at ? new Date(item.created_at).toLocaleDateString("es-VE") : "",
         item.marca || "",
         item.modelo || "",
         item.version || "",
@@ -609,6 +610,7 @@ export default function AdminInventarioEmpirePage() {
                       <TableHead>Estado</TableHead>
                       <TableHead>Póliza</TableHead>
                       <TableHead>Fecha</TableHead>
+                      <TableHead>Fecha de Registro</TableHead>
                       <TableHead>Marca</TableHead>
                       <TableHead>Modelo</TableHead>
                       <TableHead>Versión</TableHead>
@@ -622,7 +624,7 @@ export default function AdminInventarioEmpirePage() {
                   <TableBody>
                     {data.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">
                           No se encontraron registros
                         </TableCell>
                       </TableRow>
@@ -662,6 +664,9 @@ export default function AdminInventarioEmpirePage() {
                               />
                             </TableCell>
                             <TableCell className="whitespace-nowrap">{item.fecha || "-"}</TableCell>
+                            <TableCell className="whitespace-nowrap">
+                              {item.created_at ? new Date(item.created_at).toLocaleDateString("es-VE") : "-"}
+                            </TableCell>
                             <TableCell>{item.marca || "-"}</TableCell>
                             <TableCell>{item.modelo || "-"}</TableCell>
                             <TableCell>{item.version || "-"}</TableCell>
