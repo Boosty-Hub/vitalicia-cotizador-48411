@@ -39,8 +39,11 @@ Si NO es una licencia de conducir, indica que no es válida.`,
     validFields: [],
   },
   certificado_medico: {
-    prompt: `Analiza esta imagen. Determina si es un certificado médico válido.
-Si NO es un certificado médico o documento médico, indica que no es válido.`,
+    prompt: `Analiza esta imagen. Determina si es un certificado médico válido de CUALQUIER tipo:
+general, médico vial / de tránsito, ocupacional, psicológico, u otro. Acepta como válido cualquier
+certificado, constancia o informe médico emitido por un profesional o centro de salud. NO exijas que sea
+"general" ni un tipo específico. Solo indica que NO es válido si la imagen NO es un documento médico
+(por ejemplo si es otro tipo de documento, está en blanco o es ilegible).`,
     validFields: [],
   },
   rif: {
