@@ -38,6 +38,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { DuplicatePlatesHandler, DuplicatePlate } from "@/components/admin/DuplicatePlatesHandler";
 import { UnknownModelsHandler, UnknownModel } from "@/components/admin/UnknownModelsHandler";
+import { loadInventoryCatalogs, lookupMarca, lookupModelo, lookupVersion, lookupColor } from "@/lib/inventoryCatalog";
 import { ColumnMappingDialog, ColumnMappingResult } from "@/components/admin/ColumnMappingDialog";
 
 interface MotoEmpire {
@@ -251,6 +252,41 @@ export default function AdminCargaEmpirePage() {
           return item as MotoEmpire;
         })
         .filter(item => item.placa || item.serial_carroceria);
+
+      // Normalización contra catálogos: deja marca/modelo/versión/color con la
+      // descripción EXACTA del catálogo (bd_empire no tiene columnas de código,
+      // así que la activación resuelve por descripción → debe coincidir exacto).
+      const catalogs = await loadInventoryCatalogs();
+      const unknownMarcasSet = new Set<string>();
+      for (const item of processedData) {
+        const marcaHit = lookupMarca(catalogs, item.marca);
+        let cdMarca = "";
+        if (marcaHit) {
+          item.marca = marcaHit.desc;
+          cdMarca = marcaHit.code;
+        } else if (item.marca && item.marca.trim()) {
+          unknownMarcasSet.add(item.marca.trim());
+        }
+        if (item.modelo) {
+          const modeloHit = lookupModelo(catalogs, item.modelo, cdMarca || undefined);
+          if (modeloHit) item.modelo = modeloHit.desc;
+        }
+        if (item.version) {
+          const versionHit = lookupVersion(catalogs, item.version, cdMarca || undefined);
+          if (versionHit) item.version = versionHit.desc;
+        }
+        if (item.color) {
+          const colorHit = lookupColor(catalogs, item.color);
+          if (colorHit) item.color = colorHit.desc;
+        }
+      }
+      if (unknownMarcasSet.size > 0) {
+        toast({
+          title: "Marcas fuera del catálogo",
+          description: `No se reconocen y RMS las rechazará: ${Array.from(unknownMarcasSet).join(", ")}. Agregalas en Configuración → Marcas y volvé a cargar.`,
+          variant: "destructive",
+        });
+      }
 
       // Separar registros válidos de los que no tienen modelo
       const withModelData = processedData.filter(item => item.modelo && item.modelo.trim() !== "");

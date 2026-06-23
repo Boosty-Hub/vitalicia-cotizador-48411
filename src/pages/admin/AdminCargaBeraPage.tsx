@@ -41,6 +41,7 @@ import { format, parse } from "date-fns";
 import { es } from "date-fns/locale";
 import { DuplicatePlatesHandler, DuplicatePlate } from "@/components/admin/DuplicatePlatesHandler";
 import { UnknownModelsHandler, UnknownModel } from "@/components/admin/UnknownModelsHandler";
+import { loadInventoryCatalogs, lookupMarca, lookupModelo, lookupColor } from "@/lib/inventoryCatalog";
 import { ColumnMappingDialog, ColumnMappingResult } from "@/components/admin/ColumnMappingDialog";
 
 interface MotoBera {
@@ -304,6 +305,42 @@ export default function AdminCargaBeraPage() {
           return item as MotoBera;
         })
         .filter(item => item.placa || item.serial_chasis);
+
+      // Normalización contra catálogos: deja marca/modelo/color con la descripción
+      // EXACTA del catálogo y resuelve los códigos RMS (cod_modelo / cod_color).
+      const catalogs = await loadInventoryCatalogs();
+      const unknownMarcasSet = new Set<string>();
+      for (const item of processedData) {
+        const marcaHit = lookupMarca(catalogs, item.marca);
+        let cdMarca = "";
+        if (marcaHit) {
+          item.marca = marcaHit.desc;
+          cdMarca = marcaHit.code;
+        } else if (item.marca && item.marca.trim()) {
+          unknownMarcasSet.add(item.marca.trim());
+        }
+        if (item.modelo) {
+          const modeloHit = lookupModelo(catalogs, item.modelo, cdMarca || undefined);
+          if (modeloHit) {
+            item.modelo = modeloHit.desc;
+            item.cod_modelo = modeloHit.code;
+          }
+        }
+        if (item.color) {
+          const colorHit = lookupColor(catalogs, item.color);
+          if (colorHit) {
+            item.color = colorHit.desc;
+            item.cod_color = colorHit.code;
+          }
+        }
+      }
+      if (unknownMarcasSet.size > 0) {
+        toast({
+          title: "Marcas fuera del catálogo",
+          description: `No se reconocen y RMS las rechazará: ${Array.from(unknownMarcasSet).join(", ")}. Agregalas en Configuración → Marcas y volvé a cargar.`,
+          variant: "destructive",
+        });
+      }
 
       // Separar registros válidos de los que no tienen modelo
       const withModelData = processedData.filter(item => item.modelo && item.modelo.trim() !== "");
