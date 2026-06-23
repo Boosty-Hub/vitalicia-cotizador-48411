@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { formatPriceToTwoDecimals } from "@/lib/priceUtils";
+import { analizarRespuestaRms } from "@/lib/rmsErrorAnalysis";
 import { 
   ExternalLink, 
   Download, 
@@ -27,7 +28,8 @@ import {
   X,
   Loader2,
   RefreshCw,
-  Mail
+  Mail,
+  AlertTriangle
 } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
 import { PolicyStatusBadge, getPolizaStatus } from "@/components/admin/PolicyStatusBadge";
@@ -1771,11 +1773,68 @@ export function PolicyDetailsDialog({
                   ["api_coberturas", (selectedPoliza as any).api_coberturas],
                 ];
                 const fullPayload = Object.fromEntries(fields);
+
+                // selectedPoliza es de tipo laxo en este archivo (igual que el resto del IIFE).
+                const sp = selectedPoliza as any;
+
+                // Análisis legible del error de RMS (reutiliza los valores ya extraídos).
+                const analisis = analizarRespuestaRms(fullPayload.api_status, fullPayload.api_message);
+
+                // Descarga del JSON EXACTO que se envió a RMS (api_request).
+                const descargarJsonEnviado = () => {
+                  const req = sp?.api_request;
+                  if (req == null) {
+                    toast({ title: "Sin datos", description: "No hay JSON enviado registrado para esta póliza.", variant: "destructive" });
+                    return;
+                  }
+                  const text = typeof req === "string" ? req : JSON.stringify(req, null, 2);
+                  const blob = new Blob([text], { type: "application/json" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `rms-request-${sp?.id || "poliza"}.json`;
+                  document.body.appendChild(a);
+                  a.click();
+                  a.remove();
+                  URL.revokeObjectURL(url);
+                };
+
                 return (
                   <>
+                    {analisis && analisis.nivel !== "ok" && (
+                      <Card className="border-destructive/40">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <CardTitle className="text-base flex items-center gap-2 text-destructive">
+                              <AlertTriangle className="h-5 w-5" /> Análisis del error
+                            </CardTitle>
+                            <Button variant="outline" size="sm" onClick={descargarJsonEnviado}>
+                              <Download className="h-4 w-4 mr-2" /> Descargar JSON enviado a RMS
+                            </Button>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3 text-sm">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-medium">{analisis.titulo}</span>
+                            <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+                              Origen: {analisis.lado}
+                            </span>
+                          </div>
+                          {analisis.datos && (
+                            <div className="flex flex-wrap gap-2">
+                              {Object.entries(analisis.datos).map(([k, v]) => (
+                                <span key={k} className="rounded-md bg-muted px-2 py-1 text-xs font-mono">{k}: {v}</span>
+                              ))}
+                            </div>
+                          )}
+                          <p><span className="text-muted-foreground">Qué pasa: </span>{analisis.explicacion}</p>
+                          <p><span className="text-muted-foreground">Qué hacer: </span>{analisis.accion}</p>
+                        </CardContent>
+                      </Card>
+                    )}
                     <Card>
                       <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2">
                           <CardTitle className="text-base">Respuesta completa de la API</CardTitle>
                           <Button
                             variant="outline"
