@@ -176,7 +176,7 @@ export default function AdminDescargasPage() {
     setDownloading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) || "https://avlbdqqwldjteafmzwjb.supabase.co";
       const resp = await fetch(`${supabaseUrl}/functions/v1/download-poliza-documents`, {
         method: "POST",
         headers: {
