@@ -34,8 +34,18 @@ serve(async (req) => {
     // Crear Basic Auth header
     const basicAuth = btoa(`${RMS_API_USER}:${RMS_API_PASSWORD}`);
 
+    // Cliente de servicio (se usa para leer configuración y actualizar la póliza).
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Endpoint RMS según el modo del sistema (admin_settings). Sin configuración
+    // usa el QA por defecto → comportamiento idéntico al anterior.
+    const rmsUrl = await resolveRmsUrl(supabase);
+    console.log(`🌐 Endpoint RMS activo: ${rmsUrl}`);
+
     // Llamar al API de RMS
-    const rmsResponse = await fetch('https://api.rms40.com/api-qa/form_motos', {
+    const rmsResponse = await fetch(rmsUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -69,10 +79,6 @@ serve(async (req) => {
     console.log(`${isSuccess ? '✅' : '⚠️'} Respuesta RMS - Status: ${apiStatus}, Póliza: ${numeroPoliza || 'N/A'}`);
 
     // Actualizar la póliza en la base de datos
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
     const { error: updateError } = await supabase
       .from('polizas_activas')
       .update({
@@ -222,6 +228,34 @@ function sanitizeEmail(value: string | null | undefined): string {
   }
   
   return email;
+}
+
+// Endpoint RMS por defecto (QA). Se usa si admin_settings no tiene URL configurada,
+// garantizando el mismo comportamiento que cuando la URL estaba hardcodeada.
+const RMS_URL_FALLBACK = 'https://api.rms40.com/api-qa/form_motos';
+
+/**
+ * Resuelve el endpoint RMS según el modo del sistema guardado en admin_settings.
+ * - modo "produccion" → rms_url_prod (o rms_url_dev si prod está vacío)
+ * - modo "desarrollo" → rms_url_dev
+ * Cualquier fallo o valor vacío → RMS_URL_FALLBACK (QA).
+ */
+async function resolveRmsUrl(supabase: any): Promise<string> {
+  try {
+    const { data } = await supabase
+      .from('admin_settings')
+      .select('key,value')
+      .in('key', ['modo_sistema', 'rms_url_dev', 'rms_url_prod']);
+    const map: Record<string, string> = {};
+    for (const row of (data || [])) map[row.key] = row.value;
+    const modo = (map['modo_sistema'] || 'produccion').toLowerCase();
+    const url = modo === 'produccion'
+      ? (map['rms_url_prod'] || map['rms_url_dev'])
+      : map['rms_url_dev'];
+    return url && url.trim() ? url.trim() : RMS_URL_FALLBACK;
+  } catch (_e) {
+    return RMS_URL_FALLBACK;
+  }
 }
 
 function buildRmsPayload(data: Record<string, any>, tipoFormulario: string): Record<string, any> {

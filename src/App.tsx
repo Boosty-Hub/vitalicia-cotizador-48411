@@ -47,6 +47,7 @@ import AdminConfiguracionesPage from "./pages/admin/AdminConfiguracionesPage";
 import AdminUsuariosPage from "./pages/admin/AdminUsuariosPage";
 import AdminPreciosEmpirePage from "./pages/admin/AdminPreciosEmpirePage";
 import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
+import AdminConexionesPage from "./pages/admin/AdminConexionesPage";
 import AdminCargaBeraPage from "./pages/admin/AdminCargaBeraPage";
 import AdminCargaEmpirePage from "./pages/admin/AdminCargaEmpirePage";
 import AdminInventarioBeraPage from "./pages/admin/AdminInventarioBeraPage";
@@ -117,6 +118,7 @@ const App = () => (
               <Route path="configuraciones/usuarios" element={<AdminUsuariosPage />} />
               <Route path="configuraciones/precios-empire" element={<AdminPreciosEmpirePage />} />
               <Route path="configuraciones/ajustes" element={<AdminSettingsPage />} />
+              <Route path="configuraciones/conexiones" element={<AdminConexionesPage />} />
               <Route path="configuraciones/:tabla" element={<AdminConfiguracionesPage />} />
             </Route>
             

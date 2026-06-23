@@ -86,9 +86,9 @@ const NATURAL: FlowItem[] = [
   { actor: "cliente", icon: UserPlus, title: "1. Inicia la activación", desc: "Entra a /activar-poliza-rcv y elige «Persona Natural»." },
   { actor: "sistema", icon: Search, title: "2. Valida la placa", desc: "Busca en pólizas activas y en el inventario (BERA / EMPIRE)." },
   { actor: "cliente", icon: ClipboardList, title: "3. Completa el formulario", desc: "Datos del asegurado, vehículo y beneficiario (pasos 2–4)." },
-  { actor: "sistema", icon: ShieldCheck, title: "4. Carga y valida documentos", desc: "Cédula, RIF, licencia, etc. Validados con IA en tiempo real." },
+  { actor: "sistema", icon: ShieldCheck, title: "4. Carga y valida documentos", desc: "Cédula, RIF, licencia, etc. Validados con IA en tiempo real (se omite en modo Desarrollo, configurable en Conexiones)." },
   { actor: "sistema", icon: Database, title: "5. Guarda la póliza", desc: "INSERT en polizas_activas con estado «Nuevo registro»." },
-  { actor: "servidor", icon: Send, title: "6. Llama a la aseguradora", desc: "Edge Function rms-create-policy → API RMS (api.rms40.com)." },
+  { actor: "servidor", icon: Send, title: "6. Llama a la aseguradora", desc: "Edge Function rms-create-policy → API RMS (endpoint según modo Desarrollo/Producción)." },
   {
     branch: [
       { actor: "resultado", icon: ShieldCheck, title: "Éxito → «Activa»", desc: "RMS asigna el número de póliza." },

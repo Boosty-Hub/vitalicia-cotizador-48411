@@ -95,11 +95,44 @@ async function resizeImageToBase64(file: File, maxSize = 1024): Promise<string> 
   });
 }
 
+/**
+ * Lee el modo del sistema desde admin_settings (clave `modo_sistema`).
+ * En "desarrollo" se omite la validación de documentos con IA para poder
+ * testear cargando cualquier archivo; en "produccion" siempre se valida.
+ * Ante cualquier error de lectura, asume "produccion" (lo seguro).
+ */
+async function getModoSistema(): Promise<string> {
+  try {
+    const { data } = await supabase
+      .from("admin_settings")
+      .select("value")
+      .eq("key", "modo_sistema")
+      .maybeSingle();
+    return (data?.value || "produccion").toLowerCase();
+  } catch {
+    return "produccion";
+  }
+}
+
 export function useDocumentValidation() {
   const [validations, setValidations] = useState<Record<string, ValidationResult>>({});
 
   const validateDocument = useCallback(
     async (docKey: string, file: File, formData: FormDataForValidation) => {
+      // Modo desarrollo: aceptar cualquier documento sin validar con IA.
+      const modo = await getModoSistema();
+      if (modo === "desarrollo") {
+        setValidations((prev) => ({
+          ...prev,
+          [docKey]: {
+            status: "valid",
+            message: "Validación omitida (modo desarrollo)",
+            observations: [],
+          },
+        }));
+        return;
+      }
+
       const documentType = DOCUMENT_TYPE_MAP[docKey];
       if (!documentType) {
         // For documents without AI validation (empresa docs), mark as valid

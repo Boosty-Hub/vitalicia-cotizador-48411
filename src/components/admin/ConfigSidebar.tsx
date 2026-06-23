@@ -15,6 +15,7 @@ import {
   Briefcase,
   Phone,
   Wrench,
+  Plug,
   ArrowLeft,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -62,6 +63,7 @@ const otrosItems = [
 ];
 
 const sistemaItems = [
+  { title: "Conexiones", url: "/admin/configuraciones/conexiones", icon: Plug, table: "conexiones" },
   { title: "Usuarios", url: "/admin/configuraciones/usuarios", icon: Users, table: "user_roles" },
 ];
 
