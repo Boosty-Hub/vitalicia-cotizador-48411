@@ -57,15 +57,18 @@ Path alias: `@` → `src` (configured in both `vite.config.ts` and tsconfig).
 
 > **IMPORTANT — Supabase communication.** Always go through the Supabase **API / Management API**
 > for any interaction with Supabase (migrations, project management, admin scripts, CLI), using
-> this access token:
+> the Personal Access Token in the local (gitignored) `.env` file:
 >
 > ```
-> SUPABASE_ACCESS_TOKEN=sbp_16ed33e839a606a5ec4729a5214a35e48cb9505e
+> SUPABASE_ACCESS_TOKEN=<sbp_… — see .env, NEVER commit>
 > ```
 >
 > Use it for CLI/server-side/admin operations only — never reference it from browser-shipped
-> app code. (This is a broad-scope Personal Access Token; rotate it from the Supabase dashboard
-> if it is ever exposed.)
+> app code, and never commit it. It is a broad-scope Personal Access Token: rotate it from the
+> Supabase dashboard (Account → Access Tokens) if it is ever exposed.
+>
+> > ⚠️ The previous token (`sbp_16ed…`, leaked in this file's git history at commit `3dc40e5`)
+> > must be treated as compromised and revoked from the Supabase dashboard.
 
 - Client: `src/integrations/supabase/client.ts` — **auto-generated, do not edit**; the URL and
   anon key are committed here. DB types: `src/integrations/supabase/types.ts` (also generated).

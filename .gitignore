@@ -24,3 +24,9 @@ dist-ssr
 *.sw?
 
 supabase/.temp/
+
+# Env / secrets — never commit. Keep .env.example as the documented template.
+.env
+.env.*
+!.env.example
+.atl/*
