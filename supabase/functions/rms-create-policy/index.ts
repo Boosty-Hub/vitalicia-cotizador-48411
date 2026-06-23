@@ -251,7 +251,6 @@ function buildRmsPayload(data: Record<string, any>, tipoFormulario: string): Rec
     f_fchdesde: data.f_fchdesde || "",
     
     // Vehículo
-    n_anio: data.n_anio || "",
     c_placa: data.c_placa || "",
     c_carroceria: data.c_carroceria || "",
     c_motor: data.c_motor || "",
