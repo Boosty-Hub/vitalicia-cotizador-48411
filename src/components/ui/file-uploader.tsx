@@ -13,6 +13,8 @@ interface FileUploaderProps {
   validationStatus?: ValidationStatus;
   validationMessage?: string;
   validationObservations?: string[];
+  /** Sugerencias para corregir el formulario con lo que dice el documento (solo si inválido). */
+  suggestions?: Array<{ label: string; onApply: () => void }>;
 }
 
 export const FileUploader = ({
@@ -25,6 +27,7 @@ export const FileUploader = ({
   validationStatus = "idle",
   validationMessage,
   validationObservations = [],
+  suggestions = [],
 }: FileUploaderProps) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null;
@@ -129,6 +132,30 @@ export const FileUploader = ({
                     <li key={i} className="text-xs opacity-80">• {obs}</li>
                   ))}
                 </ul>
+              )}
+              {validationStatus === "invalid" && suggestions.length > 0 && (
+                <div className="mt-2 space-y-1.5">
+                  <p className="text-xs font-medium text-foreground">
+                    ¿Te equivocaste al escribir? Corregí tu dato con lo que dice el documento:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {suggestions.map((s, i) => (
+                      <Button
+                        key={i}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={s.onApply}
+                      >
+                        {s.label}
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Si en cambio el documento no es el correcto, quitalo con la ✕ y subí el indicado.
+                  </p>
+                </div>
               )}
             </div>
           )}

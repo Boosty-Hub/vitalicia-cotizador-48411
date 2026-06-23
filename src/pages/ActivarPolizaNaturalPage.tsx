@@ -628,6 +628,41 @@ const ActivarPolizaNaturalPage = () => {
       clearValidation(field);
     }
   };
+  // Sugerencias para corregir el formulario con lo que dice el documento de identidad,
+  // cuando la validación detecta que NO coinciden (suele ser un error al tipear).
+  const buildIdentitySuggestions = (): Array<{ label: string; onApply: () => void }> => {
+    const v = getValidation("docIdentidad");
+    if (v.status !== "invalid" || !v.extractedData) return [];
+    const ext = v.extractedData;
+    const norm = (s: string) =>
+      (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+    const sugs: Array<{ label: string; onApply: () => void }> = [];
+
+    const extCedula = (ext.cedula || "").replace(/[^0-9]/g, "");
+    const formCedula = formData.numeroCedula.replace(/[^0-9]/g, "");
+    if (extCedula && extCedula !== formCedula) {
+      sugs.push({
+        label: `Usar la cédula del documento: ${extCedula}`,
+        onApply: () => handleCedulaChange(extCedula),
+      });
+    }
+
+    const extNombre = (ext.nombre || "").trim();
+    if (extNombre && norm(extNombre) !== norm(`${formData.nombre} ${formData.apellidos}`)) {
+      sugs.push({
+        label: `Usar el nombre del documento: ${extNombre}`,
+        onApply: () => {
+          const parts = extNombre.split(/\s+/).filter(Boolean);
+          const nCount = Math.max(1, Math.floor(parts.length / 2));
+          const nombre = parts.slice(0, nCount).join(" ");
+          const apellidos = parts.slice(nCount).join(" ");
+          setFormData(prev => ({ ...prev, nombre, apellidos: apellidos || prev.apellidos }));
+        },
+      });
+    }
+    return sugs;
+  };
+
   const handleContactSupport = () => {
     window.open(`https://wa.me/584123230188?text=Hola, necesito ayuda con la activación de mi póliza RCV. Placa: ${placa}`, '_blank');
   };
@@ -2246,6 +2281,7 @@ const ActivarPolizaNaturalPage = () => {
                           validationStatus={getValidation("docIdentidad").status}
                           validationMessage={getValidation("docIdentidad").message}
                           validationObservations={getValidation("docIdentidad").observations}
+                          suggestions={buildIdentitySuggestions()}
                         />
                         <FileUploader
                           id="docRIF"
