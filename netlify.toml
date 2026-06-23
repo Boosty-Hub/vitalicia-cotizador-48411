@@ -1,0 +1,12 @@
+# Configuración de build y hosting en Netlify para la SPA (Vite + React Router).
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# SPA fallback: cualquier ruta que no sea un archivo estático sirve index.html
+# (necesario para React Router: /admin/*, /factura/:id, /carnet/:id, etc.).
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
