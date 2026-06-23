@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { fetchVersionApi } from "@/utils/versionApi";
-import { formatPriceToTwoDecimals } from "@/lib/priceUtils";
+import { formatPriceToTwoDecimals, fetchPrecioEmpire } from "@/lib/priceUtils";
 
 interface PolizaConfigData {
   id: string;
@@ -161,20 +161,10 @@ export async function refreshPolizaConfig(poliza: PolizaConfigData): Promise<Ref
 
     // 6. Fetch precio from precios_empire if it's an Empire vehicle
     if (poliza.s_modelo) {
-      const { data: precioData } = await supabase
-        .from('precios_empire')
-        .select('precio_venta, "precio venta", modelo, marca')
-        .or(`modelo.ilike.%${poliza.s_modelo}%,name.ilike.%${poliza.s_modelo}%`)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (precioData) {
-        const precio = precioData.precio_venta || precioData["precio venta"];
-        if (precio) {
-          updatedFields.n_suma = formatPriceToTwoDecimals(precio);
-          updatedFields.precio_venta_tienda_monday = formatPriceToTwoDecimals(precio);
-        }
+      const precio = await fetchPrecioEmpire(poliza.s_modelo);
+      if (precio) {
+        updatedFields.n_suma = formatPriceToTwoDecimals(precio);
+        updatedFields.precio_venta_tienda_monday = formatPriceToTwoDecimals(precio);
       }
     }
 

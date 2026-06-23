@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { fixEncoding } from "@/lib/utils";
 import { FileUploader } from "@/components/ui/file-uploader";
 import { fetchVersionApi } from "@/utils/versionApi";
-import { formatPriceToTwoDecimals } from "@/lib/priceUtils";
+import { formatPriceToTwoDecimals, fetchPrecioEmpire } from "@/lib/priceUtils";
 import { useDocumentValidation } from "@/hooks/useDocumentValidation";
 import { useWhatsappSoporte } from "@/hooks/useWhatsappSoporte";
 import {
@@ -418,21 +418,11 @@ const ActivarPolizaJuridicaPage = () => {
         const modeloVehiculo = empireData.modelo || '';
         
         if (modeloVehiculo) {
-          const { data: precioData, error: precioError } = await supabase
-            .from('precios_empire')
-            .select('precio_venta, "precio venta", created_at, modelo, marca, name')
-            .or(`modelo.ilike.%${modeloVehiculo}%,name.ilike.%${modeloVehiculo}%,marca.ilike.%${modeloVehiculo}%`)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (precioError) {
-            console.error('Error buscando precio en precios_empire:', precioError);
-          }
-
-          if (precioData) {
-            precioVenta = precioData.precio_venta || precioData["precio venta"] || "0";
-            console.log('💰 Precio encontrado en precios_empire:', precioVenta);
+          // Match exacto del modelo primero (helper compartido).
+          const precioEncontrado = await fetchPrecioEmpire(modeloVehiculo);
+          if (precioEncontrado != null) {
+            precioVenta = precioEncontrado;
+            console.log('💰 Precio encontrado en precios_empire (match exacto):', precioVenta);
           }
         }
 

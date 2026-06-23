@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { FileUploader } from "@/components/ui/file-uploader";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { fetchVersionApi } from "@/utils/versionApi";
-import { formatPriceToTwoDecimals } from "@/lib/priceUtils";
+import { formatPriceToTwoDecimals, fetchPrecioEmpire } from "@/lib/priceUtils";
 import { useDocumentValidation } from "@/hooks/useDocumentValidation";
 import { useWhatsappSoporte } from "@/hooks/useWhatsappSoporte";
 import {
@@ -442,21 +442,11 @@ const ActivarPolizaNaturalPage = () => {
         const modeloVehiculo = empireData.modelo || '';
         
         if (modeloVehiculo) {
-          const { data: precioData, error: precioError } = await supabase
-            .from('precios_empire')
-            .select('precio_venta, "precio venta", created_at, modelo, marca, name')
-            .or(`modelo.ilike.%${modeloVehiculo}%,name.ilike.%${modeloVehiculo}%,marca.ilike.%${modeloVehiculo}%`)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (precioError) {
-            console.error('Error buscando precio en precios_empire:', precioError);
-          }
-
-          if (precioData) {
-            precioVenta = precioData.precio_venta || precioData["precio venta"] || "0";
-            console.log('💰 Precio encontrado en precios_empire:', precioVenta);
+          // Match exacto del modelo primero (helper compartido).
+          const precioEncontrado = await fetchPrecioEmpire(modeloVehiculo);
+          if (precioEncontrado != null) {
+            precioVenta = precioEncontrado;
+            console.log('💰 Precio encontrado en precios_empire (match exacto):', precioVenta);
           }
         }
 
@@ -665,43 +655,26 @@ const ActivarPolizaNaturalPage = () => {
         fecha_comparacion: fechaComparison
       });
 
-      // Buscar por modelo en las columnas: modelo, name, o marca
-      const { data, error } = await supabase
-        .from('precios_empire')
-        .select('precio_venta, "precio venta", created_at, modelo, marca, name')
-        .or(`modelo.ilike.%${modeloVehiculo}%,name.ilike.%${modeloVehiculo}%,marca.ilike.%${modeloVehiculo}%`)
-        .lte('created_at', fechaComparison)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      // Match EXACTO del modelo primero (helper compartido) para no agarrar
+      // "NEW HORSE 150" cuando el modelo es "HORSE 150".
+      const precioEncontrado = await fetchPrecioEmpire(modeloVehiculo, { fechaComparison });
 
-      if (error) {
-        console.error('❌ Error fetching precio_venta:', error);
-        return formatPriceToTwoDecimals(vehicleData?.Suma);
+      if (precioEncontrado != null) {
+        console.log('✅ Precio de venta encontrado (match exacto):', {
+          modelo: modeloVehiculo,
+          precio_venta: precioEncontrado,
+          fecha_comparacion: fechaComparison,
+        });
+        return formatPriceToTwoDecimals(precioEncontrado);
       }
 
-      // Enhanced logging for debugging
-      if (data) {
-        const precioFinal = data.precio_venta || data["precio venta"];
-        console.log('✅ Precio de venta encontrado:', {
-          modelo_encontrado: data.modelo,
-          marca_encontrada: data.marca,
-          name_encontrado: data.name,
-          precio_venta: precioFinal,
-          fecha_registro: data.created_at,
-          fecha_compra: formData.fechaCompra,
-          fecha_comparacion: fechaComparison
-        });
-        return formatPriceToTwoDecimals(precioFinal || vehicleData?.Suma);
-      } else {
-        console.log('⚠️ No se encontró precio en precios_empire, usando Suma:', {
-          modelo: vehicleData?.Modelo,
-          marca: vehicleData?.Marca,
-          fecha_compra: formData.fechaCompra,
-          suma_fallback: vehicleData?.Suma || "0"
-        });
-        return formatPriceToTwoDecimals(vehicleData?.Suma);
-      }
+      console.log('⚠️ No se encontró precio en precios_empire, usando Suma:', {
+        modelo: vehicleData?.Modelo,
+        marca: vehicleData?.Marca,
+        fecha_compra: formData.fechaCompra,
+        suma_fallback: vehicleData?.Suma || "0"
+      });
+      return formatPriceToTwoDecimals(vehicleData?.Suma);
     } catch (error) {
       console.error('❌ Error in fetchPrecioVentaEmpire:', error);
       return formatPriceToTwoDecimals(vehicleData?.Suma);
