@@ -618,6 +618,31 @@ const ActivarPolizaJuridicaPage = () => {
     }
   };
 
+  // Sugerencias para corregir el formulario con lo que dice el documento de empresa
+  // (RIF / razón social) cuando la validación detecta que NO coinciden.
+  const buildDocSuggestions = (docKey: string): Array<{ label: string; onApply: () => void }> => {
+    const v = getValidation(docKey);
+    if (v.status !== "invalid" || !v.extractedData) return [];
+    const ext = v.extractedData;
+    const norm = (s: string) =>
+      (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+    const isEmpresaDoc =
+      docKey === "docRIFEmpresa" || docKey === "docDeclaracionISLR" || docKey === "docReferenciaBancaria";
+    if (!isEmpresaDoc) return [];
+
+    const sugs: Array<{ label: string; onApply: () => void }> = [];
+    const extRif = (ext.cedula || "").replace(/[^0-9]/g, "");
+    const formRif = formData.numeroRIF.replace(/[^0-9]/g, "");
+    if (extRif && extRif !== formRif) {
+      sugs.push({ label: `Usar el RIF del documento: ${extRif}`, onApply: () => handleInputChange("numeroRIF", extRif) });
+    }
+    const extRazon = (ext.nombre || "").trim();
+    if (extRazon && norm(extRazon) !== norm(formData.nombreEmpresa)) {
+      sugs.push({ label: `Usar la razón social del documento: ${extRazon}`, onApply: () => handleInputChange("nombreEmpresa", extRazon) });
+    }
+    return sugs;
+  };
+
   const handleContactSupport = () => {
     window.open(`https://wa.me/584123230188?text=Hola, necesito ayuda con la activación de mi póliza RCV. Placa: ${placa}`, '_blank');
   };
@@ -2382,6 +2407,7 @@ const ActivarPolizaJuridicaPage = () => {
                           validationStatus={getValidation("docRIFEmpresa").status}
                           validationMessage={getValidation("docRIFEmpresa").message}
                           validationObservations={getValidation("docRIFEmpresa").observations}
+                          suggestions={buildDocSuggestions("docRIFEmpresa")}
                         />
 
                         <FileUploader
@@ -2427,6 +2453,7 @@ const ActivarPolizaJuridicaPage = () => {
                           validationStatus={getValidation("docReferenciaBancaria").status}
                           validationMessage={getValidation("docReferenciaBancaria").message}
                           validationObservations={getValidation("docReferenciaBancaria").observations}
+                          suggestions={buildDocSuggestions("docReferenciaBancaria")}
                         />
 
                         <FileUploader
@@ -2438,6 +2465,7 @@ const ActivarPolizaJuridicaPage = () => {
                           validationStatus={getValidation("docDeclaracionISLR").status}
                           validationMessage={getValidation("docDeclaracionISLR").message}
                           validationObservations={getValidation("docDeclaracionISLR").observations}
+                          suggestions={buildDocSuggestions("docDeclaracionISLR")}
                         />
                       </div>
                     </div>
