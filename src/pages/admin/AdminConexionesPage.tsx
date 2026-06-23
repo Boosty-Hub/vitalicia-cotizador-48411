@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import {
   Plug, Loader2, Save, FlaskConical, Rocket,
@@ -31,7 +32,7 @@ interface TestResult {
   elapsedMs?: number;
 }
 
-const KEYS = ["modo_sistema", "rms_url_dev", "rms_url_prod"] as const;
+const KEYS = ["modo_sistema", "rms_url_dev", "rms_url_prod", "validar_docs_ia_dev"] as const;
 
 export default function AdminConexionesPage() {
   const [settings, setSettings] = useState<Record<string, Setting>>({});
@@ -67,6 +68,7 @@ export default function AdminConexionesPage() {
   };
 
   const modo: Modo = (settings["modo_sistema"]?.value?.toLowerCase() as Modo) || "produccion";
+  const validarDocsDev = settings["validar_docs_ia_dev"]?.value === "true";
 
   const setModo = async (next: Modo) => {
     if (next === modo) return;
@@ -84,9 +86,27 @@ export default function AdminConexionesPage() {
       toast({
         title: next === "desarrollo" ? "Modo Desarrollo activo" : "Modo Producción activo",
         description: next === "desarrollo"
-          ? "La validación de documentos con IA queda OMITIDA."
+          ? "La validación de documentos con IA se omite (salvo que la actives abajo)."
           : "La validación de documentos con IA queda SIEMPRE activa.",
       });
+    }
+    setSaving(null);
+  };
+
+  const toggleValidarDocsDev = async (next: boolean) => {
+    const row = settings["validar_docs_ia_dev"];
+    if (!row) {
+      toast({ title: "Falta configurar", description: "El ajuste 'validar_docs_ia_dev' no existe aún.", variant: "destructive" });
+      return;
+    }
+    setSaving("validar_docs_ia_dev");
+    const value = next ? "true" : "false";
+    const { error } = await supabase.from("admin_settings").update({ value }).eq("id", row.id);
+    if (error) {
+      toast({ title: "Error", description: "No se pudo actualizar", variant: "destructive" });
+    } else {
+      setSettings((p) => ({ ...p, validar_docs_ia_dev: { ...row, value } }));
+      toast({ title: next ? "Validación IA activada en Desarrollo" : "Validación IA desactivada en Desarrollo" });
     }
     setSaving(null);
   };
@@ -196,6 +216,23 @@ export default function AdminConexionesPage() {
                 <div className="text-xs text-muted-foreground">Valida siempre</div>
               </div>
             </button>
+          </div>
+
+          {/* Validación de documentos con IA: siempre ON en prod; opcional en dev */}
+          <div className="mt-4 flex items-start justify-between gap-4 rounded-lg border border-border p-4">
+            <div className="space-y-1">
+              <Label className="text-sm font-medium">Validar documentos con IA</Label>
+              <p className="text-sm text-muted-foreground">
+                {modo === "produccion"
+                  ? "En Producción está SIEMPRE activa y no se puede desactivar."
+                  : "En Desarrollo está desactivada por defecto. Activala para testear el flujo completo con validación."}
+              </p>
+            </div>
+            <Switch
+              checked={modo === "produccion" ? true : validarDocsDev}
+              disabled={modo === "produccion" || saving === "validar_docs_ia_dev"}
+              onCheckedChange={toggleValidarDocsDev}
+            />
           </div>
         </CardContent>
       </Card>

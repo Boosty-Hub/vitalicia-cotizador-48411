@@ -17,6 +17,8 @@ interface AdminSetting {
 
 const TOGGLE_KEYS = ["allow_model_creation_on_upload"];
 const TEXT_KEYS = ["whatsapp_soporte_numero"];
+// Ajustes que se gestionan en el panel "Conexiones" — no mostrarlos aquí.
+const CONEXIONES_KEYS = ["modo_sistema", "rms_url_dev", "rms_url_prod", "validar_docs_ia_dev"];
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<AdminSetting[]>([]);
@@ -98,7 +100,7 @@ export default function AdminSettingsPage() {
 
   const toggleSettings = settings.filter(s => TOGGLE_KEYS.includes(s.key));
   const textSettings = settings.filter(s => TEXT_KEYS.includes(s.key));
-  const otherSettings = settings.filter(s => !TOGGLE_KEYS.includes(s.key) && !TEXT_KEYS.includes(s.key));
+  const otherSettings = settings.filter(s => !TOGGLE_KEYS.includes(s.key) && !TEXT_KEYS.includes(s.key) && !CONEXIONES_KEYS.includes(s.key));
 
   return (
     <div className="space-y-6">

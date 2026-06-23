@@ -96,21 +96,25 @@ async function resizeImageToBase64(file: File, maxSize = 1024): Promise<string> 
 }
 
 /**
- * Lee el modo del sistema desde admin_settings (clave `modo_sistema`).
- * En "desarrollo" se omite la validación de documentos con IA para poder
- * testear cargando cualquier archivo; en "produccion" siempre se valida.
- * Ante cualquier error de lectura, asume "produccion" (lo seguro).
+ * Decide si OMITIR la validación de documentos con IA, según admin_settings:
+ * - "produccion": NUNCA se omite (siempre valida).
+ * - "desarrollo": se omite por defecto, SALVO que `validar_docs_ia_dev` = "true"
+ *   (para poder testear el flujo completo con validación a propósito).
+ * Ante cualquier error de lectura, NO se omite (valida = lo seguro).
  */
-async function getModoSistema(): Promise<string> {
+async function shouldSkipDocValidation(): Promise<boolean> {
   try {
     const { data } = await supabase
       .from("admin_settings")
-      .select("value")
-      .eq("key", "modo_sistema")
-      .maybeSingle();
-    return (data?.value || "produccion").toLowerCase();
+      .select("key, value")
+      .in("key", ["modo_sistema", "validar_docs_ia_dev"]);
+    const map: Record<string, string> = {};
+    for (const r of data ?? []) map[r.key] = (r.value ?? "").toLowerCase();
+    const modo = map["modo_sistema"] || "produccion";
+    if (modo !== "desarrollo") return false; // producción: siempre valida
+    return map["validar_docs_ia_dev"] !== "true"; // desarrollo: omite salvo que se active
   } catch {
-    return "produccion";
+    return false;
   }
 }
 
@@ -119,9 +123,8 @@ export function useDocumentValidation() {
 
   const validateDocument = useCallback(
     async (docKey: string, file: File, formData: FormDataForValidation) => {
-      // Modo desarrollo: aceptar cualquier documento sin validar con IA.
-      const modo = await getModoSistema();
-      if (modo === "desarrollo") {
+      // Modo desarrollo (sin validación IA activada): aceptar cualquier documento.
+      if (await shouldSkipDocValidation()) {
         setValidations((prev) => ({
           ...prev,
           [docKey]: {
