@@ -48,6 +48,7 @@ import { Badge } from "@/components/ui/badge";
 import { InventoryPolicyBadge as PolicyStatusBadge } from "@/components/admin/InventoryPolicyBadge";
 import { PolicyDetailsDialog } from "@/components/admin/PolicyDetailsDialog";
 import { MotoDetailsDialog } from "@/components/admin/MotoDetailsDialog";
+import { LiveSearchField } from "@/components/admin/LiveSearchField";
 import { DuplicateWarningDialog, DuplicateRow, DuplicateColumnsConfig } from "@/components/admin/DuplicateWarningDialog";
 
 interface MotoEmpire {
@@ -74,7 +75,7 @@ interface PolicyInfo {
 
 const initialFormData = {
   fecha: "",
-  marca: "EMPIRE",
+  marca: "EMPIRE KEEWAY",
   modelo: "",
   version: "",
   anio: new Date().getFullYear(),
@@ -106,6 +107,8 @@ export default function AdminInventarioEmpirePage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [formData, setFormData] = useState(initialFormData);
+  // Código de marca para filtrar el catálogo de modelos/versiones (EMPIRE KEEWAY = 329).
+  const [marcaCode, setMarcaCode] = useState("329");
   const [saving, setSaving] = useState(false);
   const [policyMap, setPolicyMap] = useState<Record<string, PolicyInfo>>({});
   const [selectedPolicy, setSelectedPolicy] = useState<any | null>(null);
@@ -271,6 +274,7 @@ export default function AdminInventarioEmpirePage() {
 
       setIsAddDialogOpen(false);
       setFormData(initialFormData);
+      setMarcaCode("329");
       fetchData();
     } catch (error) {
       console.error("Error adding record:", error);
@@ -416,27 +420,42 @@ export default function AdminInventarioEmpirePage() {
                     onChange={(e) => setFormData({ ...formData, fecha: e.target.value })}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>Marca</Label>
-                  <Input
-                    value={formData.marca}
-                    onChange={(e) => setFormData({ ...formData, marca: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Modelo</Label>
-                  <Input
-                    value={formData.modelo}
-                    onChange={(e) => setFormData({ ...formData, modelo: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Versión</Label>
-                  <Input
-                    value={formData.version}
-                    onChange={(e) => setFormData({ ...formData, version: e.target.value })}
-                  />
-                </div>
+                <LiveSearchField
+                  label="Marca"
+                  required
+                  editing
+                  table="board_cod_marca"
+                  codeColumn="cd_marca"
+                  code={marcaCode}
+                  description={formData.marca}
+                  onSelect={(code, desc) => {
+                    setMarcaCode(code);
+                    setFormData({ ...formData, marca: desc, modelo: "", version: "" });
+                  }}
+                />
+                <LiveSearchField
+                  label="Modelo"
+                  required
+                  editing
+                  table="board_cod_modelo"
+                  codeColumn="cd_modelo"
+                  filters={{ cd_marca: marcaCode }}
+                  description={formData.modelo}
+                  hint="Elegilo del catálogo para que RMS lo reconozca"
+                  onSelect={(_code, desc) => setFormData({ ...formData, modelo: desc })}
+                  showCode={false}
+                />
+                <LiveSearchField
+                  label="Versión"
+                  required
+                  editing
+                  table="board_cod_version_moto"
+                  codeColumn="cd_version"
+                  filters={{ cd_marca: marcaCode }}
+                  description={formData.version}
+                  onSelect={(_code, desc) => setFormData({ ...formData, version: desc })}
+                  showCode={false}
+                />
                 <div className="space-y-2">
                   <Label>Año</Label>
                   <Input
@@ -473,13 +492,15 @@ export default function AdminInventarioEmpirePage() {
                     onChange={(e) => setFormData({ ...formData, serial_carroceria: e.target.value })}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>Color</Label>
-                  <Input
-                    value={formData.color}
-                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                  />
-                </div>
+                <LiveSearchField
+                  label="Color"
+                  editing
+                  table="board_cod_color"
+                  codeColumn="cd_valdet"
+                  description={formData.color}
+                  onSelect={(_code, desc) => setFormData({ ...formData, color: desc })}
+                  showCode={false}
+                />
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
