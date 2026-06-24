@@ -264,7 +264,7 @@ function buildRmsPayload(data: Record<string, any>, tipoFormulario: string): Rec
     c_cd_pais: "001",
     cd_moneda: "DL",
     c_cd_actividad: "0000",
-    c_cd_ocupacion: 0,
+    c_cd_ocupacion: "00000",
     n_ingresoanualnac: 793456.83,
     n_correlativo: 0,
   };
@@ -328,7 +328,11 @@ function buildRmsPayload(data: Record<string, any>, tipoFormulario: string): Rec
     // sanitizeActividadEconomica(data.c_cd_actividad, defaultValues.c_cd_actividad) si RMS
     // corrige la validación del catálogo de actividades.
     c_cd_actividad: "0000",
-    c_cd_ocupacion: parseInt(data.c_cd_ocupacion) || defaultValues.c_cd_ocupacion,
+    // RMS exige el código de ocupación como STRING de ancho fijo (5 chars, zero-padded):
+    // debe ser "00000", NO el número 0. parseInt destruía el formato (0 → number 0) y el
+    // catálogo de RMS no lo matcheaba. Mismo formato de catálogo que c_cd_actividad ("0000")
+    // y que c_cd_ocupacion en rms-test-connection ("00003").
+    c_cd_ocupacion: String(parseInt(data.c_cd_ocupacion) || 0).padStart(5, "0"),
     n_ingresoanualnac: parseFloat(data.n_ingresoanualnac) || defaultValues.n_ingresoanualnac,
     
     // Moneda

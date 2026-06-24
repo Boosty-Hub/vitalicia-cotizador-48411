@@ -936,7 +936,7 @@ const ActivarPolizaNaturalPage = () => {
       c_email1: formData.email,
       c_email2: formData.email2,
       c_cd_actividad: 0,
-      c_cd_ocupacion: 0,
+      c_cd_ocupacion: "00000", // RMS espera código de catálogo string zero-padded (5 chars)
       n_ingresoanualnac: 0,
       c_cd_nacionalidadap: formData.beneficiarioTipoIdentificacion,
       s_nacionalidadap: nacionalidadApData?.descripcion || "",

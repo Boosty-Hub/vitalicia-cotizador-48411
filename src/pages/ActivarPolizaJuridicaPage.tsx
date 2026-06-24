@@ -893,7 +893,7 @@ const ActivarPolizaJuridicaPage = () => {
         c_email1: formData.correoElectronico,
         c_email2: formData.correoAlternativo,
         c_cd_actividad: codigosData.actividadCodigo,
-        c_cd_ocupacion: "0",
+        c_cd_ocupacion: "00000", // RMS espera código de catálogo string zero-padded (5 chars)
         n_ingresoanualnac: "0",
         
         // Datos apoderado (representante legal)
